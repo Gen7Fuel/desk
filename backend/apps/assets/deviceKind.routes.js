@@ -28,7 +28,7 @@ router.post('/', authenticate, requirePermission('assets.devices', 'create'), as
 router.put('/:id', authenticate, requirePermission('assets.devices', 'update'), async (req, res) => {
   try {
     const { name } = req.body
-    const kind = await DeviceKind.findByIdAndUpdate(req.params.id, { name }, { new: true })
+    const kind = await DeviceKind.findByIdAndUpdate(req.params.id, { name }, { returnDocument: 'after' })
     if (!kind) return res.status(404).json({ error: 'Not found' })
     res.json(kind)
   } catch (err) {

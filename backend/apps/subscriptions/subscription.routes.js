@@ -32,7 +32,7 @@ router.put('/subscriptions/:id', authenticate, requirePermission('subscriptions.
   const sub = await Subscription.findByIdAndUpdate(
     req.params.id,
     { category, identifier, price, billing_cycle, end_date, notes },
-    { new: true }
+    { returnDocument: 'after' }
   )
   if (!sub) return res.status(404).json({ error: 'Not found' })
   res.json(sub)

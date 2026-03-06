@@ -32,7 +32,7 @@ router.put('/:id', authenticate, requirePermission('assets.location', 'update'),
     if (name !== undefined) update.name = name
     if (lat !== undefined) update.lat = lat
     if (lng !== undefined) update.lng = lng
-    const location = await Location.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true })
+    const location = await Location.findByIdAndUpdate(req.params.id, update, { returnDocument: 'after', runValidators: true })
     if (!location) return res.status(404).json({ error: 'Not found' })
     res.json(location)
   } catch (err) {

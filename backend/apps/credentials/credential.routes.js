@@ -45,7 +45,7 @@ router.put('/credentials/:id', authenticate, requirePermission('credentials.list
     const cred = await Credential.findByIdAndUpdate(
       req.params.id,
       { name, category, url, username, password, notes },
-      { new: true }
+      { returnDocument: 'after' }
     )
     if (!cred) return res.status(404).json({ error: 'Not found' })
     res.json(cred)

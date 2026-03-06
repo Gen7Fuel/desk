@@ -31,7 +31,7 @@ router.post('/', authenticate, requirePermission('access.resources', 'create'), 
 router.put('/:id', authenticate, requirePermission('access.resources', 'update'), async (req, res) => {
   try {
     const { name } = req.body
-    const kind = await ResourceKind.findByIdAndUpdate(req.params.id, { name }, { new: true })
+    const kind = await ResourceKind.findByIdAndUpdate(req.params.id, { name }, { returnDocument: 'after' })
     if (!kind) return res.status(404).json({ error: 'Not found' })
     res.json(kind)
   } catch (err) {

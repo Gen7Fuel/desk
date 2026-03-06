@@ -37,7 +37,7 @@ router.post('/auth/login', async (req, res) => {
     const user = await User.findOneAndUpdate(
       { email: email.toLowerCase() },
       { $setOnInsert: { email: email.toLowerCase(), role: null, permissionOverrides: {} } },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     )
     console.log('[auth] step 2 - user.role:', user.role)
     console.log('[auth] step 2 - permissionOverrides keys:', Object.keys(user.permissionOverrides || {}))
@@ -111,13 +111,13 @@ router.post('/seed', async (req, res) => {
     const role = await Role.findOneAndUpdate(
       { name: 'admin' },
       { name: 'admin', description: 'Full access', permissions: allTrue },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     )
 
     const user = await User.findOneAndUpdate(
       { email: seedEmail },
       { email: seedEmail, role: 'admin', permissionOverrides: {} },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     )
 
     return res.json({ message: 'Seeded', role: role.name, user: user.email })

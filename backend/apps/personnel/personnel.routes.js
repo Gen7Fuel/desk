@@ -62,7 +62,7 @@ router.put('/:id', authenticate, requirePermission('personnel', 'update'), async
     if (req.body && Array.isArray(req.body.resources)) {
       await validateResourceTypes(req.body.resources)
     }
-    const person = await Personnel.findByIdAndUpdate(req.params.id, req.body, { new: true })
+    const person = await Personnel.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after' })
     if (!person) return res.status(404).json({ error: 'Not found' })
     res.json(person)
   } catch (err) {

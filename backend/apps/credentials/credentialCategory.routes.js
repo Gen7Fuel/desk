@@ -45,7 +45,7 @@ router.put('/credentials/categories/:id', authenticate, requirePermission('crede
     const category = await Category.findByIdAndUpdate(
       req.params.id,
       { name: name.trim() },
-      { new: true }
+      { returnDocument: 'after' }
     )
     if (!category) return res.status(404).json({ error: 'Not found' })
     res.json(category)
