@@ -1,13 +1,6 @@
-const { connectToMongo } = require('./config/db');
-
-connectToMongo().then(() => {
-  app.listen(port, () => {
-    console.log(`API listening on port ${port}`);
-  });
-});
-
 const express = require('express')
 const rateLimit = require('express-rate-limit')
+const { connectToMongo } = require('./config/db')
 const cipherRoutes = require('./apps/cipher/cipher.routes')
 const authRoutes = require('./apps/auth/auth.routes')
 const subscriptionsRoutes = require('./apps/subscriptions/subscription.routes')
@@ -59,6 +52,8 @@ app.get('/', (_, res) => {
   res.send('Hello World!')
 })
 
-app.listen(port, () => {
-  console.log(`API listening on port ${port}`)
+connectToMongo().then(() => {
+  app.listen(port, () => {
+    console.log(`API listening on port ${port}`)
+  })
 })
