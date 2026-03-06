@@ -53,6 +53,11 @@ app.get('/', (_, res) => {
   res.send('Hello World!')
 })
 
+// Health check — verify which version is deployed
+app.get('/api/health', (_, res) => {
+  res.json({ status: 'ok', started: new Date().toISOString() })
+})
+
 connectToMongo().then(() => {
   app.listen(port, () => {
     console.log(`API listening on port ${port}`)

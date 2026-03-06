@@ -31,5 +31,9 @@ jobs:
             SAGE_CALLBACK_URL=${{ secrets.SAGE_CALLBACK_URL }}
             ENVEOF
 
-            # Rebuild and restart containers
-            docker compose up -d --build
+            # Rebuild containers (no cache to ensure fresh code)
+            docker compose build --no-cache
+            docker compose up -d
+
+            # Clean up old images
+            docker image prune -f
