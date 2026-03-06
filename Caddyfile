@@ -1,4 +1,4 @@
-desk.gen7fuel.com {
+http://desk.gen7fuel.com {
     # API — forward to Express (prefix kept; Express routes are mounted under /api)
     handle /api/* {
         reverse_proxy api:5000
