@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
+import { createFileRoute, redirect, useNavigate, useSearch } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { Plus, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -180,13 +180,14 @@ const initialSubscriptions: Subscription[] = [
 ]
 
 export const Route = createFileRoute('/_appbar/subscriptions')({
+  beforeLoad: () => {
+    throw redirect({ to: '/subscriptions/list' })
+  },
   component: RouteComponent,
-  validateSearch: (search: Record<string, unknown>) => ({
-    selected: (search.selected as string) || '',
-  }),
 })
 
 function RouteComponent() {
+  // @ts-ignore – route uses beforeLoad redirect; RouteComponent never renders
   const { selected } = useSearch({ from: '/_appbar/subscriptions' })
   const navigate = useNavigate({ from: '/subscriptions' })
   const [subs, setSubs] = useState(initialSubscriptions)

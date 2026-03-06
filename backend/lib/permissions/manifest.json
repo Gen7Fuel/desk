@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "modules": {
+    "fuelInvoicing": {
+      "actions": ["create", "read", "update", "delete"]
+    },
+    "personnel": {
+      "actions": ["create", "read", "update", "delete"]
+    },
+    "access": {
+      "submodules": {
+        "personnel": { "actions": ["create", "read", "update", "delete"] },
+        "resources": { "actions": ["create", "read", "update", "delete"] }
+      }
+    },
+    "assets": {
+      "submodules": {
+        "devices":   { "actions": ["create", "read", "update", "delete"] },
+        "location":  { "actions": ["create", "read", "update", "delete"] },
+        "personnel": { "actions": ["create", "read", "update", "delete"] }
+      }
+    },
+    "cipher": {
+      "submodules": {
+        "lock":   { "actions": ["create", "read", "update", "delete"] },
+        "unlock": { "actions": ["create", "read", "update", "delete"] }
+      }
+    },
+    "credentials": {
+      "submodules": {
+        "categories": { "actions": ["create", "read", "update", "delete"] },
+        "list":       { "actions": ["create", "read", "update", "delete"] }
+      }
+    },
+    "inventory": {
+      "submodules": {
+        "coremarkInitialOrder": { "actions": ["create", "read", "update", "delete"] }
+      }
+    },
+    "subscriptions": {
+      "submodules": {
+        "categories": { "actions": ["create", "read", "update", "delete"] },
+        "list":       { "actions": ["create", "read", "update", "delete"] }
+      }
+    },
+    "settings": {
+      "submodules": {
+        "users": { "actions": ["create", "read", "update", "delete"] },
+        "roles": { "actions": ["create", "read", "update", "delete"] }
+      }
+    }
+  }
+}

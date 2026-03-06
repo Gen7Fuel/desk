@@ -1,0 +1,46 @@
+services:
+  caddy:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - desk
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ./backend/.env
+    networks:
+      - desk
+    depends_on:
+      - db
+
+  db:
+    image: mongo:8
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - desk
+
+networks:
+  desk:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
+  mongo_data:

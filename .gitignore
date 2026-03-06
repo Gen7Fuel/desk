@@ -1,0 +1,7 @@
+backend/node_modules
+backend/.env
+
+frontend/.vscode
+frontend/.tanstack
+frontend/.vscode
+frontend/node_modules

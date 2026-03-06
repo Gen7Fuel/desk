@@ -1,24 +1,38 @@
 import { createFileRoute, Link, Outlet, useLocation, useMatchRoute } from '@tanstack/react-router'
 import { cn } from '@/lib/utils'
+import { can } from '@/lib/permissions'
 
-const sidebarLinks: Record<string, { label: string; path: string }[]> = {
+const sidebarLinks: Record<string, { label: string; path: string; permission: string }[]> = {
   personnel: [
-    { label: 'List', path: '/personnel/list' },
+    { label: 'List', path: '/personnel/list', permission: 'personnel' },
   ],
   access: [
-    { label: 'Resources', path: '/access/resources' },
-    { label: 'Personnel', path: '/access/personnel' },
+    { label: 'Resources', path: '/access/resources', permission: 'access.resources' },
+    { label: 'Personnel', path: '/access/personnel', permission: 'access.personnel' },
   ],
   assets: [
-    { label: 'Devices', path: '/assets/devices' },
-    { label: 'Personnel', path: '/assets/personnel' },
-    { label: 'Location', path: '/assets/location' },
+    { label: 'Devices', path: '/assets/devices', permission: 'assets.devices' },
+    { label: 'Personnel', path: '/assets/personnel', permission: 'assets.personnel' },
+    { label: 'Location', path: '/assets/location', permission: 'assets.location' },
   ],
   credentials: [
-    { label: 'List', path: '/credentials/list' },
+    { label: 'Categories', path: '/credentials/categories', permission: 'credentials.categories' },
+    { label: 'Credentials', path: '/credentials/list', permission: 'credentials.list' },
   ],
   subscriptions: [
-    { label: 'List', path: '/subscriptions/list' },
+    { label: 'Categories', path: '/subscriptions/categories', permission: 'subscriptions.categories' },
+    { label: 'Subscriptions', path: '/subscriptions/list', permission: 'subscriptions.list' },
+  ],
+  cipher: [
+    { label: 'Lock', path: '/cipher/lock', permission: 'cipher.lock' },
+    { label: 'Unlock', path: '/cipher/unlock', permission: 'cipher.unlock' },
+  ],
+  inventory: [
+    { label: 'CoreMark Initial Order', path: '/inventory/coremark-initial-order', permission: 'inventory.coremarkInitialOrder' },
+  ],
+  settings: [
+    { label: 'Users', path: '/settings/users', permission: 'settings.users' },
+    { label: 'Roles', path: '/settings/roles', permission: 'settings.roles' },
   ],
 }
 
@@ -30,7 +44,7 @@ function RouteComponent() {
   const location = useLocation()
   const section = location.pathname.split('/')[1] ?? ''
   const matchRoute = useMatchRoute()
-  const links = sidebarLinks[section] ?? []
+  const links = (sidebarLinks[section] ?? []).filter((l) => can(l.permission, 'read'))
 
   return (
     <div className="flex h-full">

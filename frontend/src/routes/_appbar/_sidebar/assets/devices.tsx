@@ -1,5 +1,9 @@
-import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
+import { createFileRoute, redirect, useNavigate, useSearch } from '@tanstack/react-router'
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Plus, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { can } from '@/lib/permissions'
 import {
   Table,
   TableBody,
@@ -8,80 +12,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-
-const deviceTypes = [
-  'Laptop',
-  'Tablet',
-  'Desktop',
-  'Scanner',
-  'Printer',
-  'Camera',
-  'Networking',
-  'POS Terminal',
-  'Fuel Equipment',
-  'Safe',
-]
-
-interface DeviceEntry {
-  assignedTo: string
-  make: string
-  model: string
-  identifier: string
-}
-
-const devicesByType: Record<string, DeviceEntry[]> = {
-  Laptop: [
-    { assignedTo: 'Alice Johnson', make: 'Apple', model: 'MacBook Pro 14"', identifier: 'SN-AP-2024-7821' },
-    { assignedTo: 'David Brown', make: 'Lenovo', model: 'ThinkPad X1 Carbon', identifier: 'SN-LN-2024-3310' },
-    { assignedTo: 'Frank Miller', make: 'Dell', model: 'Latitude 5540', identifier: 'SN-DL-2024-5589' },
-  ],
-  Tablet: [
-    { assignedTo: 'Eve Davis', make: 'Apple', model: 'iPad 10th Gen', identifier: 'SN-AP-2024-3344' },
-    { assignedTo: 'Bob Smith', make: 'Apple', model: 'iPad Air M2', identifier: 'SN-AP-2024-6612' },
-    { assignedTo: 'Grace Wilson', make: 'Samsung', model: 'Galaxy Tab S9', identifier: 'SN-SS-2024-1187' },
-  ],
-  Desktop: [
-    { assignedTo: 'David Brown', make: 'Dell', model: 'OptiPlex 7010', identifier: 'SN-DL-2023-4451' },
-    { assignedTo: 'Carol Williams', make: 'HP', model: 'ProDesk 400 G9', identifier: 'SN-HP-2023-7728' },
-    { assignedTo: 'Henry Moore', make: 'Dell', model: 'OptiPlex 5000', identifier: 'SN-DL-2023-9902' },
-  ],
-  Scanner: [
-    { assignedTo: 'Bob Smith', make: 'Zebra', model: 'TC21', identifier: 'BC-ZB-00482' },
-    { assignedTo: 'Grace Wilson', make: 'Zebra', model: 'DS2208', identifier: 'BC-ZB-00615' },
-    { assignedTo: 'Eve Davis', make: 'Honeywell', model: 'Voyager 1472g', identifier: 'BC-HW-00331' },
-  ],
-  Printer: [
-    { assignedTo: 'Carol Williams', make: 'Brother', model: 'QL-820NWB', identifier: 'SN-BR-2024-1190' },
-    { assignedTo: 'Alice Johnson', make: 'Epson', model: 'TM-T88VII', identifier: 'SN-EP-2024-0098' },
-    { assignedTo: 'David Brown', make: 'HP', model: 'LaserJet Pro M404dn', identifier: 'SN-HP-2024-2245' },
-  ],
-  Camera: [
-    { assignedTo: 'Frank Miller', make: 'Hikvision', model: 'DS-2CD2143G2-I', identifier: 'SN-HK-2023-5567' },
-    { assignedTo: 'Frank Miller', make: 'Hikvision', model: 'DS-2CD2143G2-I', identifier: 'SN-HK-2023-5568' },
-    { assignedTo: 'Frank Miller', make: 'Dahua', model: 'IPC-HDW3841T-ZAS', identifier: 'SN-DH-2023-9914' },
-  ],
-  Networking: [
-    { assignedTo: 'Henry Moore', make: 'Cisco', model: 'CBS350-24T', identifier: 'SN-CS-2023-8812' },
-    { assignedTo: 'Henry Moore', make: 'Ubiquiti', model: 'UniFi U6 Pro', identifier: 'SN-UB-2024-0073' },
-    { assignedTo: 'Henry Moore', make: 'Ubiquiti', model: 'UniFi U6 Pro', identifier: 'SN-UB-2024-0074' },
-  ],
-  'POS Terminal': [
-    { assignedTo: 'Alice Johnson', make: 'Verifone', model: 'MX 925', identifier: 'SN-VF-2024-0011' },
-    { assignedTo: 'Bob Smith', make: 'Verifone', model: 'MX 925', identifier: 'SN-VF-2024-0012' },
-    { assignedTo: 'Eve Davis', make: 'Ingenico', model: 'Lane 7000', identifier: 'SN-IG-2024-4490' },
-  ],
-  'Fuel Equipment': [
-    { assignedTo: 'David Brown', make: 'Gilbarco', model: 'Passport', identifier: 'SN-GB-2022-4401' },
-    { assignedTo: 'David Brown', make: 'Gilbarco', model: 'Encore 700', identifier: 'SN-GB-2022-4402' },
-  ],
-  Safe: [
-    { assignedTo: 'Alice Johnson', make: 'Amsec', model: 'BF3416', identifier: 'SN-AM-2021-7723' },
-    { assignedTo: 'David Brown', make: 'Amsec', model: 'BF1716', identifier: 'SN-AM-2022-8801' },
-  ],
-}
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { getDeviceKinds, createDeviceKind } from '@/lib/device-kind-api'
+import { getPersonnel } from '@/lib/personnel-api'
+import { apiFetch } from '@/lib/api'
 
 export const Route = createFileRoute('/_appbar/_sidebar/assets/devices')({
   component: RouteComponent,
+  beforeLoad: () => {
+    if (typeof window !== 'undefined' && !can('assets.devices', 'read')) {
+      throw redirect({ to: '/' })
+    }
+  },
   validateSearch: (search: Record<string, unknown>) => ({
     selected: (search.selected as string) || undefined,
   }),
@@ -90,25 +33,160 @@ export const Route = createFileRoute('/_appbar/_sidebar/assets/devices')({
 function RouteComponent() {
   const { selected } = useSearch({ from: '/_appbar/_sidebar/assets/devices' })
   const navigate = useNavigate({ from: '/assets/devices' })
-  const entries = selected ? devicesByType[selected] ?? [] : []
+  const queryClient = useQueryClient()
+
+  const {
+    data: deviceKinds,
+    isLoading: isLoadingKinds,
+    isError: isErrorKinds,
+    error: kindsError,
+  } = useQuery({ queryKey: ['deviceKinds'], queryFn: getDeviceKinds })
+
+  const { data: personnel } = useQuery({ queryKey: ['personnel'], queryFn: getPersonnel })
+
+  // Flatten all devices of the selected type across all personnel
+  const entries: { personId: string; deviceIdx: number; assignedTo: string; make: string; model: string; identifier: string; location: string }[] =
+    selected && Array.isArray(personnel)
+      ? personnel.flatMap((person: any) => {
+          const id = person._id || person.id
+          return (person.devices ?? [])
+            .map((d: any, idx: number) => ({ ...d, personId: id, deviceIdx: idx, assignedTo: person.name }))
+            .filter((d: any) => d.type === selected)
+        })
+      : []
+
+  // Slide-in form state — shared for "add device kind" and "edit device entry"
+  type FormMode = 'addKind' | 'editDevice' | null
+  const [formMode, setFormMode] = useState<FormMode>(null)
+  const [editingPersonId, setEditingPersonId] = useState<string | null>(null)
+  const [editingDeviceIdx, setEditingDeviceIdx] = useState<number | null>(null)
+  const [kindName, setKindName] = useState('')
+  const [formMake, setFormMake] = useState('')
+  const [formModel, setFormModel] = useState('')
+  const [formIdentifier, setFormIdentifier] = useState('')
+
+  function closeForm() {
+    setFormMode(null)
+    setEditingPersonId(null)
+    setEditingDeviceIdx(null)
+    setKindName('')
+    setFormMake('')
+    setFormModel('')
+    setFormIdentifier('')
+  }
+
+  function openEditDevice(entry: typeof entries[number]) {
+    setEditingPersonId(entry.personId)
+    setEditingDeviceIdx(entry.deviceIdx)
+    setFormMake(entry.make)
+    setFormModel(entry.model)
+    setFormIdentifier(entry.identifier)
+    setFormMode('editDevice')
+  }
+
+  // Add new device kind
+  const addKindMutation = useMutation({
+    mutationFn: () => createDeviceKind({ name: kindName.trim() }),
+    onSuccess: (newKind: any) => {
+      queryClient.invalidateQueries({ queryKey: ['deviceKinds'] })
+      navigate({ search: { selected: newKind.name } })
+      closeForm()
+    },
+  })
+
+  // Edit an existing device entry on a person
+  const editDeviceMutation = useMutation({
+    mutationFn: async () => {
+      const person = personnel?.find(
+        (p: any) => (p._id || p.id) === editingPersonId,
+      )
+      if (!person) throw new Error('Person not found')
+      const updatedDevices = (person.devices ?? []).map((d: any, i: number) =>
+        i === editingDeviceIdx
+          ? { type: selected, make: formMake.trim(), model: formModel.trim(), identifier: formIdentifier.trim() }
+          : d,
+      )
+      const res = await apiFetch(`/api/personnel/${editingPersonId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ devices: updatedDevices }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to update device')
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['personnel'] })
+      closeForm()
+    },
+  })
+
+  function handleKindSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!kindName.trim() || addKindMutation.isPending) return
+    addKindMutation.mutate()
+  }
+
+  function handleDeviceSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!formMake.trim() || !formModel.trim() || !formIdentifier.trim()) return
+    if (editDeviceMutation.isPending) return
+    editDeviceMutation.mutate()
+  }
+
+  const showForm = formMode !== null
+  const isPending = addKindMutation.isPending || editDeviceMutation.isPending
+  const mutationError =
+    (addKindMutation.isError ? (addKindMutation.error as Error)?.message : null) ||
+    (editDeviceMutation.isError ? (editDeviceMutation.error as Error)?.message : null)
 
   return (
     <div className="flex h-full">
+      {/* Left: device kinds list */}
       <div className="flex w-56 flex-col gap-1 overflow-auto border-r p-4">
-        <h2 className="mb-2 text-lg font-semibold">Device Types</h2>
-        {deviceTypes.map((type) => (
-          <button
-            key={type}
-            onClick={() => navigate({ search: { selected: type } })}
-            className={cn(
-              'rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
-              selected === type && 'bg-accent/80 text-accent-foreground',
-            )}
+        <div className="mb-2 flex items-center gap-2">
+          <h2 className="text-lg font-semibold">Device Types</h2>
+          <Button
+            variant={formMode === 'addKind' ? 'outline' : 'default'}
+            size="icon"
+            className="h-6 w-6"
+            onClick={() => {
+              if (formMode === 'addKind') {
+                closeForm()
+              } else {
+                closeForm()
+                setFormMode('addKind')
+              }
+            }}
           >
-            {type}
-          </button>
-        ))}
+            {formMode === 'addKind' ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+          </Button>
+        </div>
+        {isLoadingKinds ? (
+          <p className="text-muted-foreground">Loading...</p>
+        ) : isErrorKinds ? (
+          <p className="text-destructive">{(kindsError as Error)?.message ?? 'Failed to load device types.'}</p>
+        ) : !deviceKinds || deviceKinds.length === 0 ? (
+          <p className="text-muted-foreground">No device types found.</p>
+        ) : (
+          deviceKinds.map((kind: any) => (
+            <button
+              key={kind._id || kind.id}
+              onClick={() => { closeForm(); navigate({ search: { selected: kind.name } }) }}
+              className={cn(
+                'rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                selected === kind.name && 'bg-accent/80 text-accent-foreground',
+              )}
+            >
+              {kind.name}
+            </button>
+          ))
+        )}
       </div>
+
+      {/* Middle: devices of selected type */}
       <div className="flex-1 overflow-auto p-4">
         {selected ? (
           <>
@@ -122,23 +200,84 @@ function RouteComponent() {
                   <TableHead>Make</TableHead>
                   <TableHead>Model</TableHead>
                   <TableHead>Identifier</TableHead>
+                  <TableHead>Location</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {entries.map((entry) => (
-                  <TableRow key={entry.identifier}>
-                    <TableCell className="font-medium">{entry.assignedTo}</TableCell>
-                    <TableCell>{entry.make}</TableCell>
-                    <TableCell>{entry.model}</TableCell>
-                    <TableCell>{entry.identifier}</TableCell>
+                {entries.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-muted-foreground">No devices of this type.</TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  entries.map((entry, idx) => (
+                    <TableRow
+                      key={`${entry.personId}-${entry.deviceIdx}-${idx}`}
+                      className={cn(
+                        'cursor-pointer hover:bg-accent/50',
+                        formMode === 'editDevice' && editingPersonId === entry.personId && editingDeviceIdx === entry.deviceIdx && 'bg-accent/80',
+                      )}
+                      onClick={() => openEditDevice(entry)}
+                    >
+                      <TableCell className="font-medium">{entry.assignedTo}</TableCell>
+                      <TableCell>{entry.make}</TableCell>
+                      <TableCell>{entry.model}</TableCell>
+                      <TableCell>{entry.identifier}</TableCell>
+                      <TableCell>{entry.location || '—'}</TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </>
         ) : (
           <p className="text-muted-foreground">Select a device type to see assigned units.</p>
         )}
+      </div>
+
+      {/* Slide-in form panel */}
+      <div
+        className={cn(
+          'shrink-0 overflow-hidden border-l bg-background transition-all duration-300 ease-in-out',
+          showForm ? 'w-80' : 'w-0 border-l-0',
+        )}
+      >
+        {formMode === 'addKind' ? (
+          <form onSubmit={handleKindSubmit} className="flex h-full w-80 flex-col gap-3 p-4">
+            <h3 className="text-sm font-semibold">New Device Type</h3>
+            <Input
+              placeholder="Type name"
+              value={kindName}
+              onChange={(e) => setKindName(e.target.value)}
+            />
+            {mutationError && <p className="text-sm text-destructive">{mutationError}</p>}
+            <Button type="submit" className="mt-1" disabled={isPending}>
+              {isPending ? 'Adding...' : 'Add'}
+            </Button>
+          </form>
+        ) : formMode === 'editDevice' ? (
+          <form onSubmit={handleDeviceSubmit} className="flex h-full w-80 flex-col gap-3 p-4">
+            <h3 className="text-sm font-semibold">Edit Device</h3>
+            <Input
+              placeholder="Make"
+              value={formMake}
+              onChange={(e) => setFormMake(e.target.value)}
+            />
+            <Input
+              placeholder="Model"
+              value={formModel}
+              onChange={(e) => setFormModel(e.target.value)}
+            />
+            <Input
+              placeholder="Identifier"
+              value={formIdentifier}
+              onChange={(e) => setFormIdentifier(e.target.value)}
+            />
+            {mutationError && <p className="text-sm text-destructive">{mutationError}</p>}
+            <Button type="submit" className="mt-1" disabled={isPending}>
+              {isPending ? 'Updating...' : 'Update'}
+            </Button>
+          </form>
+        ) : null}
       </div>
     </div>
   )

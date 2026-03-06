@@ -1,11 +1,13 @@
 services:
   frontend:
-    container_name: frontend
+    container_name: web 
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
     ports:
       - "3000:3000"
+    depends_on:
+      - backend
     command: npm run dev
     develop:
       watch:
@@ -17,3 +19,33 @@ services:
             - node_modules
         - action: rebuild
           path: package.json
+  backend:
+    container_name: api
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    env_file:
+      - ./backend/.env
+    ports:
+      - "5000:5000"
+    command: npm run dev
+    develop:
+      watch:
+        - action: sync
+          path: ./backend
+          target: /app
+          initial_sync: true
+          ignore:
+            - node_modules
+        - action: rebuild
+          path: package.json
+  mongo:
+    image: mongo:7
+    container_name: db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:

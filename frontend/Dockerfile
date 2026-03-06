@@ -1,0 +1,16 @@
+# ── Stage 1: build ────────────────────────────────────────────────────────────
+FROM node:25-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+# ── Stage 2: serve static files with Caddy ────────────────────────────────────
+FROM caddy:alpine
+
+# Copy built SPA assets — Caddy serves them via file_server in the Caddyfile
+COPY --from=builder /app/dist /srv
