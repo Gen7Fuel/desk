@@ -1,0 +1,34 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd ~/desk
+
+            # Pull latest code
+            git pull origin main
+
+            # Write .env from GitHub Secrets
+            cat > backend/.env << 'ENVEOF'
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            SAGE_CLIENT_ID=${{ secrets.SAGE_CLIENT_ID }}
+            SAGE_CLIENT_SECRET=${{ secrets.SAGE_CLIENT_SECRET }}
+            SAGE_CALLBACK_URL=${{ secrets.SAGE_CALLBACK_URL }}
+            ENVEOF
+
+            # Rebuild and restart containers
+            docker compose up -d --build

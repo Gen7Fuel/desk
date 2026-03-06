@@ -1,7 +1,7 @@
 // MongoDB connection utility using Mongoose
 const mongoose = require('mongoose');
 
-const mongoUrl = 'mongodb://mongo:27017/desk'; // 'mongo' is the Docker Compose service name
+const mongoUrl = process.env.MONGO_URI || 'mongodb://db:27017/desk';
 
 async function connectToMongo() {
 	if (mongoose.connection.readyState === 1) {

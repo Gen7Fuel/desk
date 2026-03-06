@@ -39,7 +39,7 @@ services:
             - node_modules
         - action: rebuild
           path: package.json
-  mongo:
+  db:
     image: mongo:7
     container_name: db
     ports:
