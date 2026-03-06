@@ -21,6 +21,9 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file: ./backend/.env
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - desk
     depends_on:

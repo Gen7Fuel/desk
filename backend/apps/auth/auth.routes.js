@@ -85,8 +85,8 @@ router.post('/auth/login', async (req, res) => {
     console.log('[auth] step 5 - token signed, true count in payload:', countTrues(permissions))
     return res.status(200).json({ token })
   } catch (err) {
-    console.error('[auth/login] fetch error:', err)
-    return res.status(502).json({ message: 'Could not reach authentication server.' })
+    console.error('[auth/login] fetch error:', err?.cause ?? err)
+    return res.status(502).json({ message: 'Could not reach authentication server.', detail: err?.message })
   }
 })
 

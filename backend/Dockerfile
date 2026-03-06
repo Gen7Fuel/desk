@@ -9,6 +9,9 @@ RUN npm ci --omit=dev
 # ── Stage 2: final runtime image ─────────────────────────────────────────────
 FROM node:25-alpine
 
+# ca-certificates ensures TLS connections to external services work on Alpine
+RUN apk add --no-cache ca-certificates
+
 RUN adduser -D -u 1001 app
 USER app
 
