@@ -15,7 +15,9 @@ export interface CdnFileList {
 }
 
 export async function getCdnFiles(page = 1): Promise<CdnFileList> {
-  const res = await fetch(`${CDN_BASE}/cdn/files?page=${page}`, {
+  const url = `${CDN_BASE}/cdn/files?page=${page}`;
+  console.log('Fetching CDN files from:', url);
+  const res = await fetch(url, {
     headers: { Authorization: `Bearer ${CDN_TOKEN}` },
   })
   if (!res.ok) throw new Error('Failed to fetch CDN files')
