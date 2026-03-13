@@ -424,9 +424,10 @@ function buildAllFalse(manifest: Manifest): Record<string, unknown> {
 
 function deepMergePerms(
   base: Record<string, unknown>,
-  overrides: Record<string, unknown>,
+  overrides: Record<string, unknown> | null | undefined,
 ): Record<string, unknown> {
   const result = JSON.parse(JSON.stringify(base))
+  if (!overrides) return result
   for (const [key, val] of Object.entries(overrides)) {
     if (typeof val === 'object' && val !== null) {
       if (!result[key] || typeof result[key] !== 'object') result[key] = {}
