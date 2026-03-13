@@ -1,8 +1,8 @@
-import { createFileRoute, Link, Outlet, useLocation, useMatchRoute } from '@tanstack/react-router'
+import { Link, Outlet, createFileRoute, useLocation, useMatchRoute } from '@tanstack/react-router'
 import { cn } from '@/lib/utils'
 import { can } from '@/lib/permissions'
 
-const sidebarLinks: Record<string, { label: string; path: string; permission: string }[]> = {
+const sidebarLinks: Record<string, Array<{ label: string; path: string; permission: string }>> = {
   personnel: [
     { label: 'List', path: '/personnel/list', permission: 'personnel' },
   ],

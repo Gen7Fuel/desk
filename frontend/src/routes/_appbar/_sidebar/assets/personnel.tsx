@@ -150,7 +150,7 @@ function RouteComponent() {
         {isLoading ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : isError ? (
-          <p className="text-destructive">{(error as Error)?.message ?? 'Failed to load personnel.'}</p>
+          <p className="text-destructive">{(error).message}</p>
         ) : !personnel || personnel.length === 0 ? (
           <p className="text-muted-foreground">No personnel found.</p>
         ) : (
@@ -284,7 +284,7 @@ function RouteComponent() {
             </Select>
             {saveDeviceMutation.isError && (
               <p className="text-sm text-destructive">
-                {(saveDeviceMutation.error as Error)?.message ?? 'Failed to save device.'}
+                {(saveDeviceMutation.error).message}
               </p>
             )}
             <Button type="submit" className="mt-1" disabled={saveDeviceMutation.isPending}>

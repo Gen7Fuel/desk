@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { getCategories, createCategory, deleteCategory } from '@/lib/category-api'
+import { createCategory, deleteCategory, getCategories } from '@/lib/category-api'
 
 export const Route = createFileRoute('/_appbar/_sidebar/subscriptions/categories')({
   component: RouteComponent,
@@ -80,7 +80,7 @@ function RouteComponent() {
         {isLoading ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : isError ? (
-          <p className="text-destructive">{(error as Error)?.message ?? 'Failed to load categories.'}</p>
+          <p className="text-destructive">{(error).message}</p>
         ) : !categories || categories.length === 0 ? (
           <p className="text-muted-foreground text-sm">No categories found.</p>
         ) : (
@@ -112,7 +112,7 @@ function RouteComponent() {
         )}
         {deleteMutation.isError && (
           <p className="mt-2 text-sm text-destructive">
-            {(deleteMutation.error as Error)?.message ?? 'Failed to delete.'}
+            {(deleteMutation.error).message}
           </p>
         )}
       </div>
@@ -135,7 +135,7 @@ function RouteComponent() {
             />
             {addMutation.isError && (
               <p className="text-sm text-destructive">
-                {(addMutation.error as Error)?.message ?? 'Failed to add category.'}
+                {(addMutation.error).message}
               </p>
             )}
             <Button type="submit" className="mt-1" disabled={addMutation.isPending}>

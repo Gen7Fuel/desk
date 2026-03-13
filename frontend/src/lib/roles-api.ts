@@ -14,13 +14,13 @@ export interface PermissionManifest {
   modules: Record<
     string,
     {
-      actions?: string[]
-      submodules?: Record<string, { actions: string[] }>
+      actions?: Array<string>
+      submodules?: Record<string, { actions: Array<string> }>
     }
   >
 }
 
-export async function getRoles(): Promise<Role[]> {
+export async function getRoles(): Promise<Array<Role>> {
   const res = await apiFetch('/api/roles')
   if (!res.ok) throw new Error('Failed to fetch roles.')
   return res.json()

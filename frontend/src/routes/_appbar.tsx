@@ -1,6 +1,6 @@
-import { createFileRoute, Link, Outlet, redirect, useMatchRoute, useNavigate } from '@tanstack/react-router'
+import { Link, Outlet, createFileRoute, redirect, useLocation, useMatchRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
-import { CreditCard, Fuel, Globe, KeyRound, LayoutGrid, Lock, LogOut, MonitorSmartphone, Settings, User, Binary, Package } from 'lucide-react'
+import { Binary, CreditCard, Fuel, Globe, KeyRound, LayoutGrid, Lock, LogOut, MonitorSmartphone, Package, Settings, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getTokenPayload } from '@/lib/permissions'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -56,7 +56,8 @@ function RouteComponent() {
   const isCipherActive = !!matchRoute({ to: '/cipher', fuzzy: true })
   const isInventoryActive = !!matchRoute({ to: '/inventory', fuzzy: true })
   const isSettingsActive = !!matchRoute({ to: '/settings', fuzzy: true })
-  const isHubActive = !!matchRoute({ to: '/hub', fuzzy: true })
+  const location = useLocation()
+  const isHubActive = location.pathname.startsWith('/hub')
 
   return (
     <div className="flex h-screen">

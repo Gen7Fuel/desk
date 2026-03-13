@@ -34,8 +34,8 @@ export type ExtractedFields = {
   surcharges: string | null
   taxFeeTotal: string | null
   totalInvoiceToRemit: string | null
-  productColumnValues: string[]
-  qtyNetValues: string[]
-  freightCellValues: string[]
-  tableEntries: TableEntry[]
+  productColumnValues: Array<string>
+  qtyNetValues: Array<string>
+  freightCellValues: Array<string>
+  tableEntries: Array<TableEntry>
 }

@@ -25,8 +25,8 @@ interface OrderResult {
 }
 
 interface ProcessResponse {
-  results: OrderResult[]
-  errors: { sheet: string; error: string }[]
+  results: Array<OrderResult>
+  errors: Array<{ sheet: string; error: string }>
 }
 
 async function processExcel(file: File): Promise<ProcessResponse> {
@@ -75,7 +75,7 @@ function RouteComponent() {
   function handleDrop(e: React.DragEvent) {
     e.preventDefault()
     setIsDragging(false)
-    const f = e.dataTransfer.files?.[0]
+    const f = e.dataTransfer.files[0] as File | undefined
     if (f) validateAndSet(f)
   }
 
@@ -110,7 +110,7 @@ function RouteComponent() {
     URL.revokeObjectURL(url)
   }
 
-  async function downloadAll(results: OrderResult[]) {
+  async function downloadAll(results: Array<OrderResult>) {
     const zip = new JSZip()
     for (const r of results) {
       zip.file(r.filename, r.content)
@@ -177,7 +177,7 @@ function RouteComponent() {
       {fileError && <p className="text-sm text-destructive">{fileError}</p>}
 
       {mutation.isError && (
-        <p className="text-sm text-destructive">{(mutation.error as Error).message}</p>
+        <p className="text-sm text-destructive">{(mutation.error).message}</p>
       )}
 
       {/* Actions */}

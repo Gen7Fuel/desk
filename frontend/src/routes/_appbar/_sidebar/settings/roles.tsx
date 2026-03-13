@@ -1,22 +1,23 @@
-import { createFileRoute, redirect, useSearch, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, redirect, useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, Trash2 } from 'lucide-react'
+import { PermissionTree } from './users'
+import type {Role} from '@/lib/roles-api';
 import { cn } from '@/lib/utils'
 import { can } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   Dialog,
-  DialogPortal,
-  DialogOverlay,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
   DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
 } from '@/components/ui/dialog'
-import { getRoles, getPermissionManifest, createRole, updateRole, deleteRole, type Role } from '@/lib/roles-api'
-import { PermissionTree } from './users'
+import {  createRole, deleteRole, getPermissionManifest, getRoles, updateRole } from '@/lib/roles-api'
 
 export const Route = createFileRoute('/_appbar/_sidebar/settings/roles')({
   component: RouteComponent,
@@ -49,7 +50,7 @@ function buildDefaultPerms(manifest: ReturnType<typeof buildManifestShape>): Rec
 
 function buildManifestShape(m: unknown) {
   return m as {
-    modules: Record<string, { actions?: string[]; submodules?: Record<string, { actions: string[] }> }>
+    modules: Record<string, { actions?: Array<string>; submodules?: Record<string, { actions: Array<string> }> }>
   }
 }
 
@@ -154,7 +155,7 @@ function AddRoleForm({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  function getValue(path: string[]): boolean | undefined {
+  function getValue(path: Array<string>): boolean | undefined {
     let node: unknown = permissions
     for (const p of path) {
       if (!node || typeof node !== 'object') return undefined
@@ -163,7 +164,7 @@ function AddRoleForm({
     return typeof node === 'boolean' ? node : undefined
   }
 
-  function handleChange(path: string[], value: boolean) {
+  function handleChange(path: Array<string>, value: boolean) {
     setPermissions((prev) => {
       const next = JSON.parse(JSON.stringify(prev))
       let node = next
@@ -234,7 +235,7 @@ function RoleDetail({
   const [name, setName] = useState(role.name)
   const [description, setDescription] = useState(role.description)
   const [permissions, setPermissions] = useState<Record<string, unknown>>(
-    role.permissions as Record<string, unknown>,
+    role.permissions,
   )
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
@@ -246,7 +247,7 @@ function RoleDetail({
     // only reset if user hasn't modified yet — handled via key on parent
   }
 
-  function getValue(path: string[]): boolean | undefined {
+  function getValue(path: Array<string>): boolean | undefined {
     let node: unknown = permissions
     for (const p of path) {
       if (!node || typeof node !== 'object') return undefined
@@ -255,7 +256,7 @@ function RoleDetail({
     return typeof node === 'boolean' ? node : undefined
   }
 
-  function handleChange(path: string[], value: boolean) {
+  function handleChange(path: Array<string>, value: boolean) {
     setSaveMsg(null)
     setPermissions((prev) => {
       const next = JSON.parse(JSON.stringify(prev))
@@ -358,8 +359,8 @@ function PermissionsSection({
   manifest, getValue, onChange, onToggleAll,
 }: {
   manifest: ReturnType<typeof buildManifestShape>
-  getValue: (path: string[]) => boolean | undefined
-  onChange: (path: string[], value: boolean) => void
+  getValue: (path: Array<string>) => boolean | undefined
+  onChange: (path: Array<string>, value: boolean) => void
   onToggleAll: (value: boolean) => void
 }) {
   return (

@@ -21,7 +21,7 @@ interface SageResult {
 /** Strips currency symbols / commas and parses to a number. Returns 0 on failure. */
 function parseCurrency(val: string | null | undefined): number {
   if (!val) return 0
-  return parseFloat(val.replace(/[^0-9.\-]/g, '')) || 0
+  return parseFloat(val.replace(/[^0-9.-]/g, '')) || 0
 }
 
 /** Converts "MM/DD/YYYY" (or already-ISO) to "YYYY-MM-DD". */

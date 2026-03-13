@@ -7,7 +7,7 @@ export interface CdnFile {
   lastModified: string
 }
 
-export async function getCdnFiles(): Promise<CdnFile[]> {
+export async function getCdnFiles(): Promise<Array<CdnFile>> {
   const res = await fetch(`${CDN_BASE}/cdn/files`, {
     headers: { Authorization: `Bearer ${CDN_TOKEN}` },
   })

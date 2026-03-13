@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
+import type {Credential} from '@/lib/credential-api';
 import { cn } from '@/lib/utils'
 import { can } from '@/lib/permissions'
 import {
@@ -23,11 +24,11 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { getCredentialCategories } from '@/lib/credential-category-api'
 import {
-  getCredentials,
+  
   createCredential,
-  updateCredential,
   deleteCredential,
-  type Credential,
+  getCredentials,
+  updateCredential
 } from '@/lib/credential-api'
 
 export const Route = createFileRoute('/_appbar/_sidebar/credentials/list')({
@@ -171,13 +172,13 @@ function RouteComponent() {
   const showForm = formMode !== null
   const isPending = saveMutation.isPending || deleteMutation.isPending
   const mutationError =
-    (saveMutation.isError ? (saveMutation.error as Error)?.message : null) ||
-    (deleteMutation.isError ? (deleteMutation.error as Error)?.message : null)
+    (saveMutation.isError ? (saveMutation.error).message : null) ||
+    (deleteMutation.isError ? (deleteMutation.error).message : null)
 
   const selectedCredential = credentials?.find((c) => c._id === selectedId)
 
   // Group credentials by category
-  const grouped = (credentials ?? []).reduce<Record<string, Credential[]>>((acc, cred) => {
+  const grouped = (credentials ?? []).reduce<Record<string, Array<Credential>>>((acc, cred) => {
     ;(acc[cred.category] ??= []).push(cred)
     return acc
   }, {})

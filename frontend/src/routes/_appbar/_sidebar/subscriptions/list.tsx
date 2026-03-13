@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
+import type {Subscription} from '@/lib/subscription-api';
 import { cn } from '@/lib/utils'
 import { can } from '@/lib/permissions'
 import {
@@ -23,11 +24,11 @@ import {
 } from '@/components/ui/select'
 import { getCategories } from '@/lib/category-api'
 import {
-  getSubscriptions,
+  
   createSubscription,
-  updateSubscription,
   deleteSubscription,
-  type Subscription,
+  getSubscriptions,
+  updateSubscription
 } from '@/lib/subscription-api'
 
 export const Route = createFileRoute('/_appbar/_sidebar/subscriptions/list')({
@@ -163,8 +164,8 @@ function RouteComponent() {
   const showForm = formMode !== null
   const isPending = saveMutation.isPending || deleteMutation.isPending
   const mutationError =
-    (saveMutation.isError ? (saveMutation.error as Error)?.message : null) ||
-    (deleteMutation.isError ? (deleteMutation.error as Error)?.message : null)
+    (saveMutation.isError ? (saveMutation.error).message : null) ||
+    (deleteMutation.isError ? (deleteMutation.error).message : null)
 
   return (
     <div className="flex h-full">
@@ -184,7 +185,7 @@ function RouteComponent() {
         {isLoading ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : isError ? (
-          <p className="text-destructive">{(error as Error)?.message ?? 'Failed to load subscriptions.'}</p>
+          <p className="text-destructive">{(error).message}</p>
         ) : (
           <Table>
             <TableHeader>

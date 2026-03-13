@@ -2,19 +2,20 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ExternalLink, Trash2 } from 'lucide-react'
+import type {CdnFile} from '@/lib/cdn-api';
 import { can } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
   Dialog,
-  DialogPortal,
-  DialogOverlay,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
   DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
 } from '@/components/ui/dialog'
-import { getCdnFiles, deleteCdnFile, getCdnDownloadUrl, type CdnFile } from '@/lib/cdn-api'
+import {  deleteCdnFile, getCdnDownloadUrl, getCdnFiles } from '@/lib/cdn-api'
 
 export const Route = createFileRoute('/_appbar/_sidebar/hub/cdn')({
   component: RouteComponent,

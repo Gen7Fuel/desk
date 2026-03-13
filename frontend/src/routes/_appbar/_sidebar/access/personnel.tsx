@@ -96,7 +96,7 @@ function RouteComponent() {
   const saveResourceMutation = useMutation({
     mutationFn: async () => {
       const id = selectedPerson?._id || selectedPerson?.id
-      let updatedResources: any[]
+      let updatedResources: Array<any>
       if (editingIndex !== null) {
         updatedResources = accessList.map((r: any, i: number) =>
           i === editingIndex ? { type: formType, identifier: formIdentifier.trim() } : r,
@@ -135,7 +135,7 @@ function RouteComponent() {
         {isLoading ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : isError ? (
-          <p className="text-destructive">{(error as Error)?.message ?? 'Failed to load personnel.'}</p>
+          <p className="text-destructive">{error.message}</p>
         ) : !personnel || personnel.length === 0 ? (
           <p className="text-muted-foreground">No personnel found.</p>
         ) : (
@@ -242,7 +242,7 @@ function RouteComponent() {
           />
           {saveResourceMutation.isError && (
             <p className="text-sm text-destructive">
-              {(saveResourceMutation.error as Error)?.message ?? 'Failed to save resource.'}
+              {saveResourceMutation.error.message}
             </p>
           )}
           <Button type="submit" className="mt-1" disabled={saveResourceMutation.isPending}>

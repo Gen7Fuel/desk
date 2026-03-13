@@ -6,7 +6,7 @@ export interface DeviceKind {
   name: string
 }
 
-export async function getDeviceKinds(): Promise<DeviceKind[]> {
+export async function getDeviceKinds(): Promise<Array<DeviceKind>> {
   const res = await apiFetch('/api/assets/device-kinds')
   if (!res.ok) throw new Error('Failed to fetch device kinds')
   return res.json()

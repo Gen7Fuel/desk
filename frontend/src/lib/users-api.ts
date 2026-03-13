@@ -9,7 +9,7 @@ export interface User {
   updatedAt: string
 }
 
-export async function getUsers(): Promise<User[]> {
+export async function getUsers(): Promise<Array<User>> {
   const res = await apiFetch('/api/users')
   if (!res.ok) throw new Error('Failed to fetch users.')
   return res.json()

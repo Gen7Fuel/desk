@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import type { ExtractedFields } from './types'
 import { extractFieldsFromRects } from './pdf-extractor'
 import { buildFilename } from './filename'
 import { createAttachment, createBill, createInvoice } from './sage-api'
+import type { ExtractedFields } from './types'
 
 export function useFuelInvoicing(sageToken: string) {
   const [fields, setFields] = useState<ExtractedFields | null>(null)
@@ -59,7 +59,7 @@ export function useFuelInvoicing(sageToken: string) {
       setBase64(null)
       setFields(null)
       const input = document.getElementById('pdf-upload-input') as HTMLInputElement
-      if (input) input.value = ''
+      input.value = ''
     } catch (err) {
       setSubmitMsg(err instanceof Error ? err.message : 'Submission failed. Please try again.')
     } finally {
@@ -76,7 +76,7 @@ export function useFuelInvoicing(sageToken: string) {
     e.preventDefault()
     e.stopPropagation()
     setDragActive(false)
-    const f = e.dataTransfer.files?.[0]
+    const f = e.dataTransfer.files[0] as File | undefined
     if (f && f.type === 'application/pdf') {
       handleFileUpload(f)
     } else {
