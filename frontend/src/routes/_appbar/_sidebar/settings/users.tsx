@@ -207,7 +207,7 @@ function UserDetail({
     queryFn: getPermissionManifest,
   })
 
-  const rolePerms = useMemo(() => {
+  const rolePerms = useMemo<Record<string, unknown> | null>(() => {
     const roleObj = roles.find((r) => r.name === (editRole || user.role))
     return roleObj ? (roleObj.permissions) : null
   }, [roles, editRole, user.role])
@@ -215,8 +215,7 @@ function UserDetail({
   const initialResolved = useMemo(() => {
     if (!manifest) return {}
     const base = rolePerms ?? buildAllFalse(manifest as Manifest)
-    // Ensure permissionOverrides is always an object
-    return deepMergePerms(base, user.permissionOverrides || {})
+    return deepMergePerms(base, user.permissionOverrides)
   }, [rolePerms, user.permissionOverrides, manifest])
 
   const [resolved, setResolved] = useState<Record<string, unknown>>(initialResolved)
