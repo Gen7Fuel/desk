@@ -564,7 +564,7 @@ function ActionRow({
           <label key={action} className={cn('flex cursor-pointer items-center gap-1.5 text-sm', isUndefined && showUndefined && 'opacity-50')}>
             <input
               type="checkbox"
-              checked={val === true}
+              checked={!!val}
               onChange={(e) => onChange([...path, action], e.target.checked)}
               className="h-4 w-4 rounded border"
             />
