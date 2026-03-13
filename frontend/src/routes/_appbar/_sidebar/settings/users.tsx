@@ -215,8 +215,8 @@ function UserDetail({
   const initialResolved = useMemo(() => {
     if (!manifest) return {}
     const base = rolePerms ?? buildAllFalse(manifest as Manifest)
-    // Use nullish coalescing to avoid undefined/null errors
-    return deepMergePerms(base, user.permissionOverrides ?? {})
+    // Linter expects permissionOverrides to always be defined
+    return deepMergePerms(base, user.permissionOverrides)
   }, [rolePerms, user.permissionOverrides, manifest])
 
   const [resolved, setResolved] = useState<Record<string, unknown>>(initialResolved)
