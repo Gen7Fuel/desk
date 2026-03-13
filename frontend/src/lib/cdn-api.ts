@@ -7,8 +7,15 @@ export interface CdnFile {
   lastModified: string
 }
 
-export async function getCdnFiles(): Promise<Array<CdnFile>> {
-  const res = await fetch(`${CDN_BASE}/cdn/files`, {
+export interface CdnFileList {
+  files: Array<CdnFile>
+  totalFiles: number
+  totalPages: number
+  currentPage: number
+}
+
+export async function getCdnFiles(page = 1): Promise<CdnFileList> {
+  const res = await fetch(`${CDN_BASE}/cdn/files?page=${page}`, {
     headers: { Authorization: `Bearer ${CDN_TOKEN}` },
   })
   if (!res.ok) throw new Error('Failed to fetch CDN files')

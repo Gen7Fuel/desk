@@ -35,16 +35,19 @@ function formatSize(bytes: number): string {
 function RouteComponent() {
   const queryClient = useQueryClient()
   const [pendingDelete, setPendingDelete] = useState<CdnFile | null>(null)
+  const [page, setPage] = useState(1)
 
-  const { data: files = [], isLoading, error } = useQuery({
-    queryKey: ['cdn-files'],
-    queryFn: getCdnFiles,
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['cdn-files', page],
+    queryFn: () => getCdnFiles(page),
   })
+  
+  const files = data?.files || []
 
   const deleteMutation = useMutation({
     mutationFn: (filename: string) => deleteCdnFile(filename),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cdn-files'] })
+      queryClient.invalidateQueries({ queryKey: ['cdn-files', page] })
       setPendingDelete(null)
     },
   })
@@ -53,59 +56,87 @@ function RouteComponent() {
     <div className="p-6">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-lg font-semibold">CDN Panel</h1>
-        <span className="text-sm text-muted-foreground">{files.length} file{files.length !== 1 ? 's' : ''}</span>
+        <span className="text-sm text-muted-foreground">
+          {data?.totalFiles || 0} file{data?.totalFiles !== 1 ? 's' : ''}
+        </span>
       </div>
 
       {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
       {error && <p className="text-sm text-red-500">Failed to load files.</p>}
 
       {!isLoading && !error && (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Filename</TableHead>
-              <TableHead>Size</TableHead>
-              <TableHead>Last Modified</TableHead>
-              <TableHead className="w-24"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {files.length === 0 && (
+        <>
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
-                  No files found.
-                </TableCell>
+                <TableHead>Filename</TableHead>
+                <TableHead>Size</TableHead>
+                <TableHead>Last Modified</TableHead>
+                <TableHead className="w-24"></TableHead>
               </TableRow>
-            )}
-            {files.map((file) => (
-              <TableRow key={file.filename}>
-                <TableCell className="font-mono text-sm">{file.filename}</TableCell>
-                <TableCell className="text-sm">{formatSize(file.size)}</TableCell>
-                <TableCell className="text-sm">{new Date(file.lastModified).toLocaleString()}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => window.open(getCdnDownloadUrl(file.filename), '_blank')}
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                    {can('hub.cdn', 'delete') && (
+            </TableHeader>
+            <TableBody>
+              {files.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                    No files found.
+                  </TableCell>
+                </TableRow>
+              )}
+              {files.map((file) => (
+                <TableRow key={file.filename}>
+                  <TableCell className="font-mono text-sm">{file.filename}</TableCell>
+                  <TableCell className="text-sm">{formatSize(file.size)}</TableCell>
+                  <TableCell className="text-sm">{new Date(file.lastModified).toLocaleString()}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setPendingDelete(file)}
+                        onClick={() => window.open(getCdnDownloadUrl(file.filename), '_blank')}
                       >
-                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <ExternalLink className="h-4 w-4" />
                       </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                      {can('hub.cdn', 'delete') && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setPendingDelete(file)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          <div className="mt-4 flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              Page {data?.currentPage || 0} of {data?.totalPages || 0}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(page - 1)}
+                disabled={!data || data.currentPage <= 1}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(page + 1)}
+                disabled={!data || data.currentPage >= data.totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </>
       )}
 
       <Dialog open={!!pendingDelete} onOpenChange={(open) => { if (!open) setPendingDelete(null) }}>
