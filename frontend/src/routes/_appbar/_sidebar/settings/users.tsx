@@ -215,7 +215,8 @@ function UserDetail({
   const initialResolved = useMemo(() => {
     if (!manifest) return {}
     const base = rolePerms ?? buildAllFalse(manifest as Manifest)
-    return deepMergePerms(base, user.permissionOverrides)
+    // Ensure permissionOverrides is always an object
+    return deepMergePerms(base, user.permissionOverrides || {})
   }, [rolePerms, user.permissionOverrides, manifest])
 
   const [resolved, setResolved] = useState<Record<string, unknown>>(initialResolved)
