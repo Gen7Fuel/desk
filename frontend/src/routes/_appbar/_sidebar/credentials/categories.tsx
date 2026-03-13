@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
+import type {CredentialCategory} from '@/lib/credential-category-api';
 import { cn } from '@/lib/utils'
 import { can } from '@/lib/permissions'
 import {
@@ -15,11 +16,11 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
-  getCredentialCategories,
+  
   createCredentialCategory,
-  updateCredentialCategory,
   deleteCredentialCategory,
-  type CredentialCategory,
+  getCredentialCategories,
+  updateCredentialCategory
 } from '@/lib/credential-category-api'
 
 export const Route = createFileRoute('/_appbar/_sidebar/credentials/categories')({
@@ -98,8 +99,8 @@ function RouteComponent() {
   const showForm = formMode !== null
   const isPending = saveMutation.isPending || deleteMutation.isPending
   const mutationError =
-    (saveMutation.isError ? (saveMutation.error as Error)?.message : null) ||
-    (deleteMutation.isError ? (deleteMutation.error as Error)?.message : null)
+    (saveMutation.isError ? (saveMutation.error).message : null) ||
+    (deleteMutation.isError ? (deleteMutation.error).message : null)
 
   return (
     <div className="flex h-full">
@@ -119,7 +120,7 @@ function RouteComponent() {
         {isLoading ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : isError ? (
-          <p className="text-destructive">{(error as Error)?.message ?? 'Failed to load categories.'}</p>
+          <p className="text-destructive">{(error).message}</p>
         ) : !categories || categories.length === 0 ? (
           <p className="text-muted-foreground text-sm">No categories found.</p>
         ) : (

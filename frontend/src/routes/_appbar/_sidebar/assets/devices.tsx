@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { getDeviceKinds, createDeviceKind } from '@/lib/device-kind-api'
+import { createDeviceKind, getDeviceKinds } from '@/lib/device-kind-api'
 import { getPersonnel } from '@/lib/personnel-api'
 import { apiFetch } from '@/lib/api'
 
@@ -45,7 +45,7 @@ function RouteComponent() {
   const { data: personnel } = useQuery({ queryKey: ['personnel'], queryFn: getPersonnel })
 
   // Flatten all devices of the selected type across all personnel
-  const entries: { personId: string; deviceIdx: number; assignedTo: string; make: string; model: string; identifier: string; location: string }[] =
+  const entries: Array<{ personId: string; deviceIdx: number; assignedTo: string; make: string; model: string; identifier: string; location: string }> =
     selected && Array.isArray(personnel)
       ? personnel.flatMap((person: any) => {
           const id = person._id || person.id
@@ -139,8 +139,8 @@ function RouteComponent() {
   const showForm = formMode !== null
   const isPending = addKindMutation.isPending || editDeviceMutation.isPending
   const mutationError =
-    (addKindMutation.isError ? (addKindMutation.error as Error)?.message : null) ||
-    (editDeviceMutation.isError ? (editDeviceMutation.error as Error)?.message : null)
+    (addKindMutation.isError ? (addKindMutation.error).message : null) ||
+    (editDeviceMutation.isError ? (editDeviceMutation.error).message : null)
 
   return (
     <div className="flex h-full">
@@ -167,7 +167,7 @@ function RouteComponent() {
         {isLoadingKinds ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : isErrorKinds ? (
-          <p className="text-destructive">{(kindsError as Error)?.message ?? 'Failed to load device types.'}</p>
+          <p className="text-destructive">{(kindsError).message}</p>
         ) : !deviceKinds || deviceKinds.length === 0 ? (
           <p className="text-muted-foreground">No device types found.</p>
         ) : (

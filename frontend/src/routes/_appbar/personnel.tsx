@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { Plus, X, Trash } from 'lucide-react'
-import { useRef, useState, useEffect } from 'react'
+import { Plus, Trash, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import * as personnelApi from '@/lib/personnel-api'
 import { can } from '@/lib/permissions'
 import {
@@ -16,11 +16,11 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
-  DialogPortal,
-  DialogOverlay,
   DialogContent,
-  DialogTitle,
   DialogDescription,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
 } from '@/components/ui/dialog'
 
 interface Personnel {
@@ -41,7 +41,7 @@ export const Route = createFileRoute('/_appbar/personnel')({
 })
 
 function RouteComponent() {
-  const [people, setPeople] = useState<Personnel[]>([])
+  const [people, setPeople] = useState<Array<Personnel>>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -77,8 +77,8 @@ function RouteComponent() {
     }
   })
 
-  function maskPhone(phone: string) {
-    return phone.replace(/\d/g, '*')
+  function maskPhone(ph: string) {
+    return ph.replace(/\d/g, '*')
   }
 
   function formatPhone(value: string) {

@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
-import { getTokenPayload, type PermissionPayload } from '../lib/permissions'
+import { useCallback, useEffect, useState } from 'react'
+import {  getTokenPayload } from '../lib/permissions'
+import type {PermissionPayload} from '../lib/permissions';
 
 /**
  * React hook that provides permission helpers derived from the JWT in localStorage.

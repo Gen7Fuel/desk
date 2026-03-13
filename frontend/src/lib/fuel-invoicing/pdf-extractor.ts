@@ -26,7 +26,7 @@ const RECTS = {
 type PdfItem = { text: string; x: number; y: number }
 
 function extractFromRect(
-  items: PdfItem[],
+  items: Array<PdfItem>,
   rect: { x0: number; y0: number; x1: number; y1: number },
 ): string | null {
   const inRect = items.filter(
@@ -40,12 +40,12 @@ function extractFromRect(
 }
 
 function filterRegion(
-  items: PdfItem[],
+  items: Array<PdfItem>,
   xMin: number,
   xMax: number,
   yMin: number,
   yMax: number,
-): string[] {
+): Array<string> {
   return items
     .filter(
       (item) =>
@@ -59,20 +59,20 @@ function filterRegion(
 }
 
 function buildTableEntries(
-  productColumnValues: string[],
-  qtyNetValues: string[],
-  qtyGrossValues: string[],
-  freightValues: string[],
-  rateTaxRaw: string[],
-  totalTaxRaw: string[],
-): TableEntry[] {
+  productColumnValues: Array<string>,
+  qtyNetValues: Array<string>,
+  qtyGrossValues: Array<string>,
+  freightValues: Array<string>,
+  rateTaxRaw: Array<string>,
+  totalTaxRaw: Array<string>,
+): Array<TableEntry> {
   const maxLen = Math.max(
     productColumnValues.length,
     qtyNetValues.length,
     qtyGrossValues.length,
     Math.floor(freightValues.length / 2),
   )
-  const entries: TableEntry[] = []
+  const entries: Array<TableEntry> = []
   let rateTaxIdx = 0
   let totalTaxIdx = 0
 
@@ -134,7 +134,7 @@ export async function extractFieldsFromRects(file: File): Promise<ExtractedField
   const page = await pdf.getPage(1)
   const textContent = await page.getTextContent()
 
-  const items: PdfItem[] = textContent.items.map((item: any) => ({
+  const items: Array<PdfItem> = textContent.items.map((item: any) => ({
     text: item.str.trim(),
     x: item.transform[4],
     y: item.transform[5],
@@ -152,7 +152,7 @@ export async function extractFieldsFromRects(file: File): Promise<ExtractedField
 
   const qtyGrossValues = qtyGrossRaw.filter((_, i) => i % 2 === 0)
 
-  const freightCellValues: string[] = []
+  const freightCellValues: Array<string> = []
   for (let i = 0; i < freightValues.length; i += 2) {
     freightCellValues.push(
       [freightValues[i] || '', freightValues[i + 1] || ''].filter(Boolean).join('\n'),

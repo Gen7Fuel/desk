@@ -1,12 +1,12 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { lazy, Suspense, useState } from 'react'
+import { Suspense, lazy, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { can } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { getLocations, createLocation, updateLocation } from '@/lib/location-api'
+import { createLocation, getLocations, updateLocation } from '@/lib/location-api'
 import { getPersonnel } from '@/lib/personnel-api'
 
 export interface OfficeLocation {
@@ -29,11 +29,11 @@ interface MapLocation {
   name: string
   lat: number
   lng: number
-  devices: DeviceAtLocation[]
+  devices: Array<DeviceAtLocation>
 }
 
 interface LocationMapProps {
-  locations: MapLocation[]
+  locations: Array<MapLocation>
   onEditLocation: (loc: MapLocation) => void
 }
 
@@ -123,7 +123,7 @@ export const Route = createFileRoute('/_appbar/_sidebar/assets/location')({
 function RouteComponent() {
   const queryClient = useQueryClient()
 
-  const { data: locations = [], isLoading: isLoadingLocs, isError: isErrorLocs, error: locsError } = useQuery<OfficeLocation[]>({
+  const { data: locations = [], isLoading: isLoadingLocs, isError: isErrorLocs, error: locsError } = useQuery<Array<OfficeLocation>>({
     queryKey: ['locations'],
     queryFn: getLocations,
   })
@@ -134,8 +134,8 @@ function RouteComponent() {
   })
 
   // Merge: for each location, gather devices from personnel whose device.location matches
-  const mapLocations: MapLocation[] = locations.map((loc) => {
-    const devices: DeviceAtLocation[] = personnel.flatMap((person: any) =>
+  const mapLocations: Array<MapLocation> = locations.map((loc) => {
+    const devices: Array<DeviceAtLocation> = personnel.flatMap((person: any) =>
       (person.devices ?? [])
         .filter((d: any) => d.location === loc.name)
         .map((d: any) => ({
@@ -238,8 +238,8 @@ function RouteComponent() {
 
   const isPending = addMutation.isPending || editMutation.isPending
   const mutationError =
-    (addMutation.isError ? (addMutation.error as Error)?.message : null) ||
-    (editMutation.isError ? (editMutation.error as Error)?.message : null)
+    (addMutation.isError ? (addMutation.error).message : null) ||
+    (editMutation.isError ? (editMutation.error).message : null)
   const showForm = formMode !== null
 
   return (
@@ -250,7 +250,7 @@ function RouteComponent() {
           <div className="flex h-full items-center justify-center text-muted-foreground">Loading map…</div>
         ) : isErrorLocs ? (
           <div className="flex h-full items-center justify-center text-destructive">
-            {(locsError as Error)?.message ?? 'Failed to load locations.'}
+            {(locsError).message}
           </div>
         ) : (
           <Suspense

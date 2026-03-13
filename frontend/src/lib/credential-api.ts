@@ -11,7 +11,7 @@ export interface Credential {
   createdAt: string
 }
 
-export async function getCredentials(): Promise<Credential[]> {
+export async function getCredentials(): Promise<Array<Credential>> {
   const res = await apiFetch('/api/credentials')
   if (!res.ok) throw new Error('Failed to fetch credentials')
   return res.json()

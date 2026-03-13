@@ -6,7 +6,7 @@ export interface Category {
   createdAt: string
 }
 
-export async function getCategories(): Promise<Category[]> {
+export async function getCategories(): Promise<Array<Category>> {
   const res = await apiFetch('/api/subscriptions/categories')
   if (!res.ok) throw new Error('Failed to fetch categories')
   return res.json()

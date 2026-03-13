@@ -6,7 +6,7 @@ export interface CredentialCategory {
   createdAt: string
 }
 
-export async function getCredentialCategories(): Promise<CredentialCategory[]> {
+export async function getCredentialCategories(): Promise<Array<CredentialCategory>> {
   const res = await apiFetch('/api/credentials/categories')
   if (!res.ok) throw new Error('Failed to fetch credential categories')
   return res.json()

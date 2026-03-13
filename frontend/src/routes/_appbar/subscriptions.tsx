@@ -23,7 +23,7 @@ interface Subscription {
   notes?: string
 }
 
-const initialSubscriptions: Subscription[] = [
+const initialSubscriptions: Array<Subscription> = [
   {
     name: 'Google Workspace',
     category: 'Productivity',

@@ -2,9 +2,9 @@
 
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
+import { Copy, RefreshCcw } from 'lucide-react'
 import { lockText } from '@/lib/cipher-api'
 import { Button } from '@/components/ui/button'
-import { Copy, RefreshCcw } from 'lucide-react'
 import { can } from '@/lib/permissions'
 
 export const Route = createFileRoute('/_appbar/_sidebar/cipher/lock')({

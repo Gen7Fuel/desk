@@ -1,21 +1,23 @@
-import { createFileRoute, redirect, useSearch, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect, useMemo } from 'react'
+import { createFileRoute, redirect, useNavigate, useSearch } from '@tanstack/react-router'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react'
+import type {User} from '@/lib/users-api';
+import type {Role} from '@/lib/roles-api';
 import { cn } from '@/lib/utils'
 import { can } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { getUsers, createUser, updateUser, deleteUser, type User } from '@/lib/users-api'
-import { getRoles, getPermissionManifest, type Role } from '@/lib/roles-api'
+import {  createUser, deleteUser, getUsers, updateUser } from '@/lib/users-api'
+import {  getPermissionManifest, getRoles } from '@/lib/roles-api'
 import {
   Dialog,
-  DialogPortal,
-  DialogOverlay,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
   DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
 } from '@/components/ui/dialog'
 
 export const Route = createFileRoute('/_appbar/_sidebar/settings/users')({
@@ -48,7 +50,7 @@ function RouteComponent() {
     mutationFn: () => createUser({ email: addEmail.trim(), role: addRole || null }),
     onSuccess: (user) => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
-      void navigate({ to: '/settings/users', search: { selected: user._id as string } })
+      void navigate({ to: '/settings/users', search: { selected: user._id } })
       setShowAddForm(false)
       setAddEmail('')
       setAddRole('')
@@ -140,7 +142,7 @@ function AddUserForm({
   roles, email, role, onEmailChange, onRoleChange,
   onSubmit, onCancel, isPending, error,
 }: {
-  roles: Role[]
+  roles: Array<Role>
   email: string
   role: string
   onEmailChange: (v: string) => void
@@ -190,7 +192,7 @@ function UserDetail({
   user, roles, onDelete, isDeleting, onUpdated,
 }: {
   user: User
-  roles: Role[]
+  roles: Array<Role>
   onDelete: () => void
   isDeleting: boolean
   onUpdated: () => void
@@ -207,13 +209,13 @@ function UserDetail({
 
   const rolePerms = useMemo(() => {
     const roleObj = roles.find((r) => r.name === (editRole || user.role))
-    return roleObj ? (roleObj.permissions as Record<string, unknown>) : null
+    return roleObj ? (roleObj.permissions) : null
   }, [roles, editRole, user.role])
 
   const initialResolved = useMemo(() => {
     if (!manifest) return {}
     const base = rolePerms ?? buildAllFalse(manifest as Manifest)
-    return deepMergePerms(base, (user.permissionOverrides ?? {}) as Record<string, unknown>)
+    return deepMergePerms(base, user.permissionOverrides)
   }, [rolePerms, user.permissionOverrides, manifest])
 
   const [resolved, setResolved] = useState<Record<string, unknown>>(initialResolved)
@@ -232,7 +234,7 @@ function UserDetail({
     setResolved(initialResolved)
   }, [initialResolved])
 
-  function handlePermChange(path: string[], value: boolean) {
+  function handlePermChange(path: Array<string>, value: boolean) {
     setSaveMsg(null)
     setResolved((prev) => {
       const next = JSON.parse(JSON.stringify(prev))
@@ -351,11 +353,11 @@ function OverridesEditor({
   rolePerms: Record<string, unknown> | null
   roleName: string | null | undefined
   diffCount: number
-  onChange: (path: string[], value: boolean) => void
+  onChange: (path: Array<string>, value: boolean) => void
 }) {
   const [open, setOpen] = useState(false)
 
-  function getValue(path: string[]): boolean | undefined {
+  function getValue(path: Array<string>): boolean | undefined {
     let node: unknown = resolved
     for (const p of path) {
       if (!node || typeof node !== 'object') return undefined
@@ -400,7 +402,7 @@ function OverridesEditor({
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-type Manifest = { modules: Record<string, { actions?: string[]; submodules?: Record<string, { actions: string[] }> }> }
+type Manifest = { modules: Record<string, { actions?: Array<string>; submodules?: Record<string, { actions: Array<string> }> }> }
 
 function buildAllFalse(manifest: Manifest): Record<string, unknown> {
   const result: Record<string, unknown> = {}
@@ -503,9 +505,9 @@ export function PermissionTree({
   onChange,
   showUndefined = false,
 }: {
-  manifest: { modules: Record<string, { actions?: string[]; submodules?: Record<string, { actions: string[] }> }> }
-  getValue: (path: string[]) => boolean | undefined
-  onChange: (path: string[], value: boolean) => void
+  manifest: { modules: Record<string, { actions?: Array<string>; submodules?: Record<string, { actions: Array<string> }> }> }
+  getValue: (path: Array<string>) => boolean | undefined
+  onChange: (path: Array<string>, value: boolean) => void
   showUndefined?: boolean
 }) {
   return (
@@ -546,10 +548,10 @@ export function PermissionTree({
 function ActionRow({
   path, actions, getValue, onChange, showUndefined,
 }: {
-  path: string[]
-  actions: string[]
-  getValue: (path: string[]) => boolean | undefined
-  onChange: (path: string[], value: boolean) => void
+  path: Array<string>
+  actions: Array<string>
+  getValue: (path: Array<string>) => boolean | undefined
+  onChange: (path: Array<string>, value: boolean) => void
   showUndefined: boolean
 }) {
   return (

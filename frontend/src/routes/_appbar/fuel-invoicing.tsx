@@ -1,5 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useFuelInvoicing } from '../../lib/fuel-invoicing/use-fuel-invoicing'
+import type { ExtractedFields, TableEntry } from '../../lib/fuel-invoicing/types'
 import { can } from '@/lib/permissions'
 import { apiFetch } from '@/lib/api'
 
@@ -32,7 +33,7 @@ export const Route = createFileRoute('/_appbar/fuel-invoicing')({
   ),
 })
 
-const HEADER_LABELS: { key: keyof import('../../lib/fuel-invoicing/types').ExtractedFields; label: string }[] = [
+const HEADER_LABELS: Array<{ key: keyof ExtractedFields; label: string }> = [
   { key: 'invoiceNumber',      label: 'Invoice #' },
   { key: 'billDate',           label: 'Bill Date' },
   { key: 'orderDate',          label: 'Order Date' },
@@ -48,7 +49,7 @@ const HEADER_LABELS: { key: keyof import('../../lib/fuel-invoicing/types').Extra
   { key: 'remitTo',            label: 'Remit To' },
 ]
 
-const SUMMARY_LABELS: { key: keyof import('../../lib/fuel-invoicing/types').ExtractedFields; label: string }[] = [
+const SUMMARY_LABELS: Array<{ key: keyof ExtractedFields; label: string }> = [
   { key: 'totalOrdered',       label: 'Total Ordered' },
   { key: 'totalDelivered',     label: 'Total Delivered' },
   { key: 'productTotal',       label: 'Product Total' },
@@ -58,7 +59,7 @@ const SUMMARY_LABELS: { key: keyof import('../../lib/fuel-invoicing/types').Extr
   { key: 'totalInvoiceToRemit',label: 'Total Invoice to Remit' },
 ]
 
-const TABLE_COLS: { key: keyof import('../../lib/fuel-invoicing/types').TableEntry; label: string }[] = [
+const TABLE_COLS: Array<{ key: keyof TableEntry; label: string }> = [
   { key: 'product',             label: 'Product' },
   { key: 'qtyNet',              label: 'Qty Net' },
   { key: 'qtyGross',            label: 'Qty Gross' },
@@ -178,7 +179,7 @@ function RouteComponent() {
                       <tr key={i} style={{ background: i % 2 === 0 ? '#1e1e1e' : '#252525' }}>
                         {TABLE_COLS.map(({ key }) => (
                           <td key={key} style={{ padding: '7px 12px', color: '#ddd', borderBottom: '1px solid #2a2a2a', whiteSpace: 'nowrap' }}>
-                            {entry[key] ?? '—'}
+                            {entry[key]}
                           </td>
                         ))}
                       </tr>

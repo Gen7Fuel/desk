@@ -11,7 +11,7 @@ export interface Subscription {
   createdAt: string
 }
 
-export async function getSubscriptions(): Promise<Subscription[]> {
+export async function getSubscriptions(): Promise<Array<Subscription>> {
   const res = await apiFetch('/api/subscriptions')
   if (!res.ok) throw new Error('Failed to fetch subscriptions')
   return res.json()

@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { getResourceKinds, createResourceKind } from '@/lib/resource-kind-api'
+import { createResourceKind, getResourceKinds } from '@/lib/resource-kind-api'
 import { getPersonnel } from '@/lib/personnel-api'
 
 export const Route = createFileRoute('/_appbar/_sidebar/access/resources')({
@@ -112,7 +112,7 @@ function RouteComponent() {
         {isLoadingResources ? (
 			<p className="text-muted-foreground">Loading...</p>
 		) : isErrorResources ? (
-			<p className="text-destructive">{(resourceError as Error)?.message ?? 'Failed to load resources.'}</p>
+			<p className="text-destructive">{resourceError.message}</p>
 		) : !resourceKinds || resourceKinds.length === 0 ? (
 			<p className="text-muted-foreground">No resources found.</p>
 		) : (
@@ -139,7 +139,7 @@ function RouteComponent() {
             {isLoadingPersonnel ? (
 				<p className="text-muted-foreground">Loading personnel...</p>
 			) : isErrorPersonnel ? (
-				<p className="text-destructive">{(personnelError as Error)?.message ?? 'Failed to load personnel.'}</p>
+				<p className="text-destructive">{personnelError.message}</p>
 			) : null}
             <Table>
               <TableHeader>
@@ -180,7 +180,7 @@ function RouteComponent() {
           />
           {addResourceKindMutation.isError && (
             <p className="text-sm text-destructive">
-              {(addResourceKindMutation.error as Error)?.message ?? 'Failed to add resource.'}
+              {addResourceKindMutation.error.message}
             </p>
           )}
           <Button type="submit" className="mt-1" disabled={addResourceKindMutation.isPending}>
