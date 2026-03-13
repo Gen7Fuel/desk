@@ -1,5 +1,5 @@
-const CDN_BASE = 'https://app.gen7fuel.com'
-const CDN_TOKEN = 'ede76ab3d1bfcdbaf17c99751df9539dc7f6c00265a80a7073b52db572a4fbea'
+const CDN_BASE = import.meta.env.VITE_CDN_BASE as string
+const CDN_TOKEN = import.meta.env.VITE_CDN_ADMIN_TOKEN as string
 
 export interface CdnFile {
   filename: string

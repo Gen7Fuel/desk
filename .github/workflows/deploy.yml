@@ -32,6 +32,8 @@ jobs:
             echo "SAGE_CALLBACK_URL=${{ secrets.SAGE_CALLBACK_URL }}" >> backend/.env
 
             # Rebuild and restart, wait for healthy
+            export VITE_CDN_BASE="${{ secrets.VITE_CDN_BASE }}"
+            export VITE_CDN_ADMIN_TOKEN="${{ secrets.VITE_CDN_ADMIN_TOKEN }}"
             docker compose up -d --build --force-recreate --wait
 
             # Clean up old images

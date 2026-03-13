@@ -3,6 +3,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_CDN_BASE
+        - VITE_CDN_ADMIN_TOKEN
     restart: unless-stopped
     ports:
       - "3500:80"
