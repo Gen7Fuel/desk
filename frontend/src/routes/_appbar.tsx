@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, redirect, useMatchRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
-import { CreditCard, Fuel, KeyRound, LayoutGrid, Lock, LogOut, MonitorSmartphone, Settings, User, Binary, Package } from 'lucide-react'
+import { CreditCard, Fuel, Globe, KeyRound, LayoutGrid, Lock, LogOut, MonitorSmartphone, Settings, User, Binary, Package } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getTokenPayload } from '@/lib/permissions'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -56,6 +56,7 @@ function RouteComponent() {
   const isCipherActive = !!matchRoute({ to: '/cipher', fuzzy: true })
   const isInventoryActive = !!matchRoute({ to: '/inventory', fuzzy: true })
   const isSettingsActive = !!matchRoute({ to: '/settings', fuzzy: true })
+  const isHubActive = !!matchRoute({ to: '/hub', fuzzy: true })
 
   return (
     <div className="flex h-screen">
@@ -203,6 +204,22 @@ function RouteComponent() {
               </Link>
             </TooltipTrigger>
             <TooltipContent side="right">Inventory</TooltipContent>
+          </Tooltip>
+          )}
+          {can('hub.cdn', 'read') && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                to="/hub/cdn"
+                className={cn(
+                  'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                  isHubActive && 'bg-accent/80 text-accent-foreground',
+                )}
+              >
+                <Globe className="h-5 w-5" />
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="right">The Hub</TooltipContent>
           </Tooltip>
           )}
           <div className="mt-auto flex flex-col items-center gap-2">

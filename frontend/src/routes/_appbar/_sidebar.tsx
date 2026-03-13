@@ -34,6 +34,9 @@ const sidebarLinks: Record<string, { label: string; path: string; permission: st
     { label: 'Users', path: '/settings/users', permission: 'settings.users' },
     { label: 'Roles', path: '/settings/roles', permission: 'settings.roles' },
   ],
+  hub: [
+    { label: 'CDN Panel', path: '/hub/cdn', permission: 'hub.cdn' },
+  ],
 }
 
 export const Route = createFileRoute('/_appbar/_sidebar')({

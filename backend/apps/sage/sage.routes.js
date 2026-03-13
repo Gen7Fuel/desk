@@ -5,68 +5,26 @@ const { authenticate } = require('../../middleware/auth')
 const SAGE_BASE = 'https://api.intacct.com/ia/api/v1/'
 
 /**
- * GET /sage/authorize
- * Redirects the browser to the Sage Intacct OAuth2 authorization page.
- * The frontend navigates here directly (window.location).
- * Token is passed as ?token= query param since browser redirects can't send headers.
+ * POST /sage/connect
+ * Obtains an access token using the client_credentials grant.
+ * No browser redirect or callback — returns { access_token } directly.
  */
-router.get('/authorize', (req, res, next) => {
-  // Accept JWT from query string since this is a full-page browser redirect
-  if (req.query.token) {
-    req.headers.authorization = `Bearer ${req.query.token}`
-  }
-  next()
-}, authenticate, (_req, res) => {
-  const clientId = process.env.SAGE_CLIENT_ID
-  const callbackUrl = process.env.SAGE_CALLBACK_URL
-
-  if (!clientId || !callbackUrl) {
-    return res.status(500).json({ message: 'Sage OAuth2 is not configured on the server.' })
-  }
-
-  // Generate a random state value for CSRF protection
-  const state = Math.random().toString(36).substring(2, 15)
-
-  const authorizeUrl =
-    SAGE_BASE +
-    'oauth2/authorize?' +
-    `state=${state}` +
-    `&response_type=code` +
-    `&client_id=${encodeURIComponent(clientId)}` +
-    `&redirect_uri=${encodeURIComponent(callbackUrl)}`
-
-  return res.redirect(authorizeUrl)
-})
-
-/**
- * POST /sage/token
- * Exchanges the authorization code for an access token.
- * Called by the frontend callback page with { code }.
- */
-router.post('/token', authenticate, async (req, res) => {
+router.post('/connect', authenticate, async (_req, res) => {
   try {
-    const { code } = req.body
-    if (!code) {
-      return res.status(400).json({ message: 'Authorization code is required.' })
-    }
-
     const clientId = process.env.SAGE_CLIENT_ID
     const clientSecret = process.env.SAGE_CLIENT_SECRET
-    const callbackUrl = process.env.SAGE_CALLBACK_URL
 
-    if (!clientId || !clientSecret || !callbackUrl) {
+    if (!clientId || !clientSecret) {
       return res.status(500).json({ message: 'Sage OAuth2 is not configured on the server.' })
     }
 
     const tokenUrl = SAGE_BASE + 'oauth2/token'
 
-    // Build URL-encoded form body matching the Sage demo
     const body = new URLSearchParams()
-    body.append('grant_type', 'authorization_code')
-    body.append('code', code)
-    body.append('redirect_uri', callbackUrl)
+    body.append('grant_type', 'client_credentials')
     body.append('client_id', clientId)
     body.append('client_secret', clientSecret)
+    body.append('username', 'skimWS@GPMC Management Services')
 
     const response = await fetch(tokenUrl, {
       method: 'POST',
@@ -75,9 +33,9 @@ router.post('/token', authenticate, async (req, res) => {
 
     if (!response.ok) {
       const text = await response.text()
-      console.error('[sage/token] Sage token exchange failed:', response.status, text)
+      console.error('[sage/connect] Sage token request failed:', response.status, text)
       return res.status(response.status).json({
-        message: 'Failed to exchange authorization code.',
+        message: 'Failed to obtain Sage access token.',
         detail: text,
       })
     }
@@ -86,14 +44,132 @@ router.post('/token', authenticate, async (req, res) => {
     const accessToken = data.access_token
 
     if (!accessToken) {
-      console.error('[sage/token] No access_token in response:', data)
+      console.error('[sage/connect] No access_token in response:', data)
       return res.status(502).json({ message: 'No access token returned by Sage.' })
     }
 
     return res.json({ access_token: accessToken })
   } catch (err) {
-    console.error('[sage/token] error:', err)
-    return res.status(500).json({ message: 'Token exchange failed.' })
+    console.error('[sage/connect] error:', err)
+    return res.status(500).json({ message: 'Sage connection failed.' })
+  }
+})
+
+/**
+ * POST /sage/attachment
+ * Proxies a create-attachment request to the Sage Intacct API.
+ * Expects the Sage access token in the X-Sage-Token request header.
+ */
+router.post('/attachment', authenticate, async (req, res) => {
+  try {
+    const sageToken = req.headers['x-sage-token']
+    if (!sageToken) {
+      return res.status(400).json({ message: 'Missing X-Sage-Token header.' })
+    }
+
+    const url = SAGE_BASE + 'objects/company-config/attachment'
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${sageToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(req.body),
+    })
+
+    const data = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      console.error('[sage/attachment] Sage error:', response.status, JSON.stringify(data, null, 2))
+      return res.status(response.status).json(
+        data ?? { message: `Sage returned ${response.status}` }
+      )
+    }
+
+    return res.status(response.status).json(data)
+  } catch (err) {
+    console.error('[sage/attachment] error:', err)
+    return res.status(500).json({ message: 'Sage attachment request failed.' })
+  }
+})
+
+/**
+ * POST /sage/bill
+ * Proxies a create-bill request to the Sage Intacct AP API.
+ * Expects the Sage access token in the X-Sage-Token request header.
+ */
+router.post('/bill', authenticate, async (req, res) => {
+  try {
+    const sageToken = req.headers['x-sage-token']
+    if (!sageToken) {
+      return res.status(400).json({ message: 'Missing X-Sage-Token header.' })
+    }
+
+    const url = SAGE_BASE + 'objects/accounts-payable/bill'
+    console.log('[sage/bill] payload:', JSON.stringify(req.body, null, 2))
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${sageToken}`,
+        'Content-Type': 'application/json',
+        'X-IA-API-Param-Entity': 'A090',
+      },
+      body: JSON.stringify(req.body),
+    })
+
+    const data = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      console.error('[sage/bill] Sage error:', response.status, JSON.stringify(data, null, 2))
+      return res.status(response.status).json(
+        data ?? { message: `Sage returned ${response.status}` }
+      )
+    }
+
+    return res.status(response.status).json(data)
+  } catch (err) {
+    console.error('[sage/bill] error:', err)
+    return res.status(500).json({ message: 'Sage bill request failed.' })
+  }
+})
+
+/**
+ * POST /sage/invoice
+ * Proxies a create-invoice request to the Sage Intacct AR API.
+ * Expects the Sage access token in the X-Sage-Token request header.
+ */
+router.post('/invoice', authenticate, async (req, res) => {
+  try {
+    const sageToken = req.headers['x-sage-token']
+    if (!sageToken) {
+      return res.status(400).json({ message: 'Missing X-Sage-Token header.' })
+    }
+
+    const url = SAGE_BASE + 'objects/accounts-receivable/invoice'
+    console.log('[sage/invoice] payload:', JSON.stringify(req.body, null, 2))
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${sageToken}`,
+        'Content-Type': 'application/json',
+        'X-IA-API-Param-Entity': 'A090',
+      },
+      body: JSON.stringify(req.body),
+    })
+
+    const data = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      console.error('[sage/invoice] Sage error:', response.status, JSON.stringify(data, null, 2))
+      return res.status(response.status).json(
+        data ?? { message: `Sage returned ${response.status}` }
+      )
+    }
+
+    return res.status(response.status).json(data)
+  } catch (err) {
+    console.error('[sage/invoice] error:', err)
+    return res.status(500).json({ message: 'Sage invoice request failed.' })
   }
 })
 

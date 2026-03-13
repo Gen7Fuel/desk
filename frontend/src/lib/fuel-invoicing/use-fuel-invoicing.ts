@@ -2,9 +2,9 @@ import { useState } from 'react'
 import type { ExtractedFields } from './types'
 import { extractFieldsFromRects } from './pdf-extractor'
 import { buildFilename } from './filename'
-import { uploadToAzure } from './upload-api'
+import { createAttachment, createBill, createInvoice } from './sage-api'
 
-export function useFuelInvoicing() {
+export function useFuelInvoicing(sageToken: string) {
   const [fields, setFields] = useState<ExtractedFields | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [dragActive, setDragActive] = useState(false)
@@ -39,17 +39,29 @@ export function useFuelInvoicing() {
     setSubmitMsg(null)
     try {
       const filename = buildFilename(fields)
-      const result = await uploadToAzure(base64, filename)
-      setSubmitMsg(result.message)
-      if (result.ok) {
-        setFile(null)
-        setBase64(null)
-        setFields(null)
-        const input = document.getElementById('pdf-upload-input') as HTMLInputElement
-        if (input) input.value = ''
-      }
-    } catch {
-      setSubmitMsg('Network error. Please try again.')
+      const extension = file.name.includes('.') ? file.name.split('.').pop()! : 'pdf'
+
+      if (!fields) throw new Error('No invoice data extracted from the PDF.')
+
+      // ── Step 1: create attachment in Sage Intacct ──────────────────────────
+      const attachmentKey = await createAttachment(base64, filename, extension, sageToken)
+
+      // ── Step 2: create accounts-payable bill ───────────────────────────────
+      const billKey = await createBill(fields, attachmentKey, sageToken)
+      void billKey
+
+      // ── Step 3: create accounts-receivable invoice ───────────────────────
+      const invoiceKey = await createInvoice(fields, attachmentKey, sageToken)
+      void invoiceKey
+
+      setSubmitMsg('Submitted successfully.')
+      setFile(null)
+      setBase64(null)
+      setFields(null)
+      const input = document.getElementById('pdf-upload-input') as HTMLInputElement
+      if (input) input.value = ''
+    } catch (err) {
+      setSubmitMsg(err instanceof Error ? err.message : 'Submission failed. Please try again.')
     } finally {
       setSubmitting(false)
     }

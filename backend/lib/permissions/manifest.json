@@ -48,6 +48,11 @@
         "users": { "actions": ["create", "read", "update", "delete"] },
         "roles": { "actions": ["create", "read", "update", "delete"] }
       }
+    },
+    "hub": {
+      "submodules": {
+        "cdn": { "actions": ["create", "read", "update", "delete"] }
+      }
     }
   }
 }
