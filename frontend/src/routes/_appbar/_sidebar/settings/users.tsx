@@ -215,6 +215,7 @@ function UserDetail({
   const initialResolved = useMemo(() => {
     if (!manifest) return {}
     const base = rolePerms ?? buildAllFalse(manifest as Manifest)
+    // Linter expects permissionOverrides to always be defined
     return deepMergePerms(base, user.permissionOverrides)
   }, [rolePerms, user.permissionOverrides, manifest])
 

@@ -4,7 +4,7 @@ export interface User {
   _id: string
   email: string
   role: string | null
-  permissionOverrides: Record<string, unknown>
+  permissionOverrides?: Record<string, unknown>
   createdAt: string
   updatedAt: string
 }
