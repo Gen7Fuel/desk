@@ -4,7 +4,11 @@
       "Bash(find c:UsersMohammadHasanworkspacedesk -maxdepth 2 -type f \\\\\\(-name docker-compose* -o -name *Dockerfile* -o -name *.yml -o -name *.yaml \\\\\\))",
       "Bash(grep -E \"\\\\.js$|\\\\.ts$\")",
       "Bash(find c:/Users/MohammadHasan/workspace -type d -name *cdn*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(npm audit:*)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(node -e \"const d=require\\(''''fs''''\\).readFileSync\\(0,''''utf8''''\\);const v=JSON.parse\\(d\\).vulnerabilities||{};const h=Object.entries\\(v\\).filter\\(\\([k,e]\\)=>k!=''''xlsx''''&&\\(e.severity==''''high''''||e.severity==''''critical''''\\)\\);console.log\\(''''High \\(excl xlsx\\):'''',h.length\\)\")",
+      "Bash(node --input-type=module -e 'import{readFileSync}from\"\"\"\"fs\"\"\"\";const d=readFileSync\\(0,\"\"\"\"utf8\"\"\"\"\\);const v=JSON.parse\\(d\\).vulnerabilities||{};const h=Object.entries\\(v\\).filter\\(\\([k,e]\\)=>k!==\"\"\"\"xlsx\"\"\"\"&&\\(e.severity===\"\"\"\"high\"\"\"\"||e.severity===\"\"\"\"critical\"\"\"\"\\)\\);console.log\\(\"\"\"\"High \\(excl xlsx\\):\"\"\"\",h.length\\)')"
     ]
   }
 }
