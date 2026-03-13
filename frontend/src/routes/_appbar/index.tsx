@@ -7,7 +7,7 @@ export const Route = createFileRoute('/_appbar/')({
 function RouteComponent() {
   return (
     <div className="flex h-full items-center justify-center">
-      <h1 className="text-6xl font-bold text-muted-foreground">Desk</h1>
+      <h1 className="text-6xl font-bold text-muted-foreground">Desk App</h1>
     </div>
   )
 }
