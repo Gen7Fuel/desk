@@ -1,8 +1,12 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
+import { useRef } from 'react'
+import { FileText, Loader2, UploadCloud } from 'lucide-react'
 import { useFuelInvoicing } from '../../lib/fuel-invoicing/use-fuel-invoicing'
 import type { ExtractedFields, TableEntry } from '../../lib/fuel-invoicing/types'
 import { can } from '@/lib/permissions'
 import { apiFetch } from '@/lib/api'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/_appbar/fuel-invoicing')({
   component: RouteComponent,
@@ -76,6 +80,7 @@ const TABLE_COLS: Array<{ key: keyof TableEntry; label: string }> = [
 
 function RouteComponent() {
   const { access_token: sageToken } = Route.useLoaderData()
+  const inputRef = useRef<HTMLInputElement>(null)
   const {
     fields,
     error,
@@ -91,56 +96,82 @@ function RouteComponent() {
     handleDragLeave,
   } = useFuelInvoicing(sageToken)
 
-  return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 24px' }}>
-      <h2 style={{ marginBottom: 8 }}>Upload and Submit NSP Invoice</h2>
+  function formatBytes(bytes: number) {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
 
+  return (
+    <div className="flex h-full flex-col gap-6 overflow-auto p-6">
+      <div>
+        <h2 className="text-2xl font-semibold">Upload and Submit NSP Invoice</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Upload a fuel invoice PDF to extract fields and submit to Sage Intacct.
+        </p>
+      </div>
+
+      {/* Drop zone */}
       <div
+        className={cn(
+          'flex cursor-pointer flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed p-12 transition-colors',
+          dragActive
+            ? 'border-primary bg-primary/5'
+            : 'border-border bg-muted/30 hover:border-primary/50 hover:bg-muted/50',
+          file && 'border-solid border-primary/40 bg-primary/5',
+        )}
+        onClick={() => inputRef.current?.click()}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        style={{
-          border: dragActive ? '2px solid #4f8cff' : '2px dashed #444',
-          background: dragActive ? '#232a36' : '#232323',
-          borderRadius: 12,
-          width: 400,
-          height: 180,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          margin: '32px 0',
-          transition: 'background 0.2s, border 0.2s',
-        }}
       >
         <input
+          ref={inputRef}
           type="file"
           accept="application/pdf"
-          style={{ display: 'none' }}
-          id="pdf-upload-input"
+          className="hidden"
           onChange={handleInputChange}
         />
-        <label htmlFor="pdf-upload-input" style={{ cursor: 'pointer', color: '#ccc', fontWeight: 500, fontSize: 18 }}>
-          {dragActive ? 'Drop PDF here...' : file ? file.name : 'Drag & drop PDF here or click to upload'}
-        </label>
+        {file ? (
+          <>
+            <FileText className="h-12 w-12 text-primary" />
+            <div className="text-center">
+              <p className="font-medium">{file.name}</p>
+              <p className="text-sm text-muted-foreground">{formatBytes(file.size)}</p>
+            </div>
+          </>
+        ) : (
+          <>
+            <UploadCloud className={cn('h-12 w-12 transition-colors', dragActive ? 'text-primary' : 'text-muted-foreground')} />
+            <div className="text-center">
+              <p className="font-medium">Drop your PDF here</p>
+              <p className="text-sm text-muted-foreground">or click to browse — PDF files accepted</p>
+            </div>
+          </>
+        )}
       </div>
 
+      {error && <p className="text-sm text-destructive">{error}</p>}
+
+      {/* Actions */}
       {file && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button
-            onClick={handleSubmitToAzure}
-            disabled={submitting || !base64}
-            style={{ cursor: 'pointer', padding: '8px 24px', fontWeight: 600 }}
-          >
-            {submitting ? 'Submitting…' : 'Submit'}
-          </button>
+        <div className="flex items-center gap-3">
+          <Button onClick={handleSubmitToAzure} disabled={submitting || !base64}>
+            {submitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Submitting…
+              </>
+            ) : (
+              'Submit'
+            )}
+          </Button>
+          {submitMsg && <span className="text-sm text-muted-foreground">{submitMsg}</span>}
         </div>
       )}
-      {submitMsg && <span style={{ fontSize: 14, marginTop: 8 }}>{submitMsg}</span>}
-      {error && <span style={{ fontSize: 14, marginTop: 8, color: 'red' }}>{error}</span>}
 
       {fields && (
-        <div style={{ width: '100%', maxWidth: 960, marginTop: 40 }}>
+        <div style={{ width: '100%', maxWidth: 960 }}>
 
           {/* Header fields */}
           <section style={{ marginBottom: 32 }}>
