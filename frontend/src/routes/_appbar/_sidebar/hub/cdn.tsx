@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ExternalLink, Trash2 } from 'lucide-react'
+import { Download, ExternalLink, Trash2 } from 'lucide-react'
 import type {CdnFile} from '@/lib/cdn-api';
 import { can } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
@@ -15,7 +15,7 @@ import {
   DialogPortal,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {  deleteCdnFile, getCdnDownloadUrl, getCdnFiles } from '@/lib/cdn-api'
+import { deleteCdnFile, exportAllCdnFiles, getCdnDownloadUrl, getCdnFiles } from '@/lib/cdn-api'
 
 export const Route = createFileRoute('/_appbar/_sidebar/hub/cdn')({
   component: RouteComponent,
@@ -36,6 +36,23 @@ function RouteComponent() {
   const queryClient = useQueryClient()
   const [pendingDelete, setPendingDelete] = useState<CdnFile | null>(null)
   const [page, setPage] = useState(1)
+  const [exportProgress, setExportProgress] = useState<{ done: number; total: number } | null>(null)
+  const anchorRef = useRef<HTMLAnchorElement>(null)
+
+  async function handleExport() {
+    setExportProgress({ done: 0, total: 0 })
+    try {
+      const blob = await exportAllCdnFiles((done, total) => setExportProgress({ done, total }))
+      const url = URL.createObjectURL(blob)
+      const a = anchorRef.current!
+      a.href = url
+      a.download = `cdn-export-${new Date().toISOString().slice(0, 10)}.zip`
+      a.click()
+      URL.revokeObjectURL(url)
+    } finally {
+      setExportProgress(null)
+    }
+  }
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['cdn-files', page],
@@ -56,9 +73,20 @@ function RouteComponent() {
     <div className="p-6">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-lg font-semibold">CDN Panel</h1>
-        <span className="text-sm text-muted-foreground">
-          {data?.totalFiles || 0} file{data?.totalFiles !== 1 ? 's' : ''}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">
+            {data?.totalFiles || 0} file{data?.totalFiles !== 1 ? 's' : ''}
+          </span>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={!!exportProgress || isLoading}>
+            <Download className="h-4 w-4" />
+            {exportProgress
+              ? exportProgress.total === 0
+                ? 'Preparing…'
+                : `${exportProgress.done} / ${exportProgress.total}`
+              : 'Export'}
+          </Button>
+          <a ref={anchorRef} className="hidden" />
+        </div>
       </div>
 
       {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
