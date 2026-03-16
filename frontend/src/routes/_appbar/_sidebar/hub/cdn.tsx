@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Download, ExternalLink, Trash2 } from 'lucide-react'
 import type {CdnFile} from '@/lib/cdn-api';
@@ -37,18 +37,20 @@ function RouteComponent() {
   const [pendingDelete, setPendingDelete] = useState<CdnFile | null>(null)
   const [page, setPage] = useState(1)
   const [exportProgress, setExportProgress] = useState<{ done: number; total: number } | null>(null)
-  const anchorRef = useRef<HTMLAnchorElement>(null)
+
 
   async function handleExport() {
     setExportProgress({ done: 0, total: 0 })
     try {
       const blob = await exportAllCdnFiles((done, total) => setExportProgress({ done, total }))
       const url = URL.createObjectURL(blob)
-      const a = anchorRef.current!
+      const a = document.createElement('a')
       a.href = url
       a.download = `cdn-export-${new Date().toISOString().slice(0, 10)}.zip`
+      document.body.appendChild(a)
       a.click()
-      URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } finally {
       setExportProgress(null)
     }
@@ -85,7 +87,6 @@ function RouteComponent() {
                 : `${exportProgress.done} / ${exportProgress.total}`
               : 'Export'}
           </Button>
-          <a ref={anchorRef} className="hidden" />
         </div>
       </div>
 
