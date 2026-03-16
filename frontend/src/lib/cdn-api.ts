@@ -33,3 +33,31 @@ export async function deleteCdnFile(filename: string): Promise<void> {
 export function getCdnDownloadUrl(filename: string): string {
   return `${CDN_BASE}/cdn/download/${encodeURIComponent(filename)}`
 }
+
+export async function exportAllCdnFiles(
+  onProgress?: (downloaded: number, total: number) => void,
+): Promise<Blob> {
+  // Fetch all pages to collect every filename
+  const first = await getCdnFiles(1)
+  let allFiles = [...first.files]
+  for (let p = 2; p <= first.totalPages; p++) {
+    const page = await getCdnFiles(p)
+    allFiles = allFiles.concat(page.files)
+  }
+
+  // Lazy-import jszip only when needed
+  const { default: JSZip } = await import('jszip')
+  const zip = new JSZip()
+
+  for (let i = 0; i < allFiles.length; i++) {
+    const file = allFiles[i]
+    const res = await fetch(`${CDN_BASE}/cdn/download/${encodeURIComponent(file.filename)}`, {
+      headers: { Authorization: `Bearer ${CDN_TOKEN}` },
+    })
+    if (!res.ok) throw new Error(`Failed to download ${file.filename}`)
+    zip.file(file.filename, await res.arrayBuffer())
+    onProgress?.(i + 1, allFiles.length)
+  }
+
+  return zip.generateAsync({ type: 'blob' })
+}
