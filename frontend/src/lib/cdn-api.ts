@@ -34,30 +34,33 @@ export function getCdnDownloadUrl(filename: string): string {
   return `${CDN_BASE}/cdn/download/${encodeURIComponent(filename)}`
 }
 
-export async function exportAllCdnFiles(
-  onProgress?: (downloaded: number, total: number) => void,
-): Promise<Blob> {
-  // Fetch all pages to collect every filename
-  const first = await getCdnFiles(1)
-  let allFiles = [...first.files]
-  for (let p = 2; p <= first.totalPages; p++) {
-    const page = await getCdnFiles(p)
-    allFiles = allFiles.concat(page.files)
-  }
+export interface CdnExportMonth {
+  month: string
+  fileCount: number
+  totalSize: number
+}
 
-  // Lazy-import jszip only when needed
-  const { default: JSZip } = await import('jszip')
-  const zip = new JSZip()
+export async function searchCdnFiles(q: string): Promise<{ files: CdnFile[]; totalFiles: number }> {
+  const { apiFetch } = await import('@/lib/api')
+  const res = await apiFetch(`/api/cdn/search?q=${encodeURIComponent(q)}`)
+  if (!res.ok) throw new Error('Search failed')
+  return res.json()
+}
 
-  for (let i = 0; i < allFiles.length; i++) {
-    const file = allFiles[i]
-    const res = await fetch(`${CDN_BASE}/cdn/download/${encodeURIComponent(file.filename)}`, {
-      headers: { Authorization: `Bearer ${CDN_TOKEN}` },
-    })
-    if (!res.ok) throw new Error(`Failed to download ${file.filename}`)
-    zip.file(file.filename, await res.arrayBuffer())
-    onProgress?.(i + 1, allFiles.length)
-  }
+export async function getCdnExportMonths(): Promise<CdnExportMonth[]> {
+  const { apiFetch } = await import('@/lib/api')
+  const res = await apiFetch('/api/cdn/export/months')
+  if (!res.ok) throw new Error('Failed to fetch export months')
+  const data = await res.json()
+  return data.months
+}
 
-  return zip.generateAsync({ type: 'blob' })
+export async function backupCdnMonth(month: string): Promise<string> {
+  const { apiFetch } = await import('@/lib/api')
+  const res = await apiFetch(`/api/cdn/backup?month=${encodeURIComponent(month)}`, {
+    method: 'POST',
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data?.message ?? `Backup failed (${res.status})`)
+  return data.message
 }
