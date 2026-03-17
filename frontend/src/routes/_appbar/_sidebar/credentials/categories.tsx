@@ -2,7 +2,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
-import type {CredentialCategory} from '@/lib/credential-category-api';
+import type { CredentialCategory } from '@/lib/credential-category-api'
 import { cn } from '@/lib/utils'
 import { can } from '@/lib/permissions'
 import {
@@ -16,17 +16,21 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
-  
   createCredentialCategory,
   deleteCredentialCategory,
   getCredentialCategories,
-  updateCredentialCategory
+  updateCredentialCategory,
 } from '@/lib/credential-category-api'
 
-export const Route = createFileRoute('/_appbar/_sidebar/credentials/categories')({
+export const Route = createFileRoute(
+  '/_appbar/_sidebar/credentials/categories',
+)({
   component: RouteComponent,
   beforeLoad: () => {
-    if (typeof window !== 'undefined' && !can('credentials.categories', 'read')) {
+    if (
+      typeof window !== 'undefined' &&
+      !can('credentials.categories', 'read')
+    ) {
       throw redirect({ to: '/' })
     }
   },
@@ -40,7 +44,12 @@ function RouteComponent() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formName, setFormName] = useState('')
 
-  const { data: categories, isLoading, isError, error } = useQuery({
+  const {
+    data: categories,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ['credentialCategories'],
     queryFn: getCredentialCategories,
   })
@@ -92,15 +101,16 @@ function RouteComponent() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!formName.trim() || saveMutation.isPending || deleteMutation.isPending) return
+    if (!formName.trim() || saveMutation.isPending || deleteMutation.isPending)
+      return
     saveMutation.mutate()
   }
 
   const showForm = formMode !== null
   const isPending = saveMutation.isPending || deleteMutation.isPending
   const mutationError =
-    (saveMutation.isError ? (saveMutation.error).message : null) ||
-    (deleteMutation.isError ? (deleteMutation.error).message : null)
+    (saveMutation.isError ? saveMutation.error.message : null) ||
+    (deleteMutation.isError ? deleteMutation.error.message : null)
 
   return (
     <div className="flex h-full">
@@ -113,21 +123,27 @@ function RouteComponent() {
             className="h-6 w-6"
             onClick={() => (formMode === 'add' ? closeForm() : openAdd())}
           >
-            {formMode === 'add' ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+            {formMode === 'add' ? (
+              <X className="h-3 w-3" />
+            ) : (
+              <Plus className="h-3 w-3" />
+            )}
           </Button>
         </div>
 
         {isLoading ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : isError ? (
-          <p className="text-destructive">{(error).message}</p>
+          <p className="text-destructive">{error.message}</p>
         ) : !categories || categories.length === 0 ? (
           <p className="text-muted-foreground text-sm">No categories found.</p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="font-bold text-foreground">Name</TableHead>
+                <TableHead className="font-bold text-foreground">
+                  Name
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -136,11 +152,15 @@ function RouteComponent() {
                   key={cat._id}
                   className={cn(
                     'cursor-pointer hover:bg-accent/50',
-                    formMode === 'edit' && editingId === cat._id && 'bg-accent/80',
+                    formMode === 'edit' &&
+                      editingId === cat._id &&
+                      'bg-accent/80',
                   )}
                   onClick={() => openEdit(cat)}
                 >
-                  <TableCell className="text-sm text-muted-foreground">{cat.name}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {cat.name}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -156,7 +176,10 @@ function RouteComponent() {
         )}
       >
         {showForm && (
-          <form onSubmit={handleSubmit} className="flex h-full w-80 flex-col gap-3 p-4">
+          <form
+            onSubmit={handleSubmit}
+            className="flex h-full w-80 flex-col gap-3 p-4"
+          >
             <h3 className="text-sm font-semibold">
               {formMode === 'edit' ? 'Edit Category' : 'New Category'}
             </h3>
@@ -173,8 +196,12 @@ function RouteComponent() {
 
             <Button type="submit" className="mt-1" disabled={isPending}>
               {saveMutation.isPending
-                ? formMode === 'edit' ? 'Updating...' : 'Adding...'
-                : formMode === 'edit' ? 'Update' : 'Add'}
+                ? formMode === 'edit'
+                  ? 'Updating...'
+                  : 'Adding...'
+                : formMode === 'edit'
+                  ? 'Update'
+                  : 'Add'}
             </Button>
 
             {formMode === 'edit' && (

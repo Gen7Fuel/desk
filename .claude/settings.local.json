@@ -8,7 +8,12 @@
       "Bash(npm audit:*)",
       "Bash(echo \"EXIT: $?\")",
       "Bash(node -e \"const d=require\\(''''fs''''\\).readFileSync\\(0,''''utf8''''\\);const v=JSON.parse\\(d\\).vulnerabilities||{};const h=Object.entries\\(v\\).filter\\(\\([k,e]\\)=>k!=''''xlsx''''&&\\(e.severity==''''high''''||e.severity==''''critical''''\\)\\);console.log\\(''''High \\(excl xlsx\\):'''',h.length\\)\")",
-      "Bash(node --input-type=module -e 'import{readFileSync}from\"\"\"\"fs\"\"\"\";const d=readFileSync\\(0,\"\"\"\"utf8\"\"\"\"\\);const v=JSON.parse\\(d\\).vulnerabilities||{};const h=Object.entries\\(v\\).filter\\(\\([k,e]\\)=>k!==\"\"\"\"xlsx\"\"\"\"&&\\(e.severity===\"\"\"\"high\"\"\"\"||e.severity===\"\"\"\"critical\"\"\"\"\\)\\);console.log\\(\"\"\"\"High \\(excl xlsx\\):\"\"\"\",h.length\\)')"
+      "Bash(node --input-type=module -e 'import{readFileSync}from\"\"\"\"fs\"\"\"\";const d=readFileSync\\(0,\"\"\"\"utf8\"\"\"\"\\);const v=JSON.parse\\(d\\).vulnerabilities||{};const h=Object.entries\\(v\\).filter\\(\\([k,e]\\)=>k!==\"\"\"\"xlsx\"\"\"\"&&\\(e.severity===\"\"\"\"high\"\"\"\"||e.severity===\"\"\"\"critical\"\"\"\"\\)\\);console.log\\(\"\"\"\"High \\(excl xlsx\\):\"\"\"\",h.length\\)')",
+      "Bash(grep -r \"cdn\" /c/Users/MohammadHasan/workspace/desk/backend --include=\"*.js\" -i 2>/dev/null | head -20)",
+      "Bash(grep -r \"static\\\\|express.static\\\\|memoryStorage\\\\|diskStorage\" /c/Users/MohammadHasan/workspace/desk/backend --include=\"*.js\" -i 2>/dev/null | grep -v node_modules)",
+      "Bash(grep -r \"cdn\" /c/Users/MohammadHasan/workspace/desk/frontend/src --include=\"*.ts\" --include=\"*.tsx\" -i 2>/dev/null | head -20)",
+      "Bash(find /c/Users/MohammadHasan/workspace/desk -maxdepth 2 -name \"docker-compose*\" -o -name \"compose*\" 2>/dev/null | head -10)",
+      "Bash(cd \"C:\\\\Users\\\\MohammadHasan\\\\workspace\\\\desk\\\\backend\" && npm install tar-stream)"
     ]
   }
 }

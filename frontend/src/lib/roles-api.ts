@@ -51,7 +51,11 @@ export async function createRole(data: {
 
 export async function updateRole(
   id: string,
-  data: { name?: string; description?: string; permissions?: Record<string, unknown> },
+  data: {
+    name?: string
+    description?: string
+    permissions?: Record<string, unknown>
+  },
 ): Promise<Role> {
   const res = await apiFetch(`/api/roles/${id}`, {
     method: 'PUT',

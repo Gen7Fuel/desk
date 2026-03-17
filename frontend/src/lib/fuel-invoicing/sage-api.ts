@@ -125,8 +125,10 @@ export async function createBill(
   const billDate = toISODate(fields.billDate)
   const dueDate = addDays(billDate, parseDueDays(fields.terms))
 
-  const productLineAmount = parseCurrency(fields.productTotal) + parseCurrency(fields.taxFeeTotal)
-  const freightLineAmount = parseCurrency(fields.freightTotal) + parseCurrency(fields.surcharges)
+  const productLineAmount =
+    parseCurrency(fields.productTotal) + parseCurrency(fields.taxFeeTotal)
+  const freightLineAmount =
+    parseCurrency(fields.freightTotal) + parseCurrency(fields.surcharges)
 
   const sharedTaxEntry = [
     {
@@ -275,7 +277,8 @@ export async function createInvoice(
   })
 
   // Freight line
-  const freightAmount = parseCurrency(fields.freightTotal) + parseCurrency(fields.surcharges)
+  const freightAmount =
+    parseCurrency(fields.freightTotal) + parseCurrency(fields.surcharges)
   const freightLine = {
     txnAmount: freightAmount.toFixed(2),
     glAccount: { id: '40700' },

@@ -32,14 +32,23 @@ export async function createSubscription(data: {
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error((body as { error?: string }).error || 'Failed to create subscription')
+    throw new Error(
+      (body as { error?: string }).error || 'Failed to create subscription',
+    )
   }
   return res.json()
 }
 
 export async function updateSubscription(
   id: string,
-  data: Partial<{ category: string; identifier: string; price: number; billing_cycle: string; end_date: string; notes: string }>,
+  data: Partial<{
+    category: string
+    identifier: string
+    price: number
+    billing_cycle: string
+    end_date: string
+    notes: string
+  }>,
 ): Promise<Subscription> {
   const res = await apiFetch(`/api/subscriptions/${id}`, {
     method: 'PUT',
@@ -48,7 +57,9 @@ export async function updateSubscription(
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error((body as { error?: string }).error || 'Failed to update subscription')
+    throw new Error(
+      (body as { error?: string }).error || 'Failed to update subscription',
+    )
   }
   return res.json()
 }
@@ -57,6 +68,8 @@ export async function deleteSubscription(id: string): Promise<void> {
   const res = await apiFetch(`/api/subscriptions/${id}`, { method: 'DELETE' })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error((body as { error?: string }).error || 'Failed to delete subscription')
+    throw new Error(
+      (body as { error?: string }).error || 'Failed to delete subscription',
+    )
   }
 }

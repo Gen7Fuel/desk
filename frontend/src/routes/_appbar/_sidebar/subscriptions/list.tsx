@@ -2,7 +2,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
-import type {Subscription} from '@/lib/subscription-api';
+import type { Subscription } from '@/lib/subscription-api'
 import { cn } from '@/lib/utils'
 import { can } from '@/lib/permissions'
 import {
@@ -24,11 +24,10 @@ import {
 } from '@/components/ui/select'
 import { getCategories } from '@/lib/category-api'
 import {
-  
   createSubscription,
   deleteSubscription,
   getSubscriptions,
-  updateSubscription
+  updateSubscription,
 } from '@/lib/subscription-api'
 
 export const Route = createFileRoute('/_appbar/_sidebar/subscriptions/list')({
@@ -62,7 +61,12 @@ function calcEndDate(cycle: string): string {
 function RouteComponent() {
   const queryClient = useQueryClient()
 
-  const { data: subscriptions, isLoading, isError, error } = useQuery({
+  const {
+    data: subscriptions,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ['subscriptions'],
     queryFn: getSubscriptions,
   })
@@ -77,7 +81,9 @@ function RouteComponent() {
   const [formCategory, setFormCategory] = useState('')
   const [formIdentifier, setFormIdentifier] = useState('')
   const [formPrice, setFormPrice] = useState('')
-  const [formBillingCycle, setFormBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
+  const [formBillingCycle, setFormBillingCycle] = useState<
+    'monthly' | 'yearly'
+  >('monthly')
   const [formEndDate, setFormEndDate] = useState('')
   const [formNotes, setFormNotes] = useState('')
 
@@ -156,7 +162,8 @@ function RouteComponent() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!formCategory || !formIdentifier.trim() || !formPrice || !formEndDate) return
+    if (!formCategory || !formIdentifier.trim() || !formPrice || !formEndDate)
+      return
     if (saveMutation.isPending || deleteMutation.isPending) return
     saveMutation.mutate()
   }
@@ -164,8 +171,8 @@ function RouteComponent() {
   const showForm = formMode !== null
   const isPending = saveMutation.isPending || deleteMutation.isPending
   const mutationError =
-    (saveMutation.isError ? (saveMutation.error).message : null) ||
-    (deleteMutation.isError ? (deleteMutation.error).message : null)
+    (saveMutation.isError ? saveMutation.error.message : null) ||
+    (deleteMutation.isError ? deleteMutation.error.message : null)
 
   return (
     <div className="flex h-full">
@@ -178,14 +185,18 @@ function RouteComponent() {
             className="h-6 w-6"
             onClick={() => (formMode === 'add' ? closeForm() : openAdd())}
           >
-            {formMode === 'add' ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+            {formMode === 'add' ? (
+              <X className="h-3 w-3" />
+            ) : (
+              <Plus className="h-3 w-3" />
+            )}
           </Button>
         </div>
 
         {isLoading ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : isError ? (
-          <p className="text-destructive">{(error).message}</p>
+          <p className="text-destructive">{error.message}</p>
         ) : (
           <Table>
             <TableHeader>
@@ -211,16 +222,24 @@ function RouteComponent() {
                     key={sub._id}
                     className={cn(
                       'cursor-pointer hover:bg-accent/50',
-                      formMode === 'edit' && editingId === sub._id && 'bg-accent/80',
+                      formMode === 'edit' &&
+                        editingId === sub._id &&
+                        'bg-accent/80',
                     )}
                     onClick={() => openEdit(sub)}
                   >
-                    <TableCell className="font-medium">{sub.category}</TableCell>
+                    <TableCell className="font-medium">
+                      {sub.category}
+                    </TableCell>
                     <TableCell>{sub.identifier}</TableCell>
                     <TableCell>{sub.price}</TableCell>
-                    <TableCell className="capitalize">{sub.billing_cycle}</TableCell>
+                    <TableCell className="capitalize">
+                      {sub.billing_cycle}
+                    </TableCell>
                     <TableCell>{formatDate(sub.end_date)}</TableCell>
-                    <TableCell className="text-muted-foreground">{sub.notes || '—'}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {sub.notes || '—'}
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -237,7 +256,10 @@ function RouteComponent() {
         )}
       >
         {showForm && (
-          <form onSubmit={handleSubmit} className="flex h-full w-80 flex-col gap-3 p-4">
+          <form
+            onSubmit={handleSubmit}
+            className="flex h-full w-80 flex-col gap-3 p-4"
+          >
             <h3 className="text-sm font-semibold">
               {formMode === 'edit' ? 'Edit Subscription' : 'New Subscription'}
             </h3>
@@ -289,7 +311,9 @@ function RouteComponent() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-muted-foreground">Renewal date</label>
+              <label className="text-xs text-muted-foreground">
+                Renewal date
+              </label>
               <Input
                 type="date"
                 value={formEndDate}
@@ -309,8 +333,12 @@ function RouteComponent() {
 
             <Button type="submit" className="mt-1" disabled={isPending}>
               {saveMutation.isPending
-                ? formMode === 'edit' ? 'Updating...' : 'Adding...'
-                : formMode === 'edit' ? 'Update' : 'Add'}
+                ? formMode === 'edit'
+                  ? 'Updating...'
+                  : 'Adding...'
+                : formMode === 'edit'
+                  ? 'Update'
+                  : 'Add'}
             </Button>
 
             {formMode === 'edit' && (

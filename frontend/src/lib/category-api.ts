@@ -12,7 +12,9 @@ export async function getCategories(): Promise<Array<Category>> {
   return res.json()
 }
 
-export async function createCategory(data: { name: string }): Promise<Category> {
+export async function createCategory(data: {
+  name: string
+}): Promise<Category> {
   const res = await apiFetch('/api/subscriptions/categories', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -20,15 +22,21 @@ export async function createCategory(data: { name: string }): Promise<Category> 
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error((body as { error?: string }).error || 'Failed to create category')
+    throw new Error(
+      (body as { error?: string }).error || 'Failed to create category',
+    )
   }
   return res.json()
 }
 
 export async function deleteCategory(id: string): Promise<void> {
-  const res = await apiFetch(`/api/subscriptions/categories/${id}`, { method: 'DELETE' })
+  const res = await apiFetch(`/api/subscriptions/categories/${id}`, {
+    method: 'DELETE',
+  })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error((body as { error?: string }).error || 'Failed to delete category')
+    throw new Error(
+      (body as { error?: string }).error || 'Failed to delete category',
+    )
   }
 }

@@ -2,7 +2,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
-import type {Credential} from '@/lib/credential-api';
+import type { Credential } from '@/lib/credential-api'
 import { cn } from '@/lib/utils'
 import { can } from '@/lib/permissions'
 import {
@@ -24,11 +24,10 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { getCredentialCategories } from '@/lib/credential-category-api'
 import {
-  
   createCredential,
   deleteCredential,
   getCredentials,
-  updateCredential
+  updateCredential,
 } from '@/lib/credential-api'
 
 export const Route = createFileRoute('/_appbar/_sidebar/credentials/list')({
@@ -164,7 +163,13 @@ function RouteComponent() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!formName.trim() || !formCategory || !formUsername.trim() || !formPassword.trim()) return
+    if (
+      !formName.trim() ||
+      !formCategory ||
+      !formUsername.trim() ||
+      !formPassword.trim()
+    )
+      return
     if (saveMutation.isPending || deleteMutation.isPending) return
     saveMutation.mutate()
   }
@@ -172,16 +177,19 @@ function RouteComponent() {
   const showForm = formMode !== null
   const isPending = saveMutation.isPending || deleteMutation.isPending
   const mutationError =
-    (saveMutation.isError ? (saveMutation.error).message : null) ||
-    (deleteMutation.isError ? (deleteMutation.error).message : null)
+    (saveMutation.isError ? saveMutation.error.message : null) ||
+    (deleteMutation.isError ? deleteMutation.error.message : null)
 
   const selectedCredential = credentials?.find((c) => c._id === selectedId)
 
   // Group credentials by category
-  const grouped = (credentials ?? []).reduce<Record<string, Array<Credential>>>((acc, cred) => {
-    ;(acc[cred.category] ??= []).push(cred)
-    return acc
-  }, {})
+  const grouped = (credentials ?? []).reduce<Record<string, Array<Credential>>>(
+    (acc, cred) => {
+      ;(acc[cred.category] ??= []).push(cred)
+      return acc
+    },
+    {},
+  )
 
   return (
     <div className="flex h-full">
@@ -197,14 +205,20 @@ function RouteComponent() {
             className="h-6 w-6"
             onClick={() => (formMode === 'add' ? closeForm() : openAdd())}
           >
-            {formMode === 'add' ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+            {formMode === 'add' ? (
+              <X className="h-3 w-3" />
+            ) : (
+              <Plus className="h-3 w-3" />
+            )}
           </Button>
         </div>
 
         {isLoading ? (
           <p className="px-4 py-2 text-muted-foreground text-sm">Loading...</p>
         ) : Object.keys(grouped).length === 0 ? (
-          <p className="px-4 py-2 text-muted-foreground text-sm">No credentials yet.</p>
+          <p className="px-4 py-2 text-muted-foreground text-sm">
+            No credentials yet.
+          </p>
         ) : (
           Object.entries(grouped).map(([category, creds]) => (
             <div key={category}>
@@ -221,7 +235,8 @@ function RouteComponent() {
                   }}
                   className={cn(
                     'w-full px-4 py-2 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground',
-                    selectedId === cred._id && 'bg-accent/80 text-accent-foreground',
+                    selectedId === cred._id &&
+                      'bg-accent/80 text-accent-foreground',
                   )}
                 >
                   {cred.name}
@@ -237,12 +252,16 @@ function RouteComponent() {
         {selectedCredential ? (
           <div className="px-6 pt-4">
             <div className="mb-4 flex items-center gap-2">
-              <h2 className="text-lg font-semibold">{selectedCredential.name}</h2>
+              <h2 className="text-lg font-semibold">
+                {selectedCredential.name}
+              </h2>
               <Button
                 variant="outline"
                 size="xs"
                 onClick={() => openEdit(selectedCredential)}
-                disabled={formMode === 'edit' && editingId === selectedCredential._id}
+                disabled={
+                  formMode === 'edit' && editingId === selectedCredential._id
+                }
               >
                 Edit
               </Button>
@@ -321,7 +340,10 @@ function RouteComponent() {
         )}
       >
         {showForm && (
-          <form onSubmit={handleSubmit} className="flex h-full w-80 flex-col gap-3 p-4">
+          <form
+            onSubmit={handleSubmit}
+            className="flex h-full w-80 flex-col gap-3 p-4"
+          >
             <h3 className="text-sm font-semibold">
               {formMode === 'edit' ? 'Edit Credential' : 'New Credential'}
             </h3>
@@ -374,8 +396,12 @@ function RouteComponent() {
 
             <Button type="submit" className="mt-1" disabled={isPending}>
               {saveMutation.isPending
-                ? formMode === 'edit' ? 'Updating...' : 'Adding...'
-                : formMode === 'edit' ? 'Update' : 'Add'}
+                ? formMode === 'edit'
+                  ? 'Updating...'
+                  : 'Adding...'
+                : formMode === 'edit'
+                  ? 'Update'
+                  : 'Add'}
             </Button>
 
             {formMode === 'edit' && (

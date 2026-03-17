@@ -1,4 +1,9 @@
-import { createFileRoute, redirect, useNavigate, useSearch } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  redirect,
+  useNavigate,
+  useSearch,
+} from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
@@ -42,7 +47,12 @@ function RouteComponent() {
   const navigate = useNavigate({ from: '/access/personnel' })
   const queryClient = useQueryClient()
 
-  const { data: personnel, isLoading, isError, error } = useQuery({
+  const {
+    data: personnel,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ['personnel'],
     queryFn: getPersonnel,
   })
@@ -99,10 +109,15 @@ function RouteComponent() {
       let updatedResources: Array<any>
       if (editingIndex !== null) {
         updatedResources = accessList.map((r: any, i: number) =>
-          i === editingIndex ? { type: formType, identifier: formIdentifier.trim() } : r,
+          i === editingIndex
+            ? { type: formType, identifier: formIdentifier.trim() }
+            : r,
         )
       } else {
-        updatedResources = [...accessList, { type: formType, identifier: formIdentifier.trim() }]
+        updatedResources = [
+          ...accessList,
+          { type: formType, identifier: formIdentifier.trim() },
+        ]
       }
       const res = await apiFetch(`/api/personnel/${id}`, {
         method: 'PUT',
@@ -145,7 +160,10 @@ function RouteComponent() {
             return (
               <button
                 key={id}
-                onClick={() => { closeForm(); navigate({ search: { selected: id } }) }}
+                onClick={() => {
+                  closeForm()
+                  navigate({ search: { selected: id } })
+                }}
                 className={cn(
                   'rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
                   selected === id && 'bg-accent/80 text-accent-foreground',
@@ -164,7 +182,9 @@ function RouteComponent() {
             <div className="mb-4 flex items-center gap-2">
               <h3 className="text-lg font-semibold">
                 {selectedPerson?.name || selected}{' '}
-                <span className="text-sm font-normal text-muted-foreground">({accessList.length})</span>
+                <span className="text-sm font-normal text-muted-foreground">
+                  ({accessList.length})
+                </span>
               </h3>
               <Button
                 variant={showForm ? 'outline' : 'default'}
@@ -178,7 +198,11 @@ function RouteComponent() {
                   }
                 }}
               >
-                {showForm ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                {showForm ? (
+                  <X className="h-3 w-3" />
+                ) : (
+                  <Plus className="h-3 w-3" />
+                )}
               </Button>
             </div>
             <Table>
@@ -191,16 +215,23 @@ function RouteComponent() {
               <TableBody>
                 {accessList.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={2} className="text-muted-foreground">No resources assigned.</TableCell>
+                    <TableCell colSpan={2} className="text-muted-foreground">
+                      No resources assigned.
+                    </TableCell>
                   </TableRow>
                 ) : (
                   accessList.map((entry: any, idx: number) => (
                     <TableRow
                       key={`${entry.type}-${idx}`}
-                      className={cn('cursor-pointer hover:bg-accent/50', editingIndex === idx && showForm && 'bg-accent/80')}
+                      className={cn(
+                        'cursor-pointer hover:bg-accent/50',
+                        editingIndex === idx && showForm && 'bg-accent/80',
+                      )}
                       onClick={() => openEditForm(idx)}
                     >
-                      <TableCell className="font-medium">{entry.type}</TableCell>
+                      <TableCell className="font-medium">
+                        {entry.type}
+                      </TableCell>
                       <TableCell>{entry.identifier}</TableCell>
                     </TableRow>
                   ))
@@ -209,7 +240,9 @@ function RouteComponent() {
             </Table>
           </>
         ) : (
-          <p className="text-muted-foreground">Select a person to see their access.</p>
+          <p className="text-muted-foreground">
+            Select a person to see their access.
+          </p>
         )}
       </div>
 
@@ -220,8 +253,13 @@ function RouteComponent() {
           showForm ? 'w-80' : 'w-0 border-l-0',
         )}
       >
-        <form onSubmit={handleSubmit} className="flex h-full w-80 flex-col gap-3 p-4">
-          <h3 className="text-sm font-semibold">{editingIndex !== null ? 'Edit Resource' : 'New Resource'}</h3>
+        <form
+          onSubmit={handleSubmit}
+          className="flex h-full w-80 flex-col gap-3 p-4"
+        >
+          <h3 className="text-sm font-semibold">
+            {editingIndex !== null ? 'Edit Resource' : 'New Resource'}
+          </h3>
           <Select value={formType} onValueChange={setFormType}>
             <SelectTrigger>
               <SelectValue placeholder="Select type..." />
@@ -245,11 +283,18 @@ function RouteComponent() {
               {saveResourceMutation.error.message}
             </p>
           )}
-          <Button type="submit" className="mt-1" disabled={saveResourceMutation.isPending}>
+          <Button
+            type="submit"
+            className="mt-1"
+            disabled={saveResourceMutation.isPending}
+          >
             {saveResourceMutation.isPending
-              ? editingIndex !== null ? 'Updating...' : 'Adding...'
-              : editingIndex !== null ? 'Update' : 'Add'
-            }
+              ? editingIndex !== null
+                ? 'Updating...'
+                : 'Adding...'
+              : editingIndex !== null
+                ? 'Update'
+                : 'Add'}
           </Button>
         </form>
       </div>

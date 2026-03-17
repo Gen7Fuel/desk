@@ -125,7 +125,9 @@ function buildTableEntries(
   return entries
 }
 
-export async function extractFieldsFromRects(file: File): Promise<ExtractedFields> {
+export async function extractFieldsFromRects(
+  file: File,
+): Promise<ExtractedFields> {
   const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf')
   pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
 
@@ -155,7 +157,9 @@ export async function extractFieldsFromRects(file: File): Promise<ExtractedField
   const freightCellValues: Array<string> = []
   for (let i = 0; i < freightValues.length; i += 2) {
     freightCellValues.push(
-      [freightValues[i] || '', freightValues[i + 1] || ''].filter(Boolean).join('\n'),
+      [freightValues[i] || '', freightValues[i + 1] || '']
+        .filter(Boolean)
+        .join('\n'),
     )
   }
 

@@ -14,12 +14,21 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { createCategory, deleteCategory, getCategories } from '@/lib/category-api'
+import {
+  createCategory,
+  deleteCategory,
+  getCategories,
+} from '@/lib/category-api'
 
-export const Route = createFileRoute('/_appbar/_sidebar/subscriptions/categories')({
+export const Route = createFileRoute(
+  '/_appbar/_sidebar/subscriptions/categories',
+)({
   component: RouteComponent,
   beforeLoad: () => {
-    if (typeof window !== 'undefined' && !can('subscriptions.categories', 'read')) {
+    if (
+      typeof window !== 'undefined' &&
+      !can('subscriptions.categories', 'read')
+    ) {
       throw redirect({ to: '/' })
     }
   },
@@ -30,7 +39,12 @@ function RouteComponent() {
   const [showForm, setShowForm] = useState(false)
   const [formName, setFormName] = useState('')
 
-  const { data: categories, isLoading, isError, error } = useQuery({
+  const {
+    data: categories,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ['subscriptionCategories'],
     queryFn: getCategories,
   })
@@ -73,28 +87,36 @@ function RouteComponent() {
             className="h-6 w-6"
             onClick={() => (showForm ? closeForm() : setShowForm(true))}
           >
-            {showForm ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+            {showForm ? (
+              <X className="h-3 w-3" />
+            ) : (
+              <Plus className="h-3 w-3" />
+            )}
           </Button>
         </div>
 
         {isLoading ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : isError ? (
-          <p className="text-destructive">{(error).message}</p>
+          <p className="text-destructive">{error.message}</p>
         ) : !categories || categories.length === 0 ? (
           <p className="text-muted-foreground text-sm">No categories found.</p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="font-bold text-foreground">Name</TableHead>
+                <TableHead className="font-bold text-foreground">
+                  Name
+                </TableHead>
                 <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {categories.map((cat) => (
                 <TableRow key={cat._id}>
-                  <TableCell className="text-sm text-muted-foreground">{cat.name}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {cat.name}
+                  </TableCell>
                   <TableCell>
                     <button
                       type="button"
@@ -112,7 +134,7 @@ function RouteComponent() {
         )}
         {deleteMutation.isError && (
           <p className="mt-2 text-sm text-destructive">
-            {(deleteMutation.error).message}
+            {deleteMutation.error.message}
           </p>
         )}
       </div>
@@ -125,7 +147,10 @@ function RouteComponent() {
         )}
       >
         {showForm && (
-          <form onSubmit={handleSubmit} className="flex h-full w-80 flex-col gap-3 p-4">
+          <form
+            onSubmit={handleSubmit}
+            className="flex h-full w-80 flex-col gap-3 p-4"
+          >
             <h3 className="text-sm font-semibold">New Category</h3>
             <Input
               placeholder="Category name"
@@ -135,10 +160,14 @@ function RouteComponent() {
             />
             {addMutation.isError && (
               <p className="text-sm text-destructive">
-                {(addMutation.error).message}
+                {addMutation.error.message}
               </p>
             )}
-            <Button type="submit" className="mt-1" disabled={addMutation.isPending}>
+            <Button
+              type="submit"
+              className="mt-1"
+              disabled={addMutation.isPending}
+            >
               {addMutation.isPending ? 'Adding...' : 'Add'}
             </Button>
           </form>

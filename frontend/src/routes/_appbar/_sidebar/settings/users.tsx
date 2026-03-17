@@ -1,15 +1,20 @@
-import { createFileRoute, redirect, useNavigate, useSearch } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  redirect,
+  useNavigate,
+  useSearch,
+} from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react'
-import type {User} from '@/lib/users-api';
-import type {Role} from '@/lib/roles-api';
+import type { User } from '@/lib/users-api'
+import type { Role } from '@/lib/roles-api'
 import { cn } from '@/lib/utils'
 import { can } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {  createUser, deleteUser, getUsers, updateUser } from '@/lib/users-api'
-import {  getPermissionManifest, getRoles } from '@/lib/roles-api'
+import { createUser, deleteUser, getUsers, updateUser } from '@/lib/users-api'
+import { getPermissionManifest, getRoles } from '@/lib/roles-api'
 import {
   Dialog,
   DialogClose,
@@ -41,13 +46,20 @@ function RouteComponent() {
   const [addRole, setAddRole] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
 
-  const { data: users = [], isLoading } = useQuery({ queryKey: ['users'], queryFn: getUsers })
-  const { data: roles = [] } = useQuery({ queryKey: ['roles'], queryFn: getRoles })
+  const { data: users = [], isLoading } = useQuery({
+    queryKey: ['users'],
+    queryFn: getUsers,
+  })
+  const { data: roles = [] } = useQuery({
+    queryKey: ['roles'],
+    queryFn: getRoles,
+  })
 
   const selectedUser = users.find((u) => u._id === selected) ?? null
 
   const createMutation = useMutation({
-    mutationFn: () => createUser({ email: addEmail.trim(), role: addRole || null }),
+    mutationFn: () =>
+      createUser({ email: addEmail.trim(), role: addRole || null }),
     onSuccess: (user) => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
       void navigate({ to: '/settings/users', search: { selected: user._id } })
@@ -80,9 +92,19 @@ function RouteComponent() {
         <div className="flex items-center justify-between border-b px-4 py-3">
           <span className="text-sm font-semibold">Users</span>
           {can('settings.users', 'create') && (
-          <Button size="sm" variant="ghost" onClick={() => { setShowAddForm(true); void navigate({ to: '/settings/users', search: { selected: undefined } }) }}>
-            <Plus className="h-4 w-4" />
-          </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setShowAddForm(true)
+                void navigate({
+                  to: '/settings/users',
+                  search: { selected: undefined },
+                })
+              }}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
           )}
         </div>
         {isLoading ? (
@@ -92,14 +114,22 @@ function RouteComponent() {
             {users.map((u) => (
               <button
                 key={u._id}
-                onClick={() => { void navigate({ to: '/settings/users', search: { selected: u._id } }); setShowAddForm(false) }}
+                onClick={() => {
+                  void navigate({
+                    to: '/settings/users',
+                    search: { selected: u._id },
+                  })
+                  setShowAddForm(false)
+                }}
                 className={cn(
                   'w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-accent',
                   selected === u._id && 'bg-accent/80 text-accent-foreground',
                 )}
               >
                 <div className="truncate font-medium">{u.email}</div>
-                <div className="truncate text-xs text-muted-foreground">{u.role ?? 'No role'}</div>
+                <div className="truncate text-xs text-muted-foreground">
+                  {u.role ?? 'No role'}
+                </div>
               </button>
             ))}
           </div>
@@ -116,7 +146,10 @@ function RouteComponent() {
             onEmailChange={setAddEmail}
             onRoleChange={setAddRole}
             onSubmit={handleAddSubmit}
-            onCancel={() => { setShowAddForm(false); setFormError(null) }}
+            onCancel={() => {
+              setShowAddForm(false)
+              setFormError(null)
+            }}
             isPending={createMutation.isPending}
             error={formError}
           />
@@ -127,11 +160,15 @@ function RouteComponent() {
             roles={roles}
             onDelete={() => deleteMutation.mutate(selectedUser._id)}
             isDeleting={deleteMutation.isPending}
-            onUpdated={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
+            onUpdated={() =>
+              queryClient.invalidateQueries({ queryKey: ['users'] })
+            }
           />
         )}
         {!showAddForm && !selectedUser && (
-          <p className="text-sm text-muted-foreground">Select a user or add a new one.</p>
+          <p className="text-sm text-muted-foreground">
+            Select a user or add a new one.
+          </p>
         )}
       </div>
     </div>
@@ -139,8 +176,15 @@ function RouteComponent() {
 }
 
 function AddUserForm({
-  roles, email, role, onEmailChange, onRoleChange,
-  onSubmit, onCancel, isPending, error,
+  roles,
+  email,
+  role,
+  onEmailChange,
+  onRoleChange,
+  onSubmit,
+  onCancel,
+  isPending,
+  error,
 }: {
   roles: Array<Role>
   email: string
@@ -175,21 +219,31 @@ function AddUserForm({
         >
           <option value="">— None —</option>
           {roles.map((r) => (
-            <option key={r._id} value={r.name}>{r.name}</option>
+            <option key={r._id} value={r.name}>
+              {r.name}
+            </option>
           ))}
         </select>
       </div>
       {error && <p className="text-sm text-red-500">{error}</p>}
       <div className="flex gap-2">
-        <Button type="submit" disabled={isPending}>{isPending ? 'Saving…' : 'Add User'}</Button>
-        <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
+        <Button type="submit" disabled={isPending}>
+          {isPending ? 'Saving…' : 'Add User'}
+        </Button>
+        <Button type="button" variant="ghost" onClick={onCancel}>
+          Cancel
+        </Button>
       </div>
     </form>
   )
 }
 
 function UserDetail({
-  user, roles, onDelete, isDeleting, onUpdated,
+  user,
+  roles,
+  onDelete,
+  isDeleting,
+  onUpdated,
 }: {
   user: User
   roles: Array<Role>
@@ -209,7 +263,7 @@ function UserDetail({
 
   const rolePerms = useMemo<Record<string, unknown> | null>(() => {
     const roleObj = roles.find((r) => r.name === (editRole || user.role))
-    return roleObj ? (roleObj.permissions) : null
+    return roleObj ? roleObj.permissions : null
   }, [roles, editRole, user.role])
 
   const initialResolved = useMemo(() => {
@@ -219,7 +273,8 @@ function UserDetail({
     return deepMergePerms(base, user.permissionOverrides)
   }, [rolePerms, user.permissionOverrides, manifest])
 
-  const [resolved, setResolved] = useState<Record<string, unknown>>(initialResolved)
+  const [resolved, setResolved] =
+    useState<Record<string, unknown>>(initialResolved)
 
   // Reset editRole when the selected user changes
   useEffect(() => {
@@ -256,7 +311,10 @@ function UserDetail({
     setSaveMsg(null)
     try {
       const overrides = rolePerms ? diffPerms(rolePerms, resolved) : resolved
-      await updateUser(user._id, { role: editRole || null, permissionOverrides: overrides })
+      await updateUser(user._id, {
+        role: editRole || null,
+        permissionOverrides: overrides,
+      })
       onUpdated()
       setSaveMsg('Saved.')
     } catch (err: unknown) {
@@ -271,23 +329,27 @@ function UserDetail({
       {/* Header */}
       <div className="flex items-center gap-3">
         {can('settings.users', 'delete') && (
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={() => setConfirmDelete(true)}
-          disabled={isDeleting}
-        >
-          <Trash2 className="mr-1.5 h-4 w-4" />
-          Delete
-        </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setConfirmDelete(true)}
+            disabled={isDeleting}
+          >
+            <Trash2 className="mr-1.5 h-4 w-4" />
+            Delete
+          </Button>
         )}
         {can('settings.users', 'update') && (
-        <Button size="sm" onClick={handleSave} disabled={saving}>
-          {saving ? 'Saving…' : 'Save'}
-        </Button>
+          <Button size="sm" onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving…' : 'Save'}
+          </Button>
         )}
-        {saveMsg && <span className="text-sm text-muted-foreground">{saveMsg}</span>}
-        <h2 className="ml-auto text-base font-semibold truncate text-muted-foreground">{user.email}</h2>
+        {saveMsg && (
+          <span className="text-sm text-muted-foreground">{saveMsg}</span>
+        )}
+        <h2 className="ml-auto text-base font-semibold truncate text-muted-foreground">
+          {user.email}
+        </h2>
       </div>
 
       {/* Role */}
@@ -295,12 +357,17 @@ function UserDetail({
         <label className="text-sm font-medium">Role</label>
         <select
           value={editRole}
-          onChange={(e) => { setEditRole(e.target.value); setSaveMsg(null) }}
+          onChange={(e) => {
+            setEditRole(e.target.value)
+            setSaveMsg(null)
+          }}
           className="rounded-md border bg-background px-3 py-2 text-sm"
         >
           <option value="">— None —</option>
           {roles.map((r) => (
-            <option key={r._id} value={r.name}>{r.name}</option>
+            <option key={r._id} value={r.name}>
+              {r.name}
+            </option>
           ))}
         </select>
       </div>
@@ -322,24 +389,32 @@ function UserDetail({
         <DialogPortal>
           <DialogOverlay className="fixed inset-0 z-50 bg-black/50" />
           <DialogContent className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 max-w-sm w-full space-y-4 rounded-lg border bg-background p-6 shadow-lg">
-          <DialogTitle className="text-base font-semibold">Delete user?</DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">
-            This will permanently remove <strong>{user.email}</strong>. This action cannot be undone.
-          </DialogDescription>
-          <div className="flex justify-end gap-2">
-            <DialogClose asChild>
-              <Button variant="ghost" size="sm">Cancel</Button>
-            </DialogClose>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => { setConfirmDelete(false); onDelete() }}
-              disabled={isDeleting}
-            >
-              {isDeleting ? 'Deleting…' : 'Confirm'}
-            </Button>
-          </div>
-        </DialogContent>
+            <DialogTitle className="text-base font-semibold">
+              Delete user?
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              This will permanently remove <strong>{user.email}</strong>. This
+              action cannot be undone.
+            </DialogDescription>
+            <div className="flex justify-end gap-2">
+              <DialogClose asChild>
+                <Button variant="ghost" size="sm">
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  setConfirmDelete(false)
+                  onDelete()
+                }}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting…' : 'Confirm'}
+              </Button>
+            </div>
+          </DialogContent>
         </DialogPortal>
       </Dialog>
     </div>
@@ -347,7 +422,12 @@ function UserDetail({
 }
 
 function OverridesEditor({
-  manifest, resolved, rolePerms, roleName, diffCount, onChange,
+  manifest,
+  resolved,
+  rolePerms,
+  roleName,
+  diffCount,
+  onChange,
 }: {
   manifest: Manifest
   resolved: Record<string, unknown>
@@ -374,7 +454,11 @@ function OverridesEditor({
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1.5 text-sm font-medium"
       >
-        {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        {open ? (
+          <ChevronDown className="h-4 w-4" />
+        ) : (
+          <ChevronRight className="h-4 w-4" />
+        )}
         Permissions
         {diffCount > 0 && (
           <span className="ml-1 rounded-full bg-accent px-2 py-0.5 text-xs">
@@ -387,14 +471,20 @@ function OverridesEditor({
         <div className="rounded-md border p-4 space-y-4">
           {rolePerms ? (
             <p className="text-xs text-muted-foreground">
-              Showing resolved permissions for role <strong>{roleName}</strong>. Changes are stored as overrides on top of the role.
+              Showing resolved permissions for role <strong>{roleName}</strong>.
+              Changes are stored as overrides on top of the role.
             </p>
           ) : (
             <p className="text-xs text-muted-foreground">
-              No role assigned. Permissions set here apply directly to this user.
+              No role assigned. Permissions set here apply directly to this
+              user.
             </p>
           )}
-          <PermissionTree manifest={manifest} getValue={getValue} onChange={onChange} />
+          <PermissionTree
+            manifest={manifest}
+            getValue={getValue}
+            onChange={onChange}
+          />
         </div>
       )}
     </div>
@@ -403,7 +493,15 @@ function OverridesEditor({
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-type Manifest = { modules: Record<string, { actions?: Array<string>; submodules?: Record<string, { actions: Array<string> }> }> }
+type Manifest = {
+  modules: Record<
+    string,
+    {
+      actions?: Array<string>
+      submodules?: Record<string, { actions: Array<string> }>
+    }
+  >
+}
 
 function buildAllFalse(manifest: Manifest): Record<string, unknown> {
   const result: Record<string, unknown> = {}
@@ -431,10 +529,16 @@ function deepMergePerms(
   for (const [key, val] of Object.entries(overrides)) {
     if (typeof val === 'object' && val !== null) {
       if (!result[key] || typeof result[key] !== 'object') result[key] = {}
-      for (const [subKey, subVal] of Object.entries(val as Record<string, unknown>)) {
+      for (const [subKey, subVal] of Object.entries(
+        val as Record<string, unknown>,
+      )) {
         if (typeof subVal === 'object' && subVal !== null) {
-          if (!(result[key] as Record<string, unknown>)[subKey]) (result[key] as Record<string, unknown>)[subKey] = {}
-          Object.assign((result[key] as Record<string, Record<string, unknown>>)[subKey], subVal)
+          if (!(result[key] as Record<string, unknown>)[subKey])
+            (result[key] as Record<string, unknown>)[subKey] = {}
+          Object.assign(
+            (result[key] as Record<string, Record<string, unknown>>)[subKey],
+            subVal,
+          )
         } else {
           ;(result[key] as Record<string, unknown>)[subKey] = subVal
         }
@@ -452,20 +556,33 @@ function diffPerms(
 ): Record<string, unknown> {
   const diff: Record<string, unknown> = {}
   for (const [mod, val] of Object.entries(resolved)) {
-    const roleVal = (rolePerms)[mod]
+    const roleVal = rolePerms[mod]
     if (typeof val === 'object' && val !== null) {
       const modDiff: Record<string, unknown> = {}
-      for (const [key, keyVal] of Object.entries(val as Record<string, unknown>)) {
+      for (const [key, keyVal] of Object.entries(
+        val as Record<string, unknown>,
+      )) {
         if (typeof keyVal === 'object' && keyVal !== null) {
-          const roleSubVal = roleVal && typeof roleVal === 'object' ? (roleVal as Record<string, unknown>)[key] : undefined
+          const roleSubVal =
+            roleVal && typeof roleVal === 'object'
+              ? (roleVal as Record<string, unknown>)[key]
+              : undefined
           const subDiff: Record<string, unknown> = {}
-          for (const [action, actionVal] of Object.entries(keyVal as Record<string, unknown>)) {
-            const roleAction = roleSubVal && typeof roleSubVal === 'object' ? (roleSubVal as Record<string, unknown>)[action] : undefined
+          for (const [action, actionVal] of Object.entries(
+            keyVal as Record<string, unknown>,
+          )) {
+            const roleAction =
+              roleSubVal && typeof roleSubVal === 'object'
+                ? (roleSubVal as Record<string, unknown>)[action]
+                : undefined
             if (actionVal !== roleAction) subDiff[action] = actionVal
           }
           if (Object.keys(subDiff).length > 0) modDiff[key] = subDiff
         } else {
-          const roleAction = roleVal && typeof roleVal === 'object' ? (roleVal as Record<string, unknown>)[key] : undefined
+          const roleAction =
+            roleVal && typeof roleVal === 'object'
+              ? (roleVal as Record<string, unknown>)[key]
+              : undefined
           if (keyVal !== roleAction) modDiff[key] = keyVal
         }
       }
@@ -475,20 +592,36 @@ function diffPerms(
   return diff
 }
 
-function countDiff(rolePerms: Record<string, unknown>, resolved: Record<string, unknown>): number {
+function countDiff(
+  rolePerms: Record<string, unknown>,
+  resolved: Record<string, unknown>,
+): number {
   let count = 0
   for (const [mod, val] of Object.entries(resolved)) {
     const roleVal = rolePerms[mod]
     if (typeof val === 'object' && val !== null) {
-      for (const [key, keyVal] of Object.entries(val as Record<string, unknown>)) {
+      for (const [key, keyVal] of Object.entries(
+        val as Record<string, unknown>,
+      )) {
         if (typeof keyVal === 'object' && keyVal !== null) {
-          const roleSubVal = roleVal && typeof roleVal === 'object' ? (roleVal as Record<string, unknown>)[key] : undefined
-          for (const [action, actionVal] of Object.entries(keyVal as Record<string, unknown>)) {
-            const roleAction = roleSubVal && typeof roleSubVal === 'object' ? (roleSubVal as Record<string, unknown>)[action] : undefined
+          const roleSubVal =
+            roleVal && typeof roleVal === 'object'
+              ? (roleVal as Record<string, unknown>)[key]
+              : undefined
+          for (const [action, actionVal] of Object.entries(
+            keyVal as Record<string, unknown>,
+          )) {
+            const roleAction =
+              roleSubVal && typeof roleSubVal === 'object'
+                ? (roleSubVal as Record<string, unknown>)[action]
+                : undefined
             if (actionVal !== roleAction) count++
           }
         } else {
-          const roleAction = roleVal && typeof roleVal === 'object' ? (roleVal as Record<string, unknown>)[key] : undefined
+          const roleAction =
+            roleVal && typeof roleVal === 'object'
+              ? (roleVal as Record<string, unknown>)[key]
+              : undefined
           if (keyVal !== roleAction) count++
         }
       }
@@ -507,7 +640,15 @@ export function PermissionTree({
   onChange,
   showUndefined = false,
 }: {
-  manifest: { modules: Record<string, { actions?: Array<string>; submodules?: Record<string, { actions: Array<string> }> }> }
+  manifest: {
+    modules: Record<
+      string,
+      {
+        actions?: Array<string>
+        submodules?: Record<string, { actions: Array<string> }>
+      }
+    >
+  }
   getValue: (path: Array<string>) => boolean | undefined
   onChange: (path: Array<string>, value: boolean) => void
   showUndefined?: boolean
@@ -516,7 +657,9 @@ export function PermissionTree({
     <div className="space-y-4">
       {Object.entries(manifest.modules).map(([mod, def]) => (
         <div key={mod}>
-          <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{mod}</div>
+          <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {mod}
+          </div>
           {def.actions ? (
             <ActionRow
               path={[mod]}
@@ -529,7 +672,9 @@ export function PermissionTree({
             <div className="space-y-1 pl-3">
               {Object.entries(def.submodules ?? {}).map(([sub, subDef]) => (
                 <div key={sub}>
-                  <div className="mb-0.5 text-xs font-medium text-foreground/70">{sub}</div>
+                  <div className="mb-0.5 text-xs font-medium text-foreground/70">
+                    {sub}
+                  </div>
                   <ActionRow
                     path={[mod, sub]}
                     actions={subDef.actions}
@@ -548,7 +693,11 @@ export function PermissionTree({
 }
 
 function ActionRow({
-  path, actions, getValue, onChange, showUndefined,
+  path,
+  actions,
+  getValue,
+  onChange,
+  showUndefined,
 }: {
   path: Array<string>
   actions: Array<string>
@@ -562,7 +711,13 @@ function ActionRow({
         const val = getValue([...path, action])
         const isUndefined = val === undefined
         return (
-          <label key={action} className={cn('flex cursor-pointer items-center gap-1.5 text-sm', isUndefined && showUndefined && 'opacity-50')}>
+          <label
+            key={action}
+            className={cn(
+              'flex cursor-pointer items-center gap-1.5 text-sm',
+              isUndefined && showUndefined && 'opacity-50',
+            )}
+          >
             <input
               type="checkbox"
               checked={!!val}

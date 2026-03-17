@@ -1,5 +1,3 @@
-
-
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Copy, RefreshCcw } from 'lucide-react'
@@ -15,7 +13,6 @@ export const Route = createFileRoute('/_appbar/_sidebar/cipher/lock')({
     }
   },
 })
-
 
 function RouteComponent() {
   const [text, setText] = useState('')
@@ -57,14 +54,16 @@ function RouteComponent() {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="w-full max-w-xl p-6 rounded shadow bg-background">
-        <h1 className="text-2xl font-bold mb-4 text-center">Lock (Encrypt) Information</h1>
+        <h1 className="text-2xl font-bold mb-4 text-center">
+          Lock (Encrypt) Information
+        </h1>
         {!result ? (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <textarea
               className="border rounded px-2 py-1 min-h-[100px]"
               placeholder="Enter text to encrypt..."
               value={text}
-              onChange={e => setText(e.target.value)}
+              onChange={(e) => setText(e.target.value)}
               required
             />
             <Button type="submit" disabled={loading}>
@@ -86,9 +85,15 @@ function RouteComponent() {
                   title="Copy key"
                   aria-label="Copy key"
                 >
-                  <Copy className={copied === 'key' ? 'size-4 text-green-600' : 'size-4'} />
+                  <Copy
+                    className={
+                      copied === 'key' ? 'size-4 text-green-600' : 'size-4'
+                    }
+                  />
                 </Button>
-                {copied === 'key' && <span className="text-green-600 text-xs ml-1">Copied!</span>}
+                {copied === 'key' && (
+                  <span className="text-green-600 text-xs ml-1">Copied!</span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <b>ID:</b>
@@ -101,12 +106,24 @@ function RouteComponent() {
                   title="Copy id"
                   aria-label="Copy id"
                 >
-                  <Copy className={copied === 'id' ? 'size-4 text-green-600' : 'size-4'} />
+                  <Copy
+                    className={
+                      copied === 'id' ? 'size-4 text-green-600' : 'size-4'
+                    }
+                  />
                 </Button>
-                {copied === 'id' && <span className="text-green-600 text-xs ml-1">Copied!</span>}
+                {copied === 'id' && (
+                  <span className="text-green-600 text-xs ml-1">Copied!</span>
+                )}
               </div>
             </div>
-            <Button type="button" variant="outline" onClick={handleRefresh} title="Back to form" size="icon">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleRefresh}
+              title="Back to form"
+              size="icon"
+            >
               <RefreshCcw className="size-5" />
             </Button>
           </div>

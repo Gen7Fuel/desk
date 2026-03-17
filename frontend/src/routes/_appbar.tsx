@@ -1,6 +1,27 @@
-import { Link, Outlet, createFileRoute, redirect, useLocation, useMatchRoute, useNavigate } from '@tanstack/react-router'
+import {
+  Link,
+  Outlet,
+  createFileRoute,
+  redirect,
+  useLocation,
+  useMatchRoute,
+  useNavigate,
+} from '@tanstack/react-router'
 import { useEffect } from 'react'
-import { Binary, CreditCard, Fuel, Globe, KeyRound, LayoutGrid, Lock, LogOut, MonitorSmartphone, Package, Settings, User } from 'lucide-react'
+import {
+  Binary,
+  CreditCard,
+  Fuel,
+  Globe,
+  KeyRound,
+  LayoutGrid,
+  Lock,
+  LogOut,
+  MonitorSmartphone,
+  Package,
+  Settings,
+  User,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getTokenPayload } from '@/lib/permissions'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -51,7 +72,10 @@ function RouteComponent() {
   const isAccessActive = !!matchRoute({ to: '/access', fuzzy: true })
   const isAssetsActive = !!matchRoute({ to: '/assets', fuzzy: true })
   const isCredentialsActive = !!matchRoute({ to: '/credentials', fuzzy: true })
-  const isSubscriptionsActive = !!matchRoute({ to: '/subscriptions', fuzzy: true })
+  const isSubscriptionsActive = !!matchRoute({
+    to: '/subscriptions',
+    fuzzy: true,
+  })
   const isFuelActive = !!matchRoute({ to: '/fuel-invoicing', fuzzy: true })
   const isCipherActive = !!matchRoute({ to: '/cipher', fuzzy: true })
   const isInventoryActive = !!matchRoute({ to: '/inventory', fuzzy: true })
@@ -76,168 +100,178 @@ function RouteComponent() {
           </Tooltip>
           <hr className="w-8 border-border" />
           {can('personnel', 'read') && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                to="/personnel"
-                className={cn(
-                  'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
-                  isPersonnelActive && 'bg-accent/80 text-accent-foreground',
-                )}
-              >
-                <User className="h-5 w-5" />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Personnel</TooltipContent>
-          </Tooltip>
-          )}
-          {(can('access.personnel', 'read') || can('access.resources', 'read')) && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                to="/access"
-                className={cn(
-                  'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
-                  isAccessActive && 'bg-accent/80 text-accent-foreground',
-                )}
-              >
-                <Lock className="h-5 w-5" />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Access</TooltipContent>
-          </Tooltip>
-          )}
-          {(can('assets.devices', 'read') || can('assets.personnel', 'read') || can('assets.location', 'read')) && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                to="/assets"
-                className={cn(
-                  'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
-                  isAssetsActive && 'bg-accent/80 text-accent-foreground',
-                )}
-              >
-                <MonitorSmartphone className="h-5 w-5" />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Assets</TooltipContent>
-          </Tooltip>
-          )}
-          {(can('credentials.list', 'read') || can('credentials.categories', 'read')) && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                to="/credentials"
-                search={{ selected: '' }}
-                className={cn(
-                  'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
-                  isCredentialsActive && 'bg-accent/80 text-accent-foreground',
-                )}
-              >
-                <KeyRound className="h-5 w-5" />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Credentials</TooltipContent>
-          </Tooltip>
-          )}
-          {(can('subscriptions.list', 'read') || can('subscriptions.categories', 'read')) && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                to="/subscriptions"
-                search={{ selected: '' }}
-                className={cn(
-                  'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
-                  isSubscriptionsActive && 'bg-accent/80 text-accent-foreground',
-                )}
-              >
-                <CreditCard className="h-5 w-5" />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Subscriptions</TooltipContent>
-          </Tooltip>
-          )}
-          {can('fuelInvoicing', 'read') && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                to="/fuel-invoicing"
-                search={{ selected: '' }}
-                className={cn(
-                  'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
-                  isFuelActive && 'bg-accent/80 text-accent-foreground',
-                )}
-              >
-                <Fuel className="h-5 w-5" />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Fuel Invoicing</TooltipContent>
-          </Tooltip>
-          )}
-          {(can('cipher.lock', 'read') || can('cipher.unlock', 'read')) && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                to="/cipher"
-                search={{ selected: '' }}
-                className={cn(
-                  'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
-                  isCipherActive && 'bg-accent/80 text-accent-foreground',
-                )}
-              >
-                <Binary className="h-5 w-5" />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Cipher</TooltipContent>
-          </Tooltip>
-          )}
-          {can('inventory.coremarkInitialOrder', 'read') && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                to="/inventory"
-                className={cn(
-                  'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
-                  isInventoryActive && 'bg-accent/80 text-accent-foreground',
-                )}
-              >
-                <Package className="h-5 w-5" />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Inventory</TooltipContent>
-          </Tooltip>
-          )}
-          {can('hub.cdn', 'read') && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                to="/hub/cdn"
-                className={cn(
-                  'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
-                  isHubActive && 'bg-accent/80 text-accent-foreground',
-                )}
-              >
-                <Globe className="h-5 w-5" />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">The Hub</TooltipContent>
-          </Tooltip>
-          )}
-          <div className="mt-auto flex flex-col items-center gap-2">
-            {(can('settings.users', 'read') || can('settings.roles', 'read')) && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link
+                  to="/personnel"
+                  className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                    isPersonnelActive && 'bg-accent/80 text-accent-foreground',
+                  )}
+                >
+                  <User className="h-5 w-5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Personnel</TooltipContent>
+            </Tooltip>
+          )}
+          {(can('access.personnel', 'read') ||
+            can('access.resources', 'read')) && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/access"
+                  className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                    isAccessActive && 'bg-accent/80 text-accent-foreground',
+                  )}
+                >
+                  <Lock className="h-5 w-5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Access</TooltipContent>
+            </Tooltip>
+          )}
+          {(can('assets.devices', 'read') ||
+            can('assets.personnel', 'read') ||
+            can('assets.location', 'read')) && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/assets"
+                  className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                    isAssetsActive && 'bg-accent/80 text-accent-foreground',
+                  )}
+                >
+                  <MonitorSmartphone className="h-5 w-5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Assets</TooltipContent>
+            </Tooltip>
+          )}
+          {(can('credentials.list', 'read') ||
+            can('credentials.categories', 'read')) && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/credentials"
+                  search={{ selected: '' }}
+                  className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                    isCredentialsActive &&
+                      'bg-accent/80 text-accent-foreground',
+                  )}
+                >
+                  <KeyRound className="h-5 w-5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Credentials</TooltipContent>
+            </Tooltip>
+          )}
+          {(can('subscriptions.list', 'read') ||
+            can('subscriptions.categories', 'read')) && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/subscriptions"
+                  search={{ selected: '' }}
+                  className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                    isSubscriptionsActive &&
+                      'bg-accent/80 text-accent-foreground',
+                  )}
+                >
+                  <CreditCard className="h-5 w-5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Subscriptions</TooltipContent>
+            </Tooltip>
+          )}
+          {can('fuelInvoicing', 'read') && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/fuel-invoicing"
+                  search={{ selected: '' }}
+                  className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                    isFuelActive && 'bg-accent/80 text-accent-foreground',
+                  )}
+                >
+                  <Fuel className="h-5 w-5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Fuel Invoicing</TooltipContent>
+            </Tooltip>
+          )}
+          {(can('cipher.lock', 'read') || can('cipher.unlock', 'read')) && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/cipher"
+                  search={{ selected: '' }}
+                  className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                    isCipherActive && 'bg-accent/80 text-accent-foreground',
+                  )}
+                >
+                  <Binary className="h-5 w-5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Cipher</TooltipContent>
+            </Tooltip>
+          )}
+          {can('inventory.coremarkInitialOrder', 'read') && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/inventory"
+                  className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                    isInventoryActive && 'bg-accent/80 text-accent-foreground',
+                  )}
+                >
+                  <Package className="h-5 w-5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Inventory</TooltipContent>
+            </Tooltip>
+          )}
+          {can('hub.cdn', 'read') && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/hub/cdn"
+                  className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                    isHubActive && 'bg-accent/80 text-accent-foreground',
+                  )}
+                >
+                  <Globe className="h-5 w-5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">The Hub</TooltipContent>
+            </Tooltip>
+          )}
+          <div className="mt-auto flex flex-col items-center gap-2">
+            {(can('settings.users', 'read') ||
+              can('settings.roles', 'read')) && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
                     to="/settings/users"
                     className={cn(
                       'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
-                      isSettingsActive && 'bg-accent/80 text-accent-foreground'
-                    )} search={{ selected: 'users' }}>
-                  <Settings className="h-5 w-5" />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Settings</TooltipContent>
-            </Tooltip>
+                      isSettingsActive && 'bg-accent/80 text-accent-foreground',
+                    )}
+                    search={{ selected: 'users' }}
+                  >
+                    <Settings className="h-5 w-5" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">Settings</TooltipContent>
+              </Tooltip>
             )}
             <Tooltip>
               <TooltipTrigger asChild>

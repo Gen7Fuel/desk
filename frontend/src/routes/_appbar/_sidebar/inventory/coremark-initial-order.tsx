@@ -2,16 +2,28 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import JSZip from 'jszip'
-import { Download, FileSpreadsheet, FolderDown, Loader2, UploadCloud, X } from 'lucide-react'
+import {
+  Download,
+  FileSpreadsheet,
+  FolderDown,
+  Loader2,
+  UploadCloud,
+  X,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { can } from '@/lib/permissions'
 import { apiFetch } from '@/lib/api'
 
-export const Route = createFileRoute('/_appbar/_sidebar/inventory/coremark-initial-order')({
+export const Route = createFileRoute(
+  '/_appbar/_sidebar/inventory/coremark-initial-order',
+)({
   component: RouteComponent,
   beforeLoad: () => {
-    if (typeof window !== 'undefined' && !can('inventory.coremarkInitialOrder', 'read')) {
+    if (
+      typeof window !== 'undefined' &&
+      !can('inventory.coremarkInitialOrder', 'read')
+    ) {
       throw redirect({ to: '/' })
     }
   },
@@ -32,10 +44,15 @@ interface ProcessResponse {
 async function processExcel(file: File): Promise<ProcessResponse> {
   const form = new FormData()
   form.append('file', file)
-  const res = await apiFetch('/api/inventory/coremark/process', { method: 'POST', body: form })
+  const res = await apiFetch('/api/inventory/coremark/process', {
+    method: 'POST',
+    body: form,
+  })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error((body as { error?: string }).error ?? `Server error ${res.status}`)
+    throw new Error(
+      (body as { error?: string }).error ?? `Server error ${res.status}`,
+    )
   }
   return res.json()
 }
@@ -160,15 +177,24 @@ function RouteComponent() {
             <FileSpreadsheet className="h-12 w-12 text-primary" />
             <div className="text-center">
               <p className="font-medium">{file.name}</p>
-              <p className="text-sm text-muted-foreground">{formatBytes(file.size)}</p>
+              <p className="text-sm text-muted-foreground">
+                {formatBytes(file.size)}
+              </p>
             </div>
           </>
         ) : (
           <>
-            <UploadCloud className={cn('h-12 w-12 transition-colors', isDragging ? 'text-primary' : 'text-muted-foreground')} />
+            <UploadCloud
+              className={cn(
+                'h-12 w-12 transition-colors',
+                isDragging ? 'text-primary' : 'text-muted-foreground',
+              )}
+            />
             <div className="text-center">
               <p className="font-medium">Drop your Excel file here</p>
-              <p className="text-sm text-muted-foreground">or click to browse — .xlsx and .xls accepted</p>
+              <p className="text-sm text-muted-foreground">
+                or click to browse — .xlsx and .xls accepted
+              </p>
             </div>
           </>
         )}
@@ -177,7 +203,7 @@ function RouteComponent() {
       {fileError && <p className="text-sm text-destructive">{fileError}</p>}
 
       {mutation.isError && (
-        <p className="text-sm text-destructive">{(mutation.error).message}</p>
+        <p className="text-sm text-destructive">{mutation.error.message}</p>
       )}
 
       {/* Actions */}
@@ -196,7 +222,11 @@ function RouteComponent() {
               'Import'
             )}
           </Button>
-          <Button variant="outline" onClick={clearAll} disabled={mutation.isPending}>
+          <Button
+            variant="outline"
+            onClick={clearAll}
+            disabled={mutation.isPending}
+          >
             <X className="mr-2 h-4 w-4" />
             Remove
           </Button>
@@ -208,9 +238,14 @@ function RouteComponent() {
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3">
             <p className="text-sm font-medium">
-              Generated {mutation.data.results.length} order file{mutation.data.results.length !== 1 ? 's' : ''}:
+              Generated {mutation.data.results.length} order file
+              {mutation.data.results.length !== 1 ? 's' : ''}:
             </p>
-            <Button size="sm" variant="outline" onClick={() => downloadAll(mutation.data.results)}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => downloadAll(mutation.data.results)}
+            >
               <FolderDown className="mr-2 h-4 w-4" />
               Download All
             </Button>
@@ -224,7 +259,9 @@ function RouteComponent() {
               >
                 <div>
                   <p className="text-sm font-medium">{r.filename}</p>
-                  <p className="text-xs text-muted-foreground">{r.itemCount} item{r.itemCount !== 1 ? 's' : ''}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {r.itemCount} item{r.itemCount !== 1 ? 's' : ''}
+                  </p>
                 </div>
                 <Download className="h-4 w-4 shrink-0 text-muted-foreground" />
               </button>
