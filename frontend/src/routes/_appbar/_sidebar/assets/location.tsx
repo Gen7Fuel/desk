@@ -6,7 +6,11 @@ import { cn } from '@/lib/utils'
 import { can } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { createLocation, getLocations, updateLocation } from '@/lib/location-api'
+import {
+  createLocation,
+  getLocations,
+  updateLocation,
+} from '@/lib/location-api'
 import { getPersonnel } from '@/lib/personnel-api'
 
 export interface OfficeLocation {
@@ -40,12 +44,15 @@ interface LocationMapProps {
 const LazyMap = lazy(async () => {
   const L = await import('leaflet')
   await import('leaflet/dist/leaflet.css')
-  const { MapContainer, TileLayer, Marker, Popup } = await import('react-leaflet')
+  const { MapContainer, TileLayer, Marker, Popup } =
+    await import('react-leaflet')
 
   // Fix default marker icons for bundlers
-  delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl
+  delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)
+    ._getIconUrl
   L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    iconRetinaUrl:
+      'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
     iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
     shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
   })
@@ -63,20 +70,31 @@ const LazyMap = lazy(async () => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {locations.map((office) => (
-          <Marker key={office._id ?? office.name} position={[office.lat, office.lng]}>
+          <Marker
+            key={office._id ?? office.name}
+            position={[office.lat, office.lng]}
+          >
             <Popup minWidth={280} maxWidth={400}>
               <div>
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <h3 className="text-base font-semibold">{office.name}</h3>
                   <button
                     onClick={() => onEditLocation(office)}
-                    style={{ fontSize: '0.75rem', padding: '2px 8px', border: '1px solid #d1d5db', borderRadius: 4, cursor: 'pointer', background: '#f9fafb' }}
+                    style={{
+                      fontSize: '0.75rem',
+                      padding: '2px 8px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: 4,
+                      cursor: 'pointer',
+                      background: '#f9fafb',
+                    }}
                   >
                     Edit
                   </button>
                 </div>
                 <p className="mb-1 text-sm text-muted-foreground">
-                  {office.devices.length} device{office.devices.length !== 1 ? 's' : ''}
+                  {office.devices.length} device
+                  {office.devices.length !== 1 ? 's' : ''}
                 </p>
                 {office.devices.length > 0 && (
                   <table className="w-full text-xs">
@@ -85,12 +103,17 @@ const LazyMap = lazy(async () => {
                         <th className="py-1 text-left font-medium">Type</th>
                         <th className="py-1 text-left font-medium">Model</th>
                         <th className="py-1 text-left font-medium">ID</th>
-                        <th className="py-1 text-left font-medium">Assigned To</th>
+                        <th className="py-1 text-left font-medium">
+                          Assigned To
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {office.devices.map((d) => (
-                        <tr key={d.identifier} className="border-b last:border-0">
+                        <tr
+                          key={d.identifier}
+                          className="border-b last:border-0"
+                        >
                           <td className="py-1">{d.type}</td>
                           <td className="py-1">{d.model}</td>
                           <td className="py-1 font-mono">{d.identifier}</td>
@@ -123,7 +146,12 @@ export const Route = createFileRoute('/_appbar/_sidebar/assets/location')({
 function RouteComponent() {
   const queryClient = useQueryClient()
 
-  const { data: locations = [], isLoading: isLoadingLocs, isError: isErrorLocs, error: locsError } = useQuery<Array<OfficeLocation>>({
+  const {
+    data: locations = [],
+    isLoading: isLoadingLocs,
+    isError: isErrorLocs,
+    error: locsError,
+  } = useQuery<Array<OfficeLocation>>({
     queryKey: ['locations'],
     queryFn: getLocations,
   })
@@ -151,7 +179,9 @@ function RouteComponent() {
 
   type FormMode = 'add' | 'edit' | null
   const [formMode, setFormMode] = useState<FormMode>(null)
-  const [editingLocation, setEditingLocation] = useState<MapLocation | null>(null)
+  const [editingLocation, setEditingLocation] = useState<MapLocation | null>(
+    null,
+  )
   const [nameInput, setNameInput] = useState('')
   const [latInput, setLatInput] = useState('')
   const [lngInput, setLngInput] = useState('')
@@ -192,7 +222,10 @@ function RouteComponent() {
   }
 
   function openAddForm() {
-    if (formMode === 'add') { closeForm(); return }
+    if (formMode === 'add') {
+      closeForm()
+      return
+    }
     closeForm()
     setFormMode('add')
   }
@@ -207,7 +240,11 @@ function RouteComponent() {
 
   const addMutation = useMutation({
     mutationFn: () =>
-      createLocation({ name: nameInput.trim(), lat: parseFloat(latInput), lng: parseFloat(lngInput) }),
+      createLocation({
+        name: nameInput.trim(),
+        lat: parseFloat(latInput),
+        lng: parseFloat(lngInput),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['locations'] })
       closeForm()
@@ -238,8 +275,8 @@ function RouteComponent() {
 
   const isPending = addMutation.isPending || editMutation.isPending
   const mutationError =
-    (addMutation.isError ? (addMutation.error).message : null) ||
-    (editMutation.isError ? (editMutation.error).message : null)
+    (addMutation.isError ? addMutation.error.message : null) ||
+    (editMutation.isError ? editMutation.error.message : null)
   const showForm = formMode !== null
 
   return (
@@ -247,10 +284,12 @@ function RouteComponent() {
       {/* Map area */}
       <div className="relative flex-1">
         {isLoadingLocs ? (
-          <div className="flex h-full items-center justify-center text-muted-foreground">Loading map…</div>
+          <div className="flex h-full items-center justify-center text-muted-foreground">
+            Loading map…
+          </div>
         ) : isErrorLocs ? (
           <div className="flex h-full items-center justify-center text-destructive">
-            {(locsError).message}
+            {locsError.message}
           </div>
         ) : (
           <Suspense
@@ -272,7 +311,11 @@ function RouteComponent() {
             className="h-8 w-8 shadow"
             onClick={openAddForm}
           >
-            {formMode === 'add' ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            {formMode === 'add' ? (
+              <X className="h-4 w-4" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>
@@ -284,12 +327,19 @@ function RouteComponent() {
           showForm ? 'w-80' : 'w-0 border-l-0',
         )}
       >
-        <form onSubmit={handleSubmit} className="flex h-full w-80 flex-col gap-3 p-4">
+        <form
+          onSubmit={handleSubmit}
+          className="flex h-full w-80 flex-col gap-3 p-4"
+        >
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold">
               {formMode === 'edit' ? 'Edit Location' : 'New Location'}
             </h3>
-            <button type="button" onClick={closeForm} className="text-muted-foreground hover:text-foreground">
+            <button
+              type="button"
+              onClick={closeForm}
+              className="text-muted-foreground hover:text-foreground"
+            >
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -297,7 +347,10 @@ function RouteComponent() {
             <Input
               placeholder="Name (e.g. Burlington, ON)"
               value={nameInput}
-              onChange={(e) => { setNameInput(e.target.value); setGeocodeError(null) }}
+              onChange={(e) => {
+                setNameInput(e.target.value)
+                setGeocodeError(null)
+              }}
               className="flex-1"
             />
             <Button
@@ -311,7 +364,9 @@ function RouteComponent() {
               {isGeocoding ? '…' : 'Look up'}
             </Button>
           </div>
-          {geocodeError && <p className="text-sm text-destructive">{geocodeError}</p>}
+          {geocodeError && (
+            <p className="text-sm text-destructive">{geocodeError}</p>
+          )}
           <Input
             placeholder="Latitude"
             value={latInput}
@@ -326,9 +381,17 @@ function RouteComponent() {
             type="number"
             step="any"
           />
-          {mutationError && <p className="text-sm text-destructive">{mutationError}</p>}
+          {mutationError && (
+            <p className="text-sm text-destructive">{mutationError}</p>
+          )}
           <Button type="submit" className="mt-1" disabled={isPending}>
-            {isPending ? (formMode === 'edit' ? 'Updating…' : 'Adding…') : (formMode === 'edit' ? 'Update' : 'Add')}
+            {isPending
+              ? formMode === 'edit'
+                ? 'Updating…'
+                : 'Adding…'
+              : formMode === 'edit'
+                ? 'Update'
+                : 'Add'}
           </Button>
         </form>
       </div>

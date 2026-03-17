@@ -6,4 +6,3 @@ export const Route = createFileRoute('/_appbar/credentials')({
   },
   component: () => null,
 })
-

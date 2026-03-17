@@ -15,7 +15,10 @@ export async function getUsers(): Promise<Array<User>> {
   return res.json()
 }
 
-export async function createUser(data: { email: string; role?: string | null }): Promise<User> {
+export async function createUser(data: {
+  email: string
+  role?: string | null
+}): Promise<User> {
   const res = await apiFetch('/api/users', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

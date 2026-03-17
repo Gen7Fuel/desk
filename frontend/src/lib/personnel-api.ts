@@ -7,7 +7,11 @@ export async function getPersonnel() {
   return res.json()
 }
 
-export async function createPersonnel(data: { name: string; email: string; phone: string }) {
+export async function createPersonnel(data: {
+  name: string
+  email: string
+  phone: string
+}) {
   const res = await apiFetch('/api/personnel', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -17,7 +21,10 @@ export async function createPersonnel(data: { name: string; email: string; phone
   return res.json()
 }
 
-export async function updatePersonnel(id: string, data: Partial<{ name: string; email: string; phone: string }>) {
+export async function updatePersonnel(
+  id: string,
+  data: Partial<{ name: string; email: string; phone: string }>,
+) {
   const res = await apiFetch(`/api/personnel/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -29,7 +36,8 @@ export async function updatePersonnel(id: string, data: Partial<{ name: string; 
 
 export async function deletePersonnel(id: string) {
   const res = await apiFetch(`/api/personnel/${id}`, {
-    method: 'DELETE' })
+    method: 'DELETE',
+  })
   if (!res.ok) throw new Error('Failed to delete personnel')
   return res.json()
 }

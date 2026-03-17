@@ -1,4 +1,9 @@
-import { createFileRoute, redirect, useNavigate, useSearch } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  redirect,
+  useNavigate,
+  useSearch,
+} from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
@@ -43,7 +48,12 @@ function RouteComponent() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
-  const { data: personnel, isLoading, isError, error } = useQuery({
+  const {
+    data: personnel,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ['personnel'],
     queryFn: getPersonnel,
   })
@@ -117,7 +127,9 @@ function RouteComponent() {
       }
       const updatedDevices =
         editingIndex !== null
-          ? devices.map((d: any, i: number) => (i === editingIndex ? newEntry : d))
+          ? devices.map((d: any, i: number) =>
+              i === editingIndex ? newEntry : d,
+            )
           : [...devices, newEntry]
       const res = await apiFetch(`/api/personnel/${id}`, {
         method: 'PUT',
@@ -138,7 +150,13 @@ function RouteComponent() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!formType.trim() || !formMake.trim() || !formModel.trim() || !formIdentifier.trim()) return
+    if (
+      !formType.trim() ||
+      !formMake.trim() ||
+      !formModel.trim() ||
+      !formIdentifier.trim()
+    )
+      return
     if (saveDeviceMutation.isPending) return
     saveDeviceMutation.mutate()
   }
@@ -150,7 +168,7 @@ function RouteComponent() {
         {isLoading ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : isError ? (
-          <p className="text-destructive">{(error).message}</p>
+          <p className="text-destructive">{error.message}</p>
         ) : !personnel || personnel.length === 0 ? (
           <p className="text-muted-foreground">No personnel found.</p>
         ) : (
@@ -159,7 +177,13 @@ function RouteComponent() {
             return (
               <button
                 key={id}
-                onClick={() => { closeForm(); navigate({ to: '/assets/personnel', search: { selected: id } }) }}
+                onClick={() => {
+                  closeForm()
+                  navigate({
+                    to: '/assets/personnel',
+                    search: { selected: id },
+                  })
+                }}
                 className={cn(
                   'rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
                   selected === id && 'bg-accent/80 text-accent-foreground',
@@ -178,7 +202,9 @@ function RouteComponent() {
             <div className="mb-4 flex items-center gap-2">
               <h3 className="text-lg font-semibold">
                 {selectedPerson?.name || selected}{' '}
-                <span className="text-sm font-normal text-muted-foreground">({devices.length})</span>
+                <span className="text-sm font-normal text-muted-foreground">
+                  ({devices.length})
+                </span>
               </h3>
               <Button
                 variant={showForm ? 'outline' : 'default'}
@@ -192,7 +218,11 @@ function RouteComponent() {
                   }
                 }}
               >
-                {showForm ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                {showForm ? (
+                  <X className="h-3 w-3" />
+                ) : (
+                  <Plus className="h-3 w-3" />
+                )}
               </Button>
             </div>
             <Table>
@@ -208,16 +238,23 @@ function RouteComponent() {
               <TableBody>
                 {devices.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-muted-foreground">No devices assigned.</TableCell>
+                    <TableCell colSpan={5} className="text-muted-foreground">
+                      No devices assigned.
+                    </TableCell>
                   </TableRow>
                 ) : (
                   devices.map((entry: any, idx: number) => (
                     <TableRow
                       key={`${entry.identifier}-${idx}`}
-                      className={cn('cursor-pointer hover:bg-accent/50', editingIndex === idx && showForm && 'bg-accent/80')}
+                      className={cn(
+                        'cursor-pointer hover:bg-accent/50',
+                        editingIndex === idx && showForm && 'bg-accent/80',
+                      )}
                       onClick={() => openEditForm(idx)}
                     >
-                      <TableCell className="font-medium">{entry.type}</TableCell>
+                      <TableCell className="font-medium">
+                        {entry.type}
+                      </TableCell>
                       <TableCell>{entry.make}</TableCell>
                       <TableCell>{entry.model}</TableCell>
                       <TableCell>{entry.identifier}</TableCell>
@@ -229,7 +266,9 @@ function RouteComponent() {
             </Table>
           </>
         ) : (
-          <p className="text-muted-foreground">Select a person to see their assigned devices.</p>
+          <p className="text-muted-foreground">
+            Select a person to see their assigned devices.
+          </p>
         )}
       </div>
 
@@ -241,8 +280,13 @@ function RouteComponent() {
         )}
       >
         {showForm && (
-          <form onSubmit={handleSubmit} className="flex h-full w-80 flex-col gap-3 p-4">
-            <h3 className="text-sm font-semibold">{editingIndex !== null ? 'Edit Device' : 'New Device'}</h3>
+          <form
+            onSubmit={handleSubmit}
+            className="flex h-full w-80 flex-col gap-3 p-4"
+          >
+            <h3 className="text-sm font-semibold">
+              {editingIndex !== null ? 'Edit Device' : 'New Device'}
+            </h3>
             <Select value={formType} onValueChange={setFormType}>
               <SelectTrigger>
                 <SelectValue placeholder="Select type..." />
@@ -284,13 +328,21 @@ function RouteComponent() {
             </Select>
             {saveDeviceMutation.isError && (
               <p className="text-sm text-destructive">
-                {(saveDeviceMutation.error).message}
+                {saveDeviceMutation.error.message}
               </p>
             )}
-            <Button type="submit" className="mt-1" disabled={saveDeviceMutation.isPending}>
+            <Button
+              type="submit"
+              className="mt-1"
+              disabled={saveDeviceMutation.isPending}
+            >
               {saveDeviceMutation.isPending
-                ? editingIndex !== null ? 'Updating...' : 'Adding...'
-                : editingIndex !== null ? 'Update' : 'Add'}
+                ? editingIndex !== null
+                  ? 'Updating...'
+                  : 'Adding...'
+                : editingIndex !== null
+                  ? 'Update'
+                  : 'Add'}
             </Button>
           </form>
         )}

@@ -12,7 +12,9 @@ export async function getDeviceKinds(): Promise<Array<DeviceKind>> {
   return res.json()
 }
 
-export async function createDeviceKind(data: { name: string }): Promise<DeviceKind> {
+export async function createDeviceKind(data: {
+  name: string
+}): Promise<DeviceKind> {
   const res = await apiFetch('/api/assets/device-kinds', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -22,7 +24,10 @@ export async function createDeviceKind(data: { name: string }): Promise<DeviceKi
   return res.json()
 }
 
-export async function updateDeviceKind(id: string, data: { name: string }): Promise<DeviceKind> {
+export async function updateDeviceKind(
+  id: string,
+  data: { name: string },
+): Promise<DeviceKind> {
   const res = await apiFetch(`/api/assets/device-kinds/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -32,7 +37,9 @@ export async function updateDeviceKind(id: string, data: { name: string }): Prom
   return res.json()
 }
 
-export async function deleteDeviceKind(id: string): Promise<{ success: boolean }> {
+export async function deleteDeviceKind(
+  id: string,
+): Promise<{ success: boolean }> {
   const res = await apiFetch(`/api/assets/device-kinds/${id}`, {
     method: 'DELETE',
   })

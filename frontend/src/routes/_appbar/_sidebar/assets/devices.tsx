@@ -1,4 +1,9 @@
-import { createFileRoute, redirect, useNavigate, useSearch } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  redirect,
+  useNavigate,
+  useSearch,
+} from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
@@ -42,15 +47,31 @@ function RouteComponent() {
     error: kindsError,
   } = useQuery({ queryKey: ['deviceKinds'], queryFn: getDeviceKinds })
 
-  const { data: personnel } = useQuery({ queryKey: ['personnel'], queryFn: getPersonnel })
+  const { data: personnel } = useQuery({
+    queryKey: ['personnel'],
+    queryFn: getPersonnel,
+  })
 
   // Flatten all devices of the selected type across all personnel
-  const entries: Array<{ personId: string; deviceIdx: number; assignedTo: string; make: string; model: string; identifier: string; location: string }> =
+  const entries: Array<{
+    personId: string
+    deviceIdx: number
+    assignedTo: string
+    make: string
+    model: string
+    identifier: string
+    location: string
+  }> =
     selected && Array.isArray(personnel)
       ? personnel.flatMap((person: any) => {
           const id = person._id || person.id
           return (person.devices ?? [])
-            .map((d: any, idx: number) => ({ ...d, personId: id, deviceIdx: idx, assignedTo: person.name }))
+            .map((d: any, idx: number) => ({
+              ...d,
+              personId: id,
+              deviceIdx: idx,
+              assignedTo: person.name,
+            }))
             .filter((d: any) => d.type === selected)
         })
       : []
@@ -75,7 +96,7 @@ function RouteComponent() {
     setFormIdentifier('')
   }
 
-  function openEditDevice(entry: typeof entries[number]) {
+  function openEditDevice(entry: (typeof entries)[number]) {
     setEditingPersonId(entry.personId)
     setEditingDeviceIdx(entry.deviceIdx)
     setFormMake(entry.make)
@@ -103,7 +124,12 @@ function RouteComponent() {
       if (!person) throw new Error('Person not found')
       const updatedDevices = (person.devices ?? []).map((d: any, i: number) =>
         i === editingDeviceIdx
-          ? { type: selected, make: formMake.trim(), model: formModel.trim(), identifier: formIdentifier.trim() }
+          ? {
+              type: selected,
+              make: formMake.trim(),
+              model: formModel.trim(),
+              identifier: formIdentifier.trim(),
+            }
           : d,
       )
       const res = await apiFetch(`/api/personnel/${editingPersonId}`, {
@@ -139,8 +165,8 @@ function RouteComponent() {
   const showForm = formMode !== null
   const isPending = addKindMutation.isPending || editDeviceMutation.isPending
   const mutationError =
-    (addKindMutation.isError ? (addKindMutation.error).message : null) ||
-    (editDeviceMutation.isError ? (editDeviceMutation.error).message : null)
+    (addKindMutation.isError ? addKindMutation.error.message : null) ||
+    (editDeviceMutation.isError ? editDeviceMutation.error.message : null)
 
   return (
     <div className="flex h-full">
@@ -161,20 +187,27 @@ function RouteComponent() {
               }
             }}
           >
-            {formMode === 'addKind' ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+            {formMode === 'addKind' ? (
+              <X className="h-3 w-3" />
+            ) : (
+              <Plus className="h-3 w-3" />
+            )}
           </Button>
         </div>
         {isLoadingKinds ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : isErrorKinds ? (
-          <p className="text-destructive">{(kindsError).message}</p>
+          <p className="text-destructive">{kindsError.message}</p>
         ) : !deviceKinds || deviceKinds.length === 0 ? (
           <p className="text-muted-foreground">No device types found.</p>
         ) : (
           deviceKinds.map((kind: any) => (
             <button
               key={kind._id || kind.id}
-              onClick={() => { closeForm(); navigate({ search: { selected: kind.name } }) }}
+              onClick={() => {
+                closeForm()
+                navigate({ search: { selected: kind.name } })
+              }}
               className={cn(
                 'rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
                 selected === kind.name && 'bg-accent/80 text-accent-foreground',
@@ -191,7 +224,10 @@ function RouteComponent() {
         {selected ? (
           <>
             <h3 className="mb-4 text-lg font-semibold">
-              {selected} <span className="text-sm font-normal text-muted-foreground">({entries.length})</span>
+              {selected}{' '}
+              <span className="text-sm font-normal text-muted-foreground">
+                ({entries.length})
+              </span>
             </h3>
             <Table>
               <TableHeader>
@@ -206,7 +242,9 @@ function RouteComponent() {
               <TableBody>
                 {entries.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-muted-foreground">No devices of this type.</TableCell>
+                    <TableCell colSpan={5} className="text-muted-foreground">
+                      No devices of this type.
+                    </TableCell>
                   </TableRow>
                 ) : (
                   entries.map((entry, idx) => (
@@ -214,11 +252,16 @@ function RouteComponent() {
                       key={`${entry.personId}-${entry.deviceIdx}-${idx}`}
                       className={cn(
                         'cursor-pointer hover:bg-accent/50',
-                        formMode === 'editDevice' && editingPersonId === entry.personId && editingDeviceIdx === entry.deviceIdx && 'bg-accent/80',
+                        formMode === 'editDevice' &&
+                          editingPersonId === entry.personId &&
+                          editingDeviceIdx === entry.deviceIdx &&
+                          'bg-accent/80',
                       )}
                       onClick={() => openEditDevice(entry)}
                     >
-                      <TableCell className="font-medium">{entry.assignedTo}</TableCell>
+                      <TableCell className="font-medium">
+                        {entry.assignedTo}
+                      </TableCell>
                       <TableCell>{entry.make}</TableCell>
                       <TableCell>{entry.model}</TableCell>
                       <TableCell>{entry.identifier}</TableCell>
@@ -230,7 +273,9 @@ function RouteComponent() {
             </Table>
           </>
         ) : (
-          <p className="text-muted-foreground">Select a device type to see assigned units.</p>
+          <p className="text-muted-foreground">
+            Select a device type to see assigned units.
+          </p>
         )}
       </div>
 
@@ -242,20 +287,28 @@ function RouteComponent() {
         )}
       >
         {formMode === 'addKind' ? (
-          <form onSubmit={handleKindSubmit} className="flex h-full w-80 flex-col gap-3 p-4">
+          <form
+            onSubmit={handleKindSubmit}
+            className="flex h-full w-80 flex-col gap-3 p-4"
+          >
             <h3 className="text-sm font-semibold">New Device Type</h3>
             <Input
               placeholder="Type name"
               value={kindName}
               onChange={(e) => setKindName(e.target.value)}
             />
-            {mutationError && <p className="text-sm text-destructive">{mutationError}</p>}
+            {mutationError && (
+              <p className="text-sm text-destructive">{mutationError}</p>
+            )}
             <Button type="submit" className="mt-1" disabled={isPending}>
               {isPending ? 'Adding...' : 'Add'}
             </Button>
           </form>
         ) : formMode === 'editDevice' ? (
-          <form onSubmit={handleDeviceSubmit} className="flex h-full w-80 flex-col gap-3 p-4">
+          <form
+            onSubmit={handleDeviceSubmit}
+            className="flex h-full w-80 flex-col gap-3 p-4"
+          >
             <h3 className="text-sm font-semibold">Edit Device</h3>
             <Input
               placeholder="Make"
@@ -272,7 +325,9 @@ function RouteComponent() {
               value={formIdentifier}
               onChange={(e) => setFormIdentifier(e.target.value)}
             />
-            {mutationError && <p className="text-sm text-destructive">{mutationError}</p>}
+            {mutationError && (
+              <p className="text-sm text-destructive">{mutationError}</p>
+            )}
             <Button type="submit" className="mt-1" disabled={isPending}>
               {isPending ? 'Updating...' : 'Update'}
             </Button>

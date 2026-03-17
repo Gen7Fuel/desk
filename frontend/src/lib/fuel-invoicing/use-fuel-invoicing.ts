@@ -23,7 +23,8 @@ export function useFuelInvoicing(sageToken: string) {
       const buffer = await uploadedFile.arrayBuffer()
       const bytes = new Uint8Array(buffer)
       let binary = ''
-      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
+      for (let i = 0; i < bytes.byteLength; i++)
+        binary += String.fromCharCode(bytes[i])
       setBase64(btoa(binary))
       const values = await extractFieldsFromRects(uploadedFile)
       setFields(values)
@@ -39,12 +40,19 @@ export function useFuelInvoicing(sageToken: string) {
     setSubmitMsg(null)
     try {
       const filename = buildFilename(fields)
-      const extension = file.name.includes('.') ? file.name.split('.').pop()! : 'pdf'
+      const extension = file.name.includes('.')
+        ? file.name.split('.').pop()!
+        : 'pdf'
 
       if (!fields) throw new Error('No invoice data extracted from the PDF.')
 
       // ── Step 1: create attachment in Sage Intacct ──────────────────────────
-      const attachmentKey = await createAttachment(base64, filename, extension, sageToken)
+      const attachmentKey = await createAttachment(
+        base64,
+        filename,
+        extension,
+        sageToken,
+      )
 
       // ── Step 2: create accounts-payable bill ───────────────────────────────
       const billKey = await createBill(fields, attachmentKey, sageToken)
@@ -58,10 +66,16 @@ export function useFuelInvoicing(sageToken: string) {
       setFile(null)
       setBase64(null)
       setFields(null)
-      const input = document.getElementById('pdf-upload-input') as HTMLInputElement
+      const input = document.getElementById(
+        'pdf-upload-input',
+      ) as HTMLInputElement
       input.value = ''
     } catch (err) {
-      setSubmitMsg(err instanceof Error ? err.message : 'Submission failed. Please try again.')
+      setSubmitMsg(
+        err instanceof Error
+          ? err.message
+          : 'Submission failed. Please try again.',
+      )
     } finally {
       setSubmitting(false)
     }

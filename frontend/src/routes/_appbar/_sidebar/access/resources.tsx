@@ -1,4 +1,9 @@
-import { createFileRoute, redirect, useNavigate, useSearch } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  redirect,
+  useNavigate,
+  useSearch,
+} from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
@@ -81,9 +86,10 @@ function RouteComponent() {
   const people =
     selected && Array.isArray(personnel)
       ? personnel
-          .filter((person: any) =>
-            Array.isArray(person.resources) &&
-            person.resources.some((r: any) => r.type === selected),
+          .filter(
+            (person: any) =>
+              Array.isArray(person.resources) &&
+              person.resources.some((r: any) => r.type === selected),
           )
           .map((person: any) => ({ name: person.name, email: person.email }))
       : []
@@ -106,41 +112,53 @@ function RouteComponent() {
               }
             }}
           >
-            {showForm ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+            {showForm ? (
+              <X className="h-3 w-3" />
+            ) : (
+              <Plus className="h-3 w-3" />
+            )}
           </Button>
         </div>
         {isLoadingResources ? (
-			<p className="text-muted-foreground">Loading...</p>
-		) : isErrorResources ? (
-			<p className="text-destructive">{resourceError.message}</p>
-		) : !resourceKinds || resourceKinds.length === 0 ? (
-			<p className="text-muted-foreground">No resources found.</p>
-		) : (
-			resourceKinds.map((kind: any) => (
-				<button
-					key={kind._id || kind.id || kind.name}
-					onClick={() => navigate({ to: '/access/resources', search: { selected: kind.name } })}
-					className={cn(
-						'rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
-						selected === kind.name && 'bg-accent/80 text-accent-foreground',
-					)}
-				>
-					{kind.name}
-				</button>
-			))
-		)}
+          <p className="text-muted-foreground">Loading...</p>
+        ) : isErrorResources ? (
+          <p className="text-destructive">{resourceError.message}</p>
+        ) : !resourceKinds || resourceKinds.length === 0 ? (
+          <p className="text-muted-foreground">No resources found.</p>
+        ) : (
+          resourceKinds.map((kind: any) => (
+            <button
+              key={kind._id || kind.id || kind.name}
+              onClick={() =>
+                navigate({
+                  to: '/access/resources',
+                  search: { selected: kind.name },
+                })
+              }
+              className={cn(
+                'rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                selected === kind.name && 'bg-accent/80 text-accent-foreground',
+              )}
+            >
+              {kind.name}
+            </button>
+          ))
+        )}
       </div>
       <div className="flex-1 overflow-auto p-4">
         {selected ? (
           <>
             <h3 className="mb-4 text-lg font-semibold">
-              {selected} <span className="text-sm font-normal text-muted-foreground">({people.length})</span>
+              {selected}{' '}
+              <span className="text-sm font-normal text-muted-foreground">
+                ({people.length})
+              </span>
             </h3>
             {isLoadingPersonnel ? (
-				<p className="text-muted-foreground">Loading personnel...</p>
-			) : isErrorPersonnel ? (
-				<p className="text-destructive">{personnelError.message}</p>
-			) : null}
+              <p className="text-muted-foreground">Loading personnel...</p>
+            ) : isErrorPersonnel ? (
+              <p className="text-destructive">{personnelError.message}</p>
+            ) : null}
             <Table>
               <TableHeader>
                 <TableRow>
@@ -159,7 +177,9 @@ function RouteComponent() {
             </Table>
           </>
         ) : (
-          <p className="text-muted-foreground">Select a resource to see who has access.</p>
+          <p className="text-muted-foreground">
+            Select a resource to see who has access.
+          </p>
         )}
       </div>
 
@@ -170,7 +190,10 @@ function RouteComponent() {
           showForm ? 'w-80' : 'w-0 border-l-0',
         )}
       >
-        <form onSubmit={handleSubmit} className="flex h-full w-80 flex-col gap-3 p-4">
+        <form
+          onSubmit={handleSubmit}
+          className="flex h-full w-80 flex-col gap-3 p-4"
+        >
           <h3 className="text-sm font-semibold">New Resource</h3>
           <Input
             ref={nameInputRef}
@@ -183,7 +206,11 @@ function RouteComponent() {
               {addResourceKindMutation.error.message}
             </p>
           )}
-          <Button type="submit" className="mt-1" disabled={addResourceKindMutation.isPending}>
+          <Button
+            type="submit"
+            className="mt-1"
+            disabled={addResourceKindMutation.isPending}
+          >
             {addResourceKindMutation.isPending ? 'Adding...' : 'Add'}
           </Button>
         </form>

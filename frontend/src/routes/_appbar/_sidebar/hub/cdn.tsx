@@ -1,12 +1,19 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ExternalLink, Search, Trash2, Upload, X } from 'lucide-react'
-import type {CdnFile} from '@/lib/cdn-api';
+import type { CdnExportMonth, CdnFile  } from '@/lib/cdn-api'
 import { can } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   Dialog,
   DialogClose,
@@ -16,8 +23,14 @@ import {
   DialogPortal,
   DialogTitle,
 } from '@/components/ui/dialog'
-import type { CdnExportMonth } from '@/lib/cdn-api'
-import { backupCdnMonth, deleteCdnFile, getCdnExportMonths, getCdnDownloadUrl, getCdnFiles, searchCdnFiles } from '@/lib/cdn-api'
+import {
+  backupCdnMonth,
+  deleteCdnFile,
+  getCdnDownloadUrl,
+  getCdnExportMonths,
+  getCdnFiles,
+  searchCdnFiles,
+} from '@/lib/cdn-api'
 
 export const Route = createFileRoute('/_appbar/_sidebar/hub/cdn')({
   component: RouteComponent,
@@ -34,14 +47,24 @@ function formatSize(bytes: number): string {
   return `${bytes} B`
 }
 
-const IMAGE_EXTS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif'])
+const IMAGE_EXTS = new Set([
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+  'svg',
+  'bmp',
+  'ico',
+  'avif',
+])
 
 function RouteComponent() {
   const queryClient = useQueryClient()
   const [pendingDelete, setPendingDelete] = useState<CdnFile | null>(null)
   const [page, setPage] = useState(1)
   const [exportOpen, setExportOpen] = useState(false)
-  const [months, setMonths] = useState<CdnExportMonth[]>([])
+  const [months, setMonths] = useState<Array<CdnExportMonth>>([])
   const [loadingMonths, setLoadingMonths] = useState(false)
   const [backingUpMonth, setBackingUpMonth] = useState<string | null>(null)
   const [previewFile, setPreviewFile] = useState<CdnFile | null>(null)
@@ -55,7 +78,9 @@ function RouteComponent() {
       setSearchQuery(searchInput.trim())
       setPage(1)
     }, 300)
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
   }, [searchInput])
 
   async function openExportDialog() {
@@ -65,7 +90,9 @@ function RouteComponent() {
       setMonths(await getCdnExportMonths())
     } catch (err) {
       console.error('Failed to load months:', err)
-      alert(`Failed to load months: ${err instanceof Error ? err.message : String(err)}`)
+      alert(
+        `Failed to load months: ${err instanceof Error ? err.message : String(err)}`,
+      )
       setExportOpen(false)
     } finally {
       setLoadingMonths(false)
@@ -79,7 +106,9 @@ function RouteComponent() {
       alert(message)
     } catch (err) {
       console.error('Backup failed:', err)
-      alert(`Backup failed: ${err instanceof Error ? err.message : String(err)}`)
+      alert(
+        `Backup failed: ${err instanceof Error ? err.message : String(err)}`,
+      )
     } finally {
       setBackingUpMonth(null)
     }
@@ -89,7 +118,8 @@ function RouteComponent() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: isSearching ? ['cdn-search', searchQuery] : ['cdn-files', page],
-    queryFn: () => isSearching ? searchCdnFiles(searchQuery) : getCdnFiles(page),
+    queryFn: () =>
+      isSearching ? searchCdnFiles(searchQuery) : getCdnFiles(page),
   })
 
   const files = data?.files || []
@@ -100,7 +130,11 @@ function RouteComponent() {
   const deleteMutation = useMutation({
     mutationFn: (filename: string) => deleteCdnFile(filename),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: isSearching ? ['cdn-search', searchQuery] : ['cdn-files', page] })
+      queryClient.invalidateQueries({
+        queryKey: isSearching
+          ? ['cdn-search', searchQuery]
+          : ['cdn-files', page],
+      })
       setPendingDelete(null)
     },
   })
@@ -113,7 +147,12 @@ function RouteComponent() {
           <span className="text-sm text-muted-foreground">
             {totalFiles} file{totalFiles !== 1 ? 's' : ''}
           </span>
-          <Button variant="outline" size="sm" onClick={openExportDialog} disabled={isLoading}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={openExportDialog}
+            disabled={isLoading}
+          >
             <Upload className="h-4 w-4" />
             Backup
           </Button>
@@ -155,7 +194,10 @@ function RouteComponent() {
             <TableBody>
               {files.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                  <TableCell
+                    colSpan={4}
+                    className="text-center text-sm text-muted-foreground"
+                  >
                     No files found.
                   </TableCell>
                 </TableRow>
@@ -166,15 +208,26 @@ function RouteComponent() {
                   className="cursor-pointer"
                   onClick={() => setPreviewFile(file)}
                 >
-                  <TableCell className="font-mono text-sm">{file.filename}</TableCell>
-                  <TableCell className="text-sm">{formatSize(file.size)}</TableCell>
-                  <TableCell className="text-sm">{new Date(file.lastModified).toLocaleString()}</TableCell>
+                  <TableCell className="font-mono text-sm">
+                    {file.filename}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {formatSize(file.size)}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {new Date(file.lastModified).toLocaleString()}
+                  </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => window.open(getCdnDownloadUrl(file.filename), '_blank')}
+                        onClick={() =>
+                          window.open(
+                            getCdnDownloadUrl(file.filename),
+                            '_blank',
+                          )
+                        }
                       >
                         <ExternalLink className="h-4 w-4" />
                       </Button>
@@ -222,50 +275,85 @@ function RouteComponent() {
         </>
       )}
 
-      <Dialog open={!!previewFile} onOpenChange={(open) => { if (!open) setPreviewFile(null) }}>
+      <Dialog
+        open={!!previewFile}
+        onOpenChange={(open) => {
+          if (!open) setPreviewFile(null)
+        }}
+      >
         <DialogPortal>
           <DialogOverlay className="fixed inset-0 z-50 bg-black/50" />
           <DialogContent className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 max-w-3xl w-full rounded-lg border bg-background p-6 shadow-lg">
-            <DialogTitle className="font-mono text-sm font-medium truncate">{previewFile?.filename}</DialogTitle>
-            {previewFile && (() => {
-              const ext = previewFile.filename.split('.').pop()?.toLowerCase() ?? ''
-              const isImage = IMAGE_EXTS.has(ext)
-              return isImage ? (
-                <img
-                  src={getCdnDownloadUrl(previewFile.filename)}
-                  alt={previewFile.filename}
-                  className="mt-4 max-h-[70vh] w-full rounded object-contain"
-                />
-              ) : (
-                <div className="mt-4 space-y-2 text-sm text-muted-foreground">
-                  <div><span className="font-medium text-foreground">Type</span>: {ext.toUpperCase() || 'Unknown'}</div>
-                  <div><span className="font-medium text-foreground">Size</span>: {formatSize(previewFile.size)}</div>
-                  <div><span className="font-medium text-foreground">Last Modified</span>: {new Date(previewFile.lastModified).toLocaleString()}</div>
-                </div>
-              )
-            })()}
+            <DialogTitle className="font-mono text-sm font-medium truncate">
+              {previewFile?.filename}
+            </DialogTitle>
+            {previewFile &&
+              (() => {
+                const ext =
+                  previewFile.filename.split('.').pop()?.toLowerCase() ?? ''
+                const isImage = IMAGE_EXTS.has(ext)
+                return isImage ? (
+                  <img
+                    src={getCdnDownloadUrl(previewFile.filename)}
+                    alt={previewFile.filename}
+                    className="mt-4 max-h-[70vh] w-full rounded object-contain"
+                  />
+                ) : (
+                  <div className="mt-4 space-y-2 text-sm text-muted-foreground">
+                    <div>
+                      <span className="font-medium text-foreground">Type</span>:{' '}
+                      {ext.toUpperCase() || 'Unknown'}
+                    </div>
+                    <div>
+                      <span className="font-medium text-foreground">Size</span>:{' '}
+                      {formatSize(previewFile.size)}
+                    </div>
+                    <div>
+                      <span className="font-medium text-foreground">
+                        Last Modified
+                      </span>
+                      : {new Date(previewFile.lastModified).toLocaleString()}
+                    </div>
+                  </div>
+                )
+              })()}
           </DialogContent>
         </DialogPortal>
       </Dialog>
 
-      <Dialog open={exportOpen} onOpenChange={(open) => { if (!open && !backingUpMonth) setExportOpen(false) }}>
+      <Dialog
+        open={exportOpen}
+        onOpenChange={(open) => {
+          if (!open && !backingUpMonth) setExportOpen(false)
+        }}
+      >
         <DialogPortal>
           <DialogOverlay className="fixed inset-0 z-50 bg-black/50" />
           <DialogContent className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 max-w-md w-full space-y-4 rounded-lg border bg-background p-6 shadow-lg max-h-[80vh] overflow-y-auto">
-            <DialogTitle className="text-base font-semibold">Backup by Month</DialogTitle>
+            <DialogTitle className="text-base font-semibold">
+              Backup by Month
+            </DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
               Back up CDN files to Azure Storage as a .tar archive per month.
             </DialogDescription>
-            {loadingMonths && <p className="text-sm text-muted-foreground">Loading months…</p>}
-            {!loadingMonths && months.length === 0 && <p className="text-sm text-muted-foreground">No files found.</p>}
+            {loadingMonths && (
+              <p className="text-sm text-muted-foreground">Loading months…</p>
+            )}
+            {!loadingMonths && months.length === 0 && (
+              <p className="text-sm text-muted-foreground">No files found.</p>
+            )}
             {!loadingMonths && months.length > 0 && (
               <div className="space-y-2">
                 {months.map((m) => (
-                  <div key={m.month} className="flex items-center justify-between rounded border px-3 py-2">
+                  <div
+                    key={m.month}
+                    className="flex items-center justify-between rounded border px-3 py-2"
+                  >
                     <div>
                       <span className="text-sm font-medium">{m.month}</span>
                       <span className="ml-2 text-xs text-muted-foreground">
-                        {m.fileCount} file{m.fileCount !== 1 ? 's' : ''} · {formatSize(m.totalSize)}
+                        {m.fileCount} file{m.fileCount !== 1 ? 's' : ''} ·{' '}
+                        {formatSize(m.totalSize)}
                       </span>
                     </div>
                     <Button
@@ -283,30 +371,46 @@ function RouteComponent() {
             )}
             <div className="flex justify-end">
               <DialogClose asChild>
-                <Button variant="ghost" size="sm" disabled={!!backingUpMonth}>Close</Button>
+                <Button variant="ghost" size="sm" disabled={!!backingUpMonth}>
+                  Close
+                </Button>
               </DialogClose>
             </div>
           </DialogContent>
         </DialogPortal>
       </Dialog>
 
-      <Dialog open={!!pendingDelete} onOpenChange={(open) => { if (!open) setPendingDelete(null) }}>
+      <Dialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null)
+        }}
+      >
         <DialogPortal>
           <DialogOverlay className="fixed inset-0 z-50 bg-black/50" />
           <DialogContent className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 max-w-sm w-full space-y-4 rounded-lg border bg-background p-6 shadow-lg">
-            <DialogTitle className="text-base font-semibold">Delete file?</DialogTitle>
+            <DialogTitle className="text-base font-semibold">
+              Delete file?
+            </DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
-              This will permanently delete <strong className="font-mono">{pendingDelete?.filename}</strong>. This action cannot be undone.
+              This will permanently delete{' '}
+              <strong className="font-mono">{pendingDelete?.filename}</strong>.
+              This action cannot be undone.
             </DialogDescription>
             <div className="flex justify-end gap-2">
               <DialogClose asChild>
-                <Button variant="ghost" size="sm">Cancel</Button>
+                <Button variant="ghost" size="sm">
+                  Cancel
+                </Button>
               </DialogClose>
               <Button
                 variant="destructive"
                 size="sm"
                 disabled={deleteMutation.isPending}
-                onClick={() => { if (pendingDelete) deleteMutation.mutate(pendingDelete.filename) }}
+                onClick={() => {
+                  if (pendingDelete)
+                    deleteMutation.mutate(pendingDelete.filename)
+                }}
               >
                 {deleteMutation.isPending ? 'Deleting…' : 'Delete'}
               </Button>

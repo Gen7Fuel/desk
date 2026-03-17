@@ -1,4 +1,9 @@
-import { createFileRoute, redirect, useNavigate, useSearch } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  redirect,
+  useNavigate,
+  useSearch,
+} from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { Plus, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -281,7 +286,11 @@ function RouteComponent() {
               }
             }}
           >
-            {showForm ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+            {showForm ? (
+              <X className="h-3 w-3" />
+            ) : (
+              <Plus className="h-3 w-3" />
+            )}
           </Button>
         </div>
         {categories.map((category) => (
@@ -297,7 +306,8 @@ function RouteComponent() {
                   onClick={() => navigate({ search: { selected: sub.name } })}
                   className={cn(
                     'w-full px-4 py-2 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground',
-                    selected === sub.name && 'bg-accent/80 text-accent-foreground',
+                    selected === sub.name &&
+                      'bg-accent/80 text-accent-foreground',
                   )}
                 >
                   {sub.name}
@@ -325,7 +335,9 @@ function RouteComponent() {
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Cost</TableCell>
-                  <TableCell className="font-semibold">{selectedSub.cost}</TableCell>
+                  <TableCell className="font-semibold">
+                    {selectedSub.cost}
+                  </TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Billing Cycle</TableCell>
@@ -337,7 +349,9 @@ function RouteComponent() {
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Account</TableCell>
-                  <TableCell className="font-mono text-sm">{selectedSub.account}</TableCell>
+                  <TableCell className="font-mono text-sm">
+                    {selectedSub.account}
+                  </TableCell>
                 </TableRow>
                 {selectedSub.notes && (
                   <TableRow>
@@ -364,7 +378,10 @@ function RouteComponent() {
           showForm ? 'w-80' : 'w-0 border-l-0',
         )}
       >
-        <form onSubmit={handleSubmit} className="flex h-full w-80 flex-col gap-3 p-4">
+        <form
+          onSubmit={handleSubmit}
+          className="flex h-full w-80 flex-col gap-3 p-4"
+        >
           <h3 className="text-sm font-semibold">New Subscription</h3>
           <Input
             ref={nameInputRef}
@@ -407,7 +424,9 @@ function RouteComponent() {
             </Button>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-muted-foreground">Next Renewal</label>
+            <label className="text-xs text-muted-foreground">
+              Next Renewal
+            </label>
             <Input
               type="date"
               value={formRenewalDate}

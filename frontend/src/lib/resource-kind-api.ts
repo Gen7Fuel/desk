@@ -29,7 +29,8 @@ export async function updateResourceKind(id: string, data: { name: string }) {
 
 export async function deleteResourceKind(id: string) {
   const res = await apiFetch(`/api/access/resource-kinds/${id}`, {
-    method: 'DELETE' })
+    method: 'DELETE',
+  })
   if (!res.ok) throw new Error('Failed to delete resource kind')
   return res.json()
 }

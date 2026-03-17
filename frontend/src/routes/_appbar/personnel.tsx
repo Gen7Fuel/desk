@@ -55,9 +55,10 @@ function RouteComponent() {
 
   // Load personnel from backend
   useEffect(() => {
-    personnelApi.getPersonnel()
+    personnelApi
+      .getPersonnel()
       .then(setPeople)
-      .catch(err => setError(err.message))
+      .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }, [])
 
@@ -118,15 +119,21 @@ function RouteComponent() {
           return
         }
         const updated = await personnelApi.updatePersonnel(id, {
-          name: name.trim(), email: email.trim(), phone: phone.trim(),
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
         })
-        setPeople(prev => prev.map((p, i) => i === editingIndex ? updated : p))
+        setPeople((prev) =>
+          prev.map((p, i) => (i === editingIndex ? updated : p)),
+        )
         closeForm()
       } else {
         const created = await personnelApi.createPersonnel({
-          name: name.trim(), email: email.trim(), phone: phone.trim(),
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
         })
-        setPeople(prev => [...prev, created])
+        setPeople((prev) => [...prev, created])
         setName('')
         setEmail('')
         setPhone('')
@@ -144,24 +151,28 @@ function RouteComponent() {
         <div className="mb-4 flex items-center gap-2">
           <h2 className="text-2xl font-semibold">Personnel</h2>
           {(showForm || can('personnel', 'create')) && (
-          <Button
-            variant={showForm ? 'outline' : 'default'}
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => {
-              if (showForm) {
-                closeForm()
-              } else {
-                setEditingIndex(null)
-                setName('')
-                setEmail('')
-                setPhone('')
-                setShowForm(true)
-              }
-            }}
-          >
-            {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          </Button>
+            <Button
+              variant={showForm ? 'outline' : 'default'}
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => {
+                if (showForm) {
+                  closeForm()
+                } else {
+                  setEditingIndex(null)
+                  setName('')
+                  setEmail('')
+                  setPhone('')
+                  setShowForm(true)
+                }
+              }}
+            >
+              {showForm ? (
+                <X className="h-4 w-4" />
+              ) : (
+                <Plus className="h-4 w-4" />
+              )}
+            </Button>
           )}
         </div>
         {error && <p className="mb-2 text-sm text-destructive">{error}</p>}
@@ -175,9 +186,13 @@ function RouteComponent() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={3}>Loading...</TableCell></TableRow>
+              <TableRow>
+                <TableCell colSpan={3}>Loading...</TableCell>
+              </TableRow>
             ) : people.length === 0 ? (
-              <TableRow><TableCell colSpan={3}>No personnel found.</TableCell></TableRow>
+              <TableRow>
+                <TableCell colSpan={3}>No personnel found.</TableCell>
+              </TableRow>
             ) : (
               people.map((person, index) => (
                 <TableRow
@@ -207,7 +222,10 @@ function RouteComponent() {
           showForm ? 'w-80' : 'w-0 border-l-0',
         )}
       >
-        <form onSubmit={handleSubmit} className="flex h-full w-80 flex-col gap-3 p-4">
+        <form
+          onSubmit={handleSubmit}
+          className="flex h-full w-80 flex-col gap-3 p-4"
+        >
           <h3 className="text-sm font-semibold">
             {editingIndex !== null ? 'Edit Personnel' : 'New Personnel'}
           </h3>
@@ -229,10 +247,12 @@ function RouteComponent() {
             onChange={(e) => setPhone(formatPhone(e.target.value))}
           />
           <div className="flex gap-2">
-            {(editingIndex !== null ? can('personnel', 'update') : can('personnel', 'create')) && (
-            <Button type="submit" className="flex-1">
-              {editingIndex !== null ? 'Update' : 'Add'}
-            </Button>
+            {(editingIndex !== null
+              ? can('personnel', 'update')
+              : can('personnel', 'create')) && (
+              <Button type="submit" className="flex-1">
+                {editingIndex !== null ? 'Update' : 'Add'}
+              </Button>
             )}
             {editingIndex !== null && can('personnel', 'delete') && (
               <Button
@@ -255,7 +275,9 @@ function RouteComponent() {
           <DialogPortal>
             <DialogOverlay className="fixed inset-0 z-50 bg-black/40" />
             <DialogContent className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border bg-background p-6 shadow-lg text-foreground">
-              <DialogTitle className="mb-2 text-xl font-bold">Delete Personnel</DialogTitle>
+              <DialogTitle className="mb-2 text-xl font-bold">
+                Delete Personnel
+              </DialogTitle>
               <DialogDescription className="mb-4">
                 Are you sure you want to delete <b>{name}</b> (<b>{email}</b>)?
               </DialogDescription>
@@ -265,13 +287,16 @@ function RouteComponent() {
                   onClick={async () => {
                     setError(null)
                     try {
-                      const id = people[editingIndex]._id || people[editingIndex].id
+                      const id =
+                        people[editingIndex]._id || people[editingIndex].id
                       if (!id) {
                         setError('Unable to delete: missing personnel ID')
                         return
                       }
                       await personnelApi.deletePersonnel(id)
-                      setPeople(prev => prev.filter((_, i) => i !== editingIndex))
+                      setPeople((prev) =>
+                        prev.filter((_, i) => i !== editingIndex),
+                      )
                       closeForm()
                     } catch (err: any) {
                       setError(err.message || 'Error deleting personnel')
@@ -281,7 +306,10 @@ function RouteComponent() {
                 >
                   Yes
                 </Button>
-                <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDeleteDialog(false)}
+                >
                   No
                 </Button>
               </div>

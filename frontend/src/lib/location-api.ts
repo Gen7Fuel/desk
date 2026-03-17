@@ -7,7 +7,11 @@ export async function getLocations() {
   return res.json()
 }
 
-export async function createLocation(data: { name: string; lat: number; lng: number }) {
+export async function createLocation(data: {
+  name: string
+  lat: number
+  lng: number
+}) {
   const res = await apiFetch('/api/assets/locations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -20,7 +24,10 @@ export async function createLocation(data: { name: string; lat: number; lng: num
   return res.json()
 }
 
-export async function updateLocation(id: string, data: Partial<{ name: string; lat: number; lng: number }>) {
+export async function updateLocation(
+  id: string,
+  data: Partial<{ name: string; lat: number; lng: number }>,
+) {
   const res = await apiFetch(`/api/assets/locations/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -34,7 +41,9 @@ export async function updateLocation(id: string, data: Partial<{ name: string; l
 }
 
 export async function deleteLocation(id: string) {
-  const res = await apiFetch(`/api/assets/locations/${id}`, { method: 'DELETE' })
+  const res = await apiFetch(`/api/assets/locations/${id}`, {
+    method: 'DELETE',
+  })
   if (!res.ok) throw new Error('Failed to delete location')
   return res.json()
 }
