@@ -12,11 +12,11 @@ import {
   Binary,
   BriefcaseBusiness,
   Fuel,
-  Tablet,
   LayoutGrid,
   LogOut,
   Package,
   Settings,
+  Tablet,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getTokenPayload } from '@/lib/permissions'
@@ -65,7 +65,13 @@ function RouteComponent() {
   }
 
   const location = useLocation()
-  const adminSections = ['personnel', 'access', 'assets', 'credentials', 'subscriptions']
+  const adminSections = [
+    'personnel',
+    'access',
+    'assets',
+    'credentials',
+    'subscriptions',
+  ]
   const section = location.pathname.split('/')[1] ?? ''
   const isAdminActive = adminSections.includes(section)
   const isFuelActive = !!matchRoute({ to: '/fuel-invoicing', fuzzy: true })

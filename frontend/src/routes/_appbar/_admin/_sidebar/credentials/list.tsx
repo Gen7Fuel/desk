@@ -30,7 +30,9 @@ import {
   updateCredential,
 } from '@/lib/credential-api'
 
-export const Route = createFileRoute('/_appbar/_admin/_sidebar/credentials/list')({
+export const Route = createFileRoute(
+  '/_appbar/_admin/_sidebar/credentials/list',
+)({
   component: RouteComponent,
   beforeLoad: () => {
     if (typeof window !== 'undefined' && !can('credentials.list', 'read')) {

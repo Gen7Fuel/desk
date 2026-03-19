@@ -6,9 +6,7 @@ const sidebarLinks: Record<
   string,
   Array<{ label: string; path: string; permission: string }>
 > = {
-  personnel: [
-    { label: 'List', path: '/personnel', permission: 'personnel' },
-  ],
+  personnel: [{ label: 'List', path: '/personnel', permission: 'personnel' }],
   access: [
     {
       label: 'Resources',

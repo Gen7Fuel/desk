@@ -31,7 +31,9 @@ import { getPersonnel } from '@/lib/personnel-api'
 import { getDeviceKinds } from '@/lib/device-kind-api'
 import { getLocations } from '@/lib/location-api'
 
-export const Route = createFileRoute('/_appbar/_admin/_sidebar/assets/personnel')({
+export const Route = createFileRoute(
+  '/_appbar/_admin/_sidebar/assets/personnel',
+)({
   component: RouteComponent,
   beforeLoad: () => {
     if (typeof window !== 'undefined' && !can('assets.personnel', 'read')) {
@@ -44,7 +46,9 @@ export const Route = createFileRoute('/_appbar/_admin/_sidebar/assets/personnel'
 })
 
 function RouteComponent() {
-  const { selected } = useSearch({ from: '/_appbar/_admin/_sidebar/assets/personnel' })
+  const { selected } = useSearch({
+    from: '/_appbar/_admin/_sidebar/assets/personnel',
+  })
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 

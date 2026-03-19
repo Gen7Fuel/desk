@@ -1,14 +1,22 @@
 import { Outlet, createFileRoute } from '@tanstack/react-router'
+import type { SidebarLink } from '@/components/sidebar'
 import { can } from '@/lib/permissions'
 import { SidebarNavLinks } from '@/components/sidebar'
-import type { SidebarLink } from '@/components/sidebar'
 
 const adminModules: Array<SidebarLink & { permission: string }> = [
   { label: 'Personnel', path: '/personnel', permission: 'personnel' },
   { label: 'Access', path: '/access/resources', permission: 'access' },
   { label: 'Assets', path: '/assets/devices', permission: 'assets' },
-  { label: 'Credentials', path: '/credentials/categories', permission: 'credentials' },
-  { label: 'Subscriptions', path: '/subscriptions/categories', permission: 'subscriptions' },
+  {
+    label: 'Credentials',
+    path: '/credentials/categories',
+    permission: 'credentials',
+  },
+  {
+    label: 'Subscriptions',
+    path: '/subscriptions/categories',
+    permission: 'subscriptions',
+  },
 ]
 
 export const Route = createFileRoute('/_appbar/_admin')({

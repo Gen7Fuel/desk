@@ -22,7 +22,9 @@ import { Input } from '@/components/ui/input'
 import { createResourceKind, getResourceKinds } from '@/lib/resource-kind-api'
 import { getPersonnel } from '@/lib/personnel-api'
 
-export const Route = createFileRoute('/_appbar/_admin/_sidebar/access/resources')({
+export const Route = createFileRoute(
+  '/_appbar/_admin/_sidebar/access/resources',
+)({
   component: RouteComponent,
   beforeLoad: () => {
     if (typeof window !== 'undefined' && !can('access.resources', 'read')) {
@@ -35,7 +37,9 @@ export const Route = createFileRoute('/_appbar/_admin/_sidebar/access/resources'
 })
 
 function RouteComponent() {
-  const { selected } = useSearch({ from: '/_appbar/_admin/_sidebar/access/resources' })
+  const { selected } = useSearch({
+    from: '/_appbar/_admin/_sidebar/access/resources',
+  })
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 

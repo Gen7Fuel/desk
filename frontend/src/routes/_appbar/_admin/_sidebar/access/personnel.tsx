@@ -30,7 +30,9 @@ import {
 import { getPersonnel } from '@/lib/personnel-api'
 import { getResourceKinds } from '@/lib/resource-kind-api'
 
-export const Route = createFileRoute('/_appbar/_admin/_sidebar/access/personnel')({
+export const Route = createFileRoute(
+  '/_appbar/_admin/_sidebar/access/personnel',
+)({
   component: RouteComponent,
   beforeLoad: () => {
     if (typeof window !== 'undefined' && !can('access.personnel', 'read')) {
@@ -43,7 +45,9 @@ export const Route = createFileRoute('/_appbar/_admin/_sidebar/access/personnel'
 })
 
 function RouteComponent() {
-  const { selected } = useSearch({ from: '/_appbar/_admin/_sidebar/access/personnel' })
+  const { selected } = useSearch({
+    from: '/_appbar/_admin/_sidebar/access/personnel',
+  })
   const navigate = useNavigate({ from: '/access/personnel' })
   const queryClient = useQueryClient()
 

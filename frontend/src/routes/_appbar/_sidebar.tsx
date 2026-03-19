@@ -22,9 +22,13 @@ const sidebarLinks: Record<
     { label: 'Roles', path: '/settings/roles', permission: 'settings.roles' },
   ],
   hub: [
-    { label: 'CDN Panel',    path: '/hub/cdn',         permission: 'hub.cdn' },
-    { label: 'Payables',     path: '/hub/payables',    permission: 'hub.payables' },
-    { label: 'Receivables',  path: '/hub/receivables', permission: 'hub.receivables' },
+    { label: 'CDN Panel', path: '/hub/cdn', permission: 'hub.cdn' },
+    { label: 'Payables', path: '/hub/payables', permission: 'hub.payables' },
+    {
+      label: 'Receivables',
+      path: '/hub/receivables',
+      permission: 'hub.receivables',
+    },
   ],
 }
 

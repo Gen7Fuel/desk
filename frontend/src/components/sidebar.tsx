@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
 import { Link, useLocation, useMatchRoute } from '@tanstack/react-router'
+import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 export interface SidebarLink {
@@ -62,7 +62,7 @@ export function SidebarNavLinks({
   links,
   fuzzy,
 }: {
-  links: SidebarLink[]
+  links: Array<SidebarLink>
   fuzzy?: boolean
 }) {
   const matchRoute = useMatchRoute()

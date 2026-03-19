@@ -134,7 +134,9 @@ const LazyMap = lazy(async () => {
   return { default: LocationMap }
 })
 
-export const Route = createFileRoute('/_appbar/_admin/_sidebar/assets/location')({
+export const Route = createFileRoute(
+  '/_appbar/_admin/_sidebar/assets/location',
+)({
   component: RouteComponent,
   beforeLoad: () => {
     if (typeof window !== 'undefined' && !can('assets.location', 'read')) {
