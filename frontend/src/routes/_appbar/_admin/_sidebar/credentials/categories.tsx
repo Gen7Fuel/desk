@@ -23,7 +23,7 @@ import {
 } from '@/lib/credential-category-api'
 
 export const Route = createFileRoute(
-  '/_appbar/_sidebar/credentials/categories',
+  '/_appbar/_admin/_sidebar/credentials/categories',
 )({
   component: RouteComponent,
   beforeLoad: () => {

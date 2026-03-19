@@ -11,6 +11,7 @@ import type { User } from '@/lib/users-api'
 import type { Role } from '@/lib/roles-api'
 import { cn } from '@/lib/utils'
 import { can } from '@/lib/permissions'
+import { Sidebar, SidebarHeader, SidebarItem } from '@/components/sidebar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createUser, deleteUser, getUsers, updateUser } from '@/lib/users-api'
@@ -87,33 +88,35 @@ function RouteComponent() {
 
   return (
     <div className="flex h-full">
-      {/* Left panel */}
-      <div className="flex w-72 flex-col border-r">
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <span className="text-sm font-semibold">Users</span>
-          {can('settings.users', 'create') && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                setShowAddForm(true)
-                void navigate({
-                  to: '/settings/users',
-                  search: { selected: undefined },
-                })
-              }}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
+      <Sidebar className="w-48">
+        <SidebarHeader
+          title="Users"
+          action={
+            can('settings.users', 'create') ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setShowAddForm(true)
+                  void navigate({
+                    to: '/settings/users',
+                    search: { selected: undefined },
+                  })
+                }}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            ) : undefined
+          }
+        />
         {isLoading ? (
           <p className="p-4 text-sm text-muted-foreground">Loading…</p>
         ) : (
           <div className="flex-1 overflow-auto">
             {users.map((u) => (
-              <button
+              <SidebarItem
                 key={u._id}
+                active={selected === u._id}
                 onClick={() => {
                   void navigate({
                     to: '/settings/users',
@@ -121,20 +124,16 @@ function RouteComponent() {
                   })
                   setShowAddForm(false)
                 }}
-                className={cn(
-                  'w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-accent',
-                  selected === u._id && 'bg-accent/80 text-accent-foreground',
-                )}
               >
                 <div className="truncate font-medium">{u.email}</div>
                 <div className="truncate text-xs text-muted-foreground">
                   {u.role ?? 'No role'}
                 </div>
-              </button>
+              </SidebarItem>
             ))}
           </div>
         )}
-      </div>
+      </Sidebar>
 
       {/* Right panel */}
       <div className="flex-1 overflow-auto p-6">
@@ -660,7 +659,7 @@ export function PermissionTree({
           <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {mod}
           </div>
-          {def.actions ? (
+          {def.actions && (
             <ActionRow
               path={[mod]}
               actions={def.actions ?? ACTIONS}
@@ -668,9 +667,10 @@ export function PermissionTree({
               onChange={onChange}
               showUndefined={showUndefined}
             />
-          ) : (
+          )}
+          {def.submodules && (
             <div className="space-y-1 pl-3">
-              {Object.entries(def.submodules ?? {}).map(([sub, subDef]) => (
+              {Object.entries(def.submodules).map(([sub, subDef]) => (
                 <div key={sub}>
                   <div className="mb-0.5 text-xs font-medium text-foreground/70">
                     {sub}

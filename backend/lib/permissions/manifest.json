@@ -8,12 +8,14 @@
       "actions": ["create", "read", "update", "delete"]
     },
     "access": {
+      "actions": ["read"],
       "submodules": {
         "personnel": { "actions": ["create", "read", "update", "delete"] },
         "resources": { "actions": ["create", "read", "update", "delete"] }
       }
     },
     "assets": {
+      "actions": ["read"],
       "submodules": {
         "devices":   { "actions": ["create", "read", "update", "delete"] },
         "location":  { "actions": ["create", "read", "update", "delete"] },
@@ -21,37 +23,45 @@
       }
     },
     "cipher": {
+      "actions": ["read"],
       "submodules": {
         "lock":   { "actions": ["create", "read", "update", "delete"] },
         "unlock": { "actions": ["create", "read", "update", "delete"] }
       }
     },
     "credentials": {
+      "actions": ["read"],
       "submodules": {
         "categories": { "actions": ["create", "read", "update", "delete"] },
         "list":       { "actions": ["create", "read", "update", "delete"] }
       }
     },
     "inventory": {
+      "actions": ["read"],
       "submodules": {
         "coremarkInitialOrder": { "actions": ["create", "read", "update", "delete"] }
       }
     },
     "subscriptions": {
+      "actions": ["read"],
       "submodules": {
         "categories": { "actions": ["create", "read", "update", "delete"] },
         "list":       { "actions": ["create", "read", "update", "delete"] }
       }
     },
     "settings": {
+      "actions": ["read"],
       "submodules": {
         "users": { "actions": ["create", "read", "update", "delete"] },
         "roles": { "actions": ["create", "read", "update", "delete"] }
       }
     },
     "hub": {
+      "actions": ["read"],
       "submodules": {
-        "cdn": { "actions": ["create", "read", "update", "delete"] }
+        "cdn":         { "actions": ["create", "read", "update", "delete"] },
+        "payables":    { "actions": ["create", "read", "update", "delete"] },
+        "receivables": { "actions": ["create", "read", "update", "delete"] }
       }
     }
   }

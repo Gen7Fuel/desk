@@ -23,20 +23,24 @@ import { createDeviceKind, getDeviceKinds } from '@/lib/device-kind-api'
 import { getPersonnel } from '@/lib/personnel-api'
 import { apiFetch } from '@/lib/api'
 
-export const Route = createFileRoute('/_appbar/_sidebar/assets/devices')({
-  component: RouteComponent,
-  beforeLoad: () => {
-    if (typeof window !== 'undefined' && !can('assets.devices', 'read')) {
-      throw redirect({ to: '/' })
-    }
+export const Route = createFileRoute('/_appbar/_admin/_sidebar/assets/devices')(
+  {
+    component: RouteComponent,
+    beforeLoad: () => {
+      if (typeof window !== 'undefined' && !can('assets.devices', 'read')) {
+        throw redirect({ to: '/' })
+      }
+    },
+    validateSearch: (search: Record<string, unknown>) => ({
+      selected: (search.selected as string) || undefined,
+    }),
   },
-  validateSearch: (search: Record<string, unknown>) => ({
-    selected: (search.selected as string) || undefined,
-  }),
-})
+)
 
 function RouteComponent() {
-  const { selected } = useSearch({ from: '/_appbar/_sidebar/assets/devices' })
+  const { selected } = useSearch({
+    from: '/_appbar/_admin/_sidebar/assets/devices',
+  })
   const navigate = useNavigate({ from: '/assets/devices' })
   const queryClient = useQueryClient()
 

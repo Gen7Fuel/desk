@@ -17,8 +17,6 @@ const RECTS = {
   totalOrdered: { x0: 329, y0: 109, x1: 329 + 59, y1: 109 + 15 },
   totalDelivered: { x0: 330, y0: 95, x1: 330 + 59, y1: 95 + 15 },
   productTotal: { x0: 510, y0: 108, x1: 510 + 77, y1: 108 + 17 },
-  freightTotal: { x0: 510, y0: 83, x1: 510 + 75, y1: 83 + 13 },
-  surcharges: { x0: 510, y0: 70, x1: 510 + 75, y1: 70 + 13 },
   taxFeeTotal: { x0: 510, y0: 42, x1: 510 + 76, y1: 42 + 15 },
   totalInvoiceToRemit: { x0: 487, y0: 27, x1: 487 + 99, y1: 27 + 15 },
 }
@@ -152,6 +150,17 @@ export async function extractFieldsFromRects(
   const qtyGrossRaw = filterRegion(items, 290, 360, 127, 496)
   const freightValues = filterRegion(items, 480, 530, 127, 496)
 
+  // Column-based extraction for freightTotal and surcharges
+  const totalsLabels = filterRegion(items, 440, 520, 70, 120)
+  const totalsValues = filterRegion(items, 520, 585, 70, 120)
+  let freightTotal: string | null = null
+  let surcharges: string | null = null
+  for (let i = 0; i < totalsLabels.length; i++) {
+    const label = totalsLabels[i].toLowerCase()
+    if (label.includes('freight')) freightTotal = totalsValues[i] || null
+    if (label.includes('surcharge')) surcharges = totalsValues[i] || null
+  }
+
   const qtyGrossValues = qtyGrossRaw.filter((_, i) => i % 2 === 0)
 
   const freightCellValues: Array<string> = []
@@ -194,8 +203,8 @@ export async function extractFieldsFromRects(
     totalOrdered: extract(RECTS.totalOrdered),
     totalDelivered: extract(RECTS.totalDelivered),
     productTotal: extract(RECTS.productTotal),
-    freightTotal: extract(RECTS.freightTotal),
-    surcharges: extract(RECTS.surcharges),
+    freightTotal,
+    surcharges,
     taxFeeTotal: extract(RECTS.taxFeeTotal),
     totalInvoiceToRemit: extract(RECTS.totalInvoiceToRemit),
     productColumnValues,
