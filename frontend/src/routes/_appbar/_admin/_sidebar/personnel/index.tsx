@@ -31,7 +31,7 @@ interface Personnel {
   phone: string
 }
 
-export const Route = createFileRoute('/_appbar/personnel')({
+export const Route = createFileRoute('/_appbar/_admin/_sidebar/personnel/')({
   component: RouteComponent,
   beforeLoad: () => {
     if (typeof window !== 'undefined' && !can('personnel', 'read')) {

@@ -8,12 +8,11 @@ const manifest = require('./manifest.json')
 function buildDefaultPermissions(value = false) {
   const perms = {}
   for (const [mod, def] of Object.entries(manifest.modules)) {
+    perms[mod] = {}
     if (def.actions) {
-      perms[mod] = {}
       for (const action of def.actions) perms[mod][action] = value
     }
     if (def.submodules) {
-      perms[mod] = {}
       for (const [sub, subDef] of Object.entries(def.submodules)) {
         perms[mod][sub] = {}
         for (const action of subDef.actions) perms[mod][sub][action] = value

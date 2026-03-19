@@ -27,6 +27,8 @@ export function useFuelInvoicing(sageToken: string) {
         binary += String.fromCharCode(bytes[i])
       setBase64(btoa(binary))
       const values = await extractFieldsFromRects(uploadedFile)
+      console.log('freightTotal:', values.freightTotal)
+      console.log('surcharges:', values.surcharges)
       setFields(values)
     } catch (err) {
       setError('Failed to parse PDF.')

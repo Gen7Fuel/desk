@@ -21,7 +21,7 @@ import {
 } from '@/lib/category-api'
 
 export const Route = createFileRoute(
-  '/_appbar/_sidebar/subscriptions/categories',
+  '/_appbar/_admin/_sidebar/subscriptions/categories',
 )({
   component: RouteComponent,
   beforeLoad: () => {

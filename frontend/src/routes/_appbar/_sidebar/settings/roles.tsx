@@ -9,8 +9,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, Trash2 } from 'lucide-react'
 import { PermissionTree } from './users'
 import type { Role } from '@/lib/roles-api'
-import { cn } from '@/lib/utils'
 import { can } from '@/lib/permissions'
+import { Sidebar, SidebarHeader, SidebarItem } from '@/components/sidebar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -47,16 +47,18 @@ function buildDefaultPerms(
 ): Record<string, unknown> {
   const perms: Record<string, unknown> = {}
   for (const [mod, def] of Object.entries(manifest.modules)) {
+    const modPerms: Record<string, unknown> = {}
     if (def.actions) {
-      perms[mod] = Object.fromEntries(def.actions.map((a) => [a, false]))
-    } else if (def.submodules) {
-      perms[mod] = Object.fromEntries(
-        Object.entries(def.submodules).map(([sub, subDef]) => [
-          sub,
-          Object.fromEntries(subDef.actions.map((a) => [a, false])),
-        ]),
-      )
+      for (const a of def.actions) modPerms[a] = false
     }
+    if (def.submodules) {
+      for (const [sub, subDef] of Object.entries(def.submodules)) {
+        modPerms[sub] = Object.fromEntries(
+          subDef.actions.map((a) => [a, false]),
+        )
+      }
+    }
+    perms[mod] = modPerms
   }
   return perms
 }
@@ -101,33 +103,35 @@ function RouteComponent() {
 
   return (
     <div className="flex h-full">
-      {/* Left panel */}
-      <div className="flex w-64 flex-col border-r">
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <span className="text-sm font-semibold">Roles</span>
-          {can('settings.roles', 'create') && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                setShowAddForm(true)
-                void navigate({
-                  to: '/settings/roles',
-                  search: { selected: undefined },
-                })
-              }}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
+      <Sidebar className="w-48">
+        <SidebarHeader
+          title="Roles"
+          action={
+            can('settings.roles', 'create') ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setShowAddForm(true)
+                  void navigate({
+                    to: '/settings/roles',
+                    search: { selected: undefined },
+                  })
+                }}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            ) : undefined
+          }
+        />
         {isLoading ? (
           <p className="p-4 text-sm text-muted-foreground">Loading…</p>
         ) : (
           <div className="flex-1 overflow-auto">
             {roles.map((r) => (
-              <button
+              <SidebarItem
                 key={r._id}
+                active={selected === r._id}
                 onClick={() => {
                   void navigate({
                     to: '/settings/roles',
@@ -135,10 +139,6 @@ function RouteComponent() {
                   })
                   setShowAddForm(false)
                 }}
-                className={cn(
-                  'w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-accent',
-                  selected === r._id && 'bg-accent/80 text-accent-foreground',
-                )}
               >
                 <div className="font-medium">{r.name}</div>
                 {r.description && (
@@ -146,11 +146,11 @@ function RouteComponent() {
                     {r.description}
                   </div>
                 )}
-              </button>
+              </SidebarItem>
             ))}
           </div>
         )}
-      </div>
+      </Sidebar>
 
       {/* Right panel */}
       <div className="flex-1 overflow-auto p-6">

@@ -30,7 +30,7 @@ import {
   updateSubscription,
 } from '@/lib/subscription-api'
 
-export const Route = createFileRoute('/_appbar/_sidebar/subscriptions/list')({
+export const Route = createFileRoute('/_appbar/_admin/_sidebar/subscriptions/list')({
   component: RouteComponent,
   beforeLoad: () => {
     if (typeof window !== 'undefined' && !can('subscriptions.list', 'read')) {

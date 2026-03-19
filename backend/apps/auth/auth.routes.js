@@ -57,7 +57,8 @@ router.post('/auth/login', async (req, res) => {
         console.log('[auth] step 3 - rolePerms sample (settings):', JSON.stringify(rolePerms?.settings))
         console.log('[auth] step 3 - userOverrides keys:', Object.keys(userOverrides))
 
-        permissions = resolvePermissions(rolePerms, userOverrides)
+        const defaults = buildDefaultPermissions(false)
+        permissions = resolvePermissions(defaults, resolvePermissions(rolePerms, userOverrides))
 
         const trueCount = countTrues(permissions)
         console.log('[auth] step 4 - resolved permissions true count:', trueCount)
