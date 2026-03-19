@@ -55,8 +55,11 @@ export async function searchCdnFiles(
 export async function getCdnExportMonths(): Promise<Array<CdnExportMonth>> {
   const { apiFetch } = await import('@/lib/api')
   const res = await apiFetch('/api/cdn/export/months')
-  if (!res.ok) throw new Error('Failed to fetch export months')
   const data = await res.json()
+  if (!res.ok)
+    throw new Error(
+      data?.message ?? `Failed to fetch export months (${res.status})`,
+    )
   return data.months
 }
 
