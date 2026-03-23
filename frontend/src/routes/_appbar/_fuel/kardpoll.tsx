@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { FileSpreadsheet, UploadCloud } from 'lucide-react'
-import * as XLSX from 'xlsx'
+import readXlsxFile, { type Row } from 'read-excel-file'
 import { can, getTokenPayload  } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import { SitePicker } from '@/components/custom/SitePicker'
@@ -22,20 +22,14 @@ interface KardpollData {
   date: string
 }
 
-function extractKardpollData(workbook: XLSX.WorkBook): KardpollData {
-  const sheet = workbook.Sheets[workbook.SheetNames[0]]
-  const rows: Array<Array<string | Date>> = XLSX.utils.sheet_to_json(sheet, {
-    header: 1,
-    defval: '',
-  })
-
+function extractKardpollData(rows: Row[]): KardpollData {
   let totalSales = ''
   let totalLitres = ''
   const rawDate = rows[2]?.[0]
   const date =
     rawDate instanceof Date
       ? rawDate.toISOString().slice(0, 10)
-      : String(rawDate).trim()
+      : String(rawDate ?? '').trim()
 
   for (let i = rows.length - 1; i >= 0; i--) {
     const row = rows[i]
@@ -77,32 +71,21 @@ function RouteComponent() {
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [submitError, setSubmitError] = useState('')
 
-  function processFile(f: File) {
+  async function processFile(f: File) {
     setError('')
     setData(null)
     setFile(f)
-
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      try {
-        const buffer = e.target?.result as ArrayBuffer
-        const workbook = XLSX.read(buffer, { type: 'array', cellDates: true })
-        const extracted = extractKardpollData(workbook)
-
-        if (!extracted.totalSales && !extracted.totalLitres) {
-          setError(
-            'Could not find "Total Sales" or "Total Volume" rows in the file.',
-          )
-        } else {
-          setData(extracted)
-        }
-      } catch {
-        setError(
-          'Failed to parse the Excel file. Please check the file format.',
-        )
+    try {
+      const rows = await readXlsxFile(f)
+      const extracted = extractKardpollData(rows)
+      if (!extracted.totalSales && !extracted.totalLitres) {
+        setError('Could not find "Total Sales" or "Total Volume" rows in the file.')
+      } else {
+        setData(extracted)
       }
+    } catch {
+      setError('Failed to parse the Excel file. Please check the file format.')
     }
-    reader.readAsArrayBuffer(f)
   }
 
   function handleDrop(e: React.DragEvent) {
@@ -194,7 +177,7 @@ function RouteComponent() {
         <input
           ref={inputRef}
           type="file"
-          accept=".xlsx,.xls,.xlsm"
+          accept=".xlsx,.xlsm"
           className="hidden"
           onChange={handleInputChange}
         />

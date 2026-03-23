@@ -29,7 +29,8 @@
       "Bash(ls C:/Users/MohammadHasan/workspace/desk/frontend/.env*)",
       "Bash(find C:/Users/MohammadHasan/workspace/thehub/frontend/src -name *kardpoll* -o -name *cashRec* -o -name *cash-rec*)",
       "Bash(find C:/Users/MohammadHasan/workspace/thehub/frontend/src/lib -name constants*)",
-      "Bash(xargs cat:*)"
+      "Bash(xargs cat:*)",
+      "Bash(npm uninstall:*)"
     ]
   }
 }
