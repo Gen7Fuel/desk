@@ -1,8 +1,9 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { FileSpreadsheet, UploadCloud } from 'lucide-react'
-import readXlsxFile, { type Row } from 'read-excel-file'
-import { can, getTokenPayload  } from '@/lib/permissions'
+import readXlsxFile from 'read-excel-file/browser'
+import type { Row } from 'read-excel-file/browser'
+import { can, getTokenPayload } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import { SitePicker } from '@/components/custom/SitePicker'
 import { Button } from '@/components/ui/button'
@@ -22,7 +23,7 @@ interface KardpollData {
   date: string
 }
 
-function extractKardpollData(rows: Row[]): KardpollData {
+function extractKardpollData(rows: Array<Row>): KardpollData {
   let totalSales = ''
   let totalLitres = ''
   const rawDate = rows[2]?.[0]
@@ -79,7 +80,9 @@ function RouteComponent() {
       const rows = await readXlsxFile(f)
       const extracted = extractKardpollData(rows)
       if (!extracted.totalSales && !extracted.totalLitres) {
-        setError('Could not find "Total Sales" or "Total Volume" rows in the file.')
+        setError(
+          'Could not find "Total Sales" or "Total Volume" rows in the file.',
+        )
       } else {
         setData(extracted)
       }

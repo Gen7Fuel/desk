@@ -18586,13 +18586,11 @@ var V3 = class extends cl {
       this.#t.setOptions(this.options),
       r._defaulted &&
         !h0(this.options, r) &&
-        this.#e
-          .getQueryCache()
-          .notify({
-            type: 'observerOptionsUpdated',
-            query: this.#t,
-            observer: this,
-          }))
+        this.#e.getQueryCache().notify({
+          type: 'observerOptionsUpdated',
+          query: this.#t,
+          observer: this,
+        }))
     const a = this.hasListeners()
     ;(a && M2(this.#t, t, this.options, r) && this.#f(),
       this.updateResult(),
@@ -19272,13 +19270,11 @@ var Y3 = class extends cl {
       const t = this.options
       ;((this.options = this.#e.defaultMutationOptions(r)),
         h0(this.options, t) ||
-          this.#e
-            .getMutationCache()
-            .notify({
-              type: 'observerOptionsUpdated',
-              mutation: this.#r,
-              observer: this,
-            }),
+          this.#e.getMutationCache().notify({
+            type: 'observerOptionsUpdated',
+            mutation: this.#r,
+            observer: this,
+          }),
         t?.mutationKey &&
         this.options.mutationKey &&
         Ps(t.mutationKey) !== Ps(this.options.mutationKey)

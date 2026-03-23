@@ -16897,15 +16897,13 @@ class Hr {
     const t = 'GetMetadata',
       e = this.#e.get(t)
     if (e) return e
-    const s = this.messageHandler
-      .sendWithPromise(t, null)
-      .then((i) => ({
-        info: i[0],
-        metadata: i[1] ? new mr(i[1]) : null,
-        contentDispositionFilename: this.#t?.filename ?? null,
-        contentLength: this.#t?.contentLength ?? null,
-        hasStructTree: i[2],
-      }))
+    const s = this.messageHandler.sendWithPromise(t, null).then((i) => ({
+      info: i[0],
+      metadata: i[1] ? new mr(i[1]) : null,
+      contentDispositionFilename: this.#t?.filename ?? null,
+      contentLength: this.#t?.contentLength ?? null,
+      hasStructTree: i[2],
+    }))
     return (this.#e.set(t, s), s)
   }
   getMarkInfo() {
