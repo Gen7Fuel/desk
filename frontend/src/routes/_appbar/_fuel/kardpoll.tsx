@@ -35,7 +35,7 @@ function extractKardpollData(workbook: XLSX.WorkBook): KardpollData {
   const date =
     rawDate instanceof Date
       ? rawDate.toISOString().slice(0, 10)
-      : String(rawDate ?? '').trim()
+      : String(rawDate).trim()
 
   for (let i = rows.length - 1; i >= 0; i--) {
     const row = rows[i]
@@ -44,7 +44,7 @@ function extractKardpollData(workbook: XLSX.WorkBook): KardpollData {
       const gCell = String(row[6] ?? '').trim()
       if (gCell.startsWith('Total Sales:')) {
         const afterDollar = gCell.split('$')[1]
-        if (afterDollar !== undefined) {
+        if (afterDollar) {
           totalSales = afterDollar.trim()
         }
       }
@@ -108,7 +108,7 @@ function RouteComponent() {
   function handleDrop(e: React.DragEvent) {
     e.preventDefault()
     setDragActive(false)
-    const f = e.dataTransfer.files[0]
+    const f = e.dataTransfer.files.item(0)
     if (f) processFile(f)
   }
 
