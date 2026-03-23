@@ -23,14 +23,34 @@ interface KardpollData {
   date: string
 }
 
+function formatDisplayDate(d: Date): string {
+  const day = d.getUTCDate()
+  const suffix =
+    day === 1 || day === 21 || day === 31
+      ? 'st'
+      : day === 2 || day === 22
+        ? 'nd'
+        : day === 3 || day === 23
+          ? 'rd'
+          : 'th'
+  const month = d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })
+  return `${month} ${String(day)}${suffix}, ${String(d.getUTCFullYear())}`
+}
+
+function toDate(raw: unknown): Date | null {
+  if (raw instanceof Date) return raw
+  if (typeof raw === 'number') return new Date((raw - 25569) * 86400000)
+  return null
+}
+
 function extractKardpollData(rows: Array<Row>): KardpollData {
   let totalSales = ''
   let totalLitres = ''
   const rawDate = rows[2]?.[0]
-  const date =
-    rawDate instanceof Date
-      ? rawDate.toISOString().slice(0, 10)
-      : String(rawDate ?? '').trim()
+  const parsed = toDate(rawDate)
+  const date = parsed
+    ? formatDisplayDate(parsed)
+    : String(rawDate ?? '').trim()
 
   for (let i = rows.length - 1; i >= 0; i--) {
     const row = rows[i]
@@ -126,8 +146,9 @@ function RouteComponent() {
 
       const formData = new FormData()
       formData.append('file', file)
+      formData.append('site', site)
 
-      const url = `https://app.gen7fuel.com/api/cash-rec/parse-kardpoll-excel?site=${encodeURIComponent(site)}`
+      const url = 'https://app.gen7fuel.com/api/cash-rec/parse-kardpoll-excel'
       const res = await fetch(url, {
         method: 'POST',
         headers: {
