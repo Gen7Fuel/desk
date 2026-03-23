@@ -22,7 +22,14 @@
       "Bash(do sed:*)",
       "Bash(done)",
       "Bash(npx tsr:*)",
-      "Bash(npx:*)"
+      "Bash(npx:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(find C:/Users/MohammadHasan/workspace/thehub/frontend/src -name api*)",
+      "Bash(ls C:/Users/MohammadHasan/workspace/desk/frontend/.env*)",
+      "Bash(find C:/Users/MohammadHasan/workspace/thehub/frontend/src -name *kardpoll* -o -name *cashRec* -o -name *cash-rec*)",
+      "Bash(find C:/Users/MohammadHasan/workspace/thehub/frontend/src/lib -name constants*)",
+      "Bash(xargs cat:*)"
     ]
   }
 }

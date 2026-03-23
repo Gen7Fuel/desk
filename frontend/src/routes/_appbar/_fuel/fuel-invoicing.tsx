@@ -1,17 +1,17 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useRef } from 'react'
 import { FileText, Loader2, UploadCloud } from 'lucide-react'
-import { useFuelInvoicing } from '../../lib/fuel-invoicing/use-fuel-invoicing'
+import { useFuelInvoicing } from '../../../lib/fuel-invoicing/use-fuel-invoicing'
 import type {
   ExtractedFields,
   TableEntry,
-} from '../../lib/fuel-invoicing/types'
+} from '../../../lib/fuel-invoicing/types'
 import { can } from '@/lib/permissions'
 import { apiFetch } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
-export const Route = createFileRoute('/_appbar/fuel-invoicing')({
+export const Route = createFileRoute('/_appbar/_fuel/fuel-invoicing')({
   component: RouteComponent,
   beforeLoad: () => {
     if (typeof window !== 'undefined' && !can('fuelInvoicing', 'read')) {
