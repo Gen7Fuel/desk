@@ -30,7 +30,7 @@ export function SitePicker({
   label = 'Sites',
   className = 'w-[180px]',
 }: SitePickerProps) {
-  const [locations, setLocations] = useState<Location[]>([])
+  const [locations, setLocations] = useState<Array<Location>>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -40,7 +40,7 @@ export function SitePicker({
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
         return res.json()
       })
-      .then((data: Location[]) => setLocations(data))
+      .then((data: Array<Location>) => setLocations(data))
       .catch((err) => {
         console.error('Error fetching locations:', err)
         setError('Failed to load locations')

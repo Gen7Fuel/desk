@@ -2,11 +2,10 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { FileSpreadsheet, UploadCloud } from 'lucide-react'
 import * as XLSX from 'xlsx'
-import { can } from '@/lib/permissions'
+import { can, getTokenPayload  } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import { SitePicker } from '@/components/custom/SitePicker'
 import { Button } from '@/components/ui/button'
-import { getTokenPayload } from '@/lib/permissions'
 
 export const Route = createFileRoute('/_appbar/_fuel/kardpoll')({
   component: RouteComponent,
@@ -25,10 +24,10 @@ interface KardpollData {
 
 function extractKardpollData(workbook: XLSX.WorkBook): KardpollData {
   const sheet = workbook.Sheets[workbook.SheetNames[0]]
-  const rows: (string | Date)[][] = XLSX.utils.sheet_to_json(sheet, {
+  const rows: Array<Array<string | Date>> = XLSX.utils.sheet_to_json(sheet, {
     header: 1,
     defval: '',
-  }) as (string | Date)[][]
+  })
 
   let totalSales = ''
   let totalLitres = ''
@@ -98,7 +97,9 @@ function RouteComponent() {
           setData(extracted)
         }
       } catch {
-        setError('Failed to parse the Excel file. Please check the file format.')
+        setError(
+          'Failed to parse the Excel file. Please check the file format.',
+        )
       }
     }
     reader.readAsArrayBuffer(f)
@@ -131,18 +132,28 @@ function RouteComponent() {
     setSubmitError('')
     setSubmitSuccess(false)
     try {
-      const payload = getTokenPayload() as (ReturnType<typeof getTokenPayload> & { externalToken?: string }) | null
+      const payload = getTokenPayload() as
+        | (ReturnType<typeof getTokenPayload> & { externalToken?: string })
+        | null
       const externalToken = payload?.externalToken
       if (!externalToken) throw new Error('No external token available.')
 
-      const res = await fetch('https://app.gen7fuel.com/api/cash-rec/parse-kardpoll-excel', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${externalToken}`,
+      const res = await fetch(
+        'https://app.gen7fuel.com/api/cash-rec/parse-kardpoll-excel',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${externalToken}`,
+          },
+          body: JSON.stringify({
+            site,
+            date: data.date,
+            totalSales: data.totalSales,
+            totalLitres: data.totalLitres,
+          }),
         },
-        body: JSON.stringify({ site, date: data.date, totalSales: data.totalSales, totalLitres: data.totalLitres }),
-      })
+      )
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         throw new Error(body.message || 'Submission failed.')
@@ -244,11 +255,20 @@ function RouteComponent() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Button onClick={handleSubmit} disabled={submitting || submitSuccess}>
-              {submitting ? 'Submitting…' : submitSuccess ? 'Submitted' : 'Submit Entry'}
+            <Button
+              onClick={handleSubmit}
+              disabled={submitting || submitSuccess}
+            >
+              {submitting
+                ? 'Submitting…'
+                : submitSuccess
+                  ? 'Submitted'
+                  : 'Submit Entry'}
             </Button>
             {submitSuccess && (
-              <p className="text-sm text-green-600">Entry saved successfully.</p>
+              <p className="text-sm text-green-600">
+                Entry saved successfully.
+              </p>
             )}
             {submitError && (
               <p className="text-sm text-destructive">{submitError}</p>
