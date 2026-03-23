@@ -113,7 +113,7 @@ function RouteComponent() {
   }
 
   async function handleSubmit() {
-    if (!data) return
+    if (!data || !file) return
     setSubmitting(true)
     setSubmitError('')
     setSubmitSuccess(false)
@@ -124,25 +124,20 @@ function RouteComponent() {
       const externalToken = payload?.externalToken
       if (!externalToken) throw new Error('No external token available.')
 
-      const res = await fetch(
-        'https://app.gen7fuel.com/api/cash-rec/parse-kardpoll-excel',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${externalToken}`,
-          },
-          body: JSON.stringify({
-            site,
-            date: data.date,
-            totalSales: data.totalSales,
-            totalLitres: data.totalLitres,
-          }),
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const url = `https://app.gen7fuel.com/api/cash-rec/parse-kardpoll-excel?site=${encodeURIComponent(site)}`
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${externalToken}`,
         },
-      )
+        body: formData,
+      })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        throw new Error(body.message || 'Submission failed.')
+        throw new Error(body.error || body.message || 'Submission failed.')
       }
       setSubmitSuccess(true)
     } catch (err) {
