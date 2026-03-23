@@ -12,14 +12,16 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppbarRouteImport } from './routes/_appbar'
 import { Route as AppbarIndexRouteImport } from './routes/_appbar/index'
 import { Route as AppbarHubRouteImport } from './routes/_appbar/hub'
-import { Route as AppbarFuelInvoicingRouteImport } from './routes/_appbar/fuel-invoicing'
 import { Route as AppbarSidebarRouteImport } from './routes/_appbar/_sidebar'
+import { Route as AppbarFuelRouteImport } from './routes/_appbar/_fuel'
 import { Route as AppbarAdminRouteImport } from './routes/_appbar/_admin'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
 import { Route as AppbarSidebarSettingsRouteImport } from './routes/_appbar/_sidebar/settings'
 import { Route as AppbarSidebarInventoryRouteImport } from './routes/_appbar/_sidebar/inventory'
 import { Route as AppbarSidebarHubRouteImport } from './routes/_appbar/_sidebar/hub'
 import { Route as AppbarSidebarCipherRouteImport } from './routes/_appbar/_sidebar/cipher'
+import { Route as AppbarFuelKardpollRouteImport } from './routes/_appbar/_fuel/kardpoll'
+import { Route as AppbarFuelFuelInvoicingRouteImport } from './routes/_appbar/_fuel/fuel-invoicing'
 import { Route as AppbarAdminSidebarRouteImport } from './routes/_appbar/_admin/_sidebar'
 import { Route as AppbarSidebarSettingsUsersRouteImport } from './routes/_appbar/_sidebar/settings/users'
 import { Route as AppbarSidebarSettingsRolesRouteImport } from './routes/_appbar/_sidebar/settings/roles'
@@ -59,13 +61,12 @@ const AppbarHubRoute = AppbarHubRouteImport.update({
   path: '/hub',
   getParentRoute: () => AppbarRoute,
 } as any)
-const AppbarFuelInvoicingRoute = AppbarFuelInvoicingRouteImport.update({
-  id: '/fuel-invoicing',
-  path: '/fuel-invoicing',
-  getParentRoute: () => AppbarRoute,
-} as any)
 const AppbarSidebarRoute = AppbarSidebarRouteImport.update({
   id: '/_sidebar',
+  getParentRoute: () => AppbarRoute,
+} as any)
+const AppbarFuelRoute = AppbarFuelRouteImport.update({
+  id: '/_fuel',
   getParentRoute: () => AppbarRoute,
 } as any)
 const AppbarAdminRoute = AppbarAdminRouteImport.update({
@@ -96,6 +97,16 @@ const AppbarSidebarCipherRoute = AppbarSidebarCipherRouteImport.update({
   id: '/cipher',
   path: '/cipher',
   getParentRoute: () => AppbarSidebarRoute,
+} as any)
+const AppbarFuelKardpollRoute = AppbarFuelKardpollRouteImport.update({
+  id: '/kardpoll',
+  path: '/kardpoll',
+  getParentRoute: () => AppbarFuelRoute,
+} as any)
+const AppbarFuelFuelInvoicingRoute = AppbarFuelFuelInvoicingRouteImport.update({
+  id: '/fuel-invoicing',
+  path: '/fuel-invoicing',
+  getParentRoute: () => AppbarFuelRoute,
 } as any)
 const AppbarAdminSidebarRoute = AppbarAdminSidebarRouteImport.update({
   id: '/_sidebar',
@@ -241,8 +252,9 @@ const AppbarAdminSidebarAccessPersonnelRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AppbarIndexRoute
   '/login': typeof authLoginRoute
-  '/fuel-invoicing': typeof AppbarFuelInvoicingRoute
   '/hub': typeof AppbarSidebarHubRouteWithChildren
+  '/fuel-invoicing': typeof AppbarFuelFuelInvoicingRoute
+  '/kardpoll': typeof AppbarFuelKardpollRoute
   '/cipher': typeof AppbarSidebarCipherRouteWithChildren
   '/inventory': typeof AppbarSidebarInventoryRouteWithChildren
   '/settings': typeof AppbarSidebarSettingsRouteWithChildren
@@ -273,8 +285,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof authLoginRoute
   '/': typeof AppbarIndexRoute
-  '/fuel-invoicing': typeof AppbarFuelInvoicingRoute
   '/hub': typeof AppbarSidebarHubRouteWithChildren
+  '/fuel-invoicing': typeof AppbarFuelFuelInvoicingRoute
+  '/kardpoll': typeof AppbarFuelKardpollRoute
   '/cipher': typeof AppbarSidebarCipherRouteWithChildren
   '/inventory': typeof AppbarSidebarInventoryRouteWithChildren
   '/settings': typeof AppbarSidebarSettingsRouteWithChildren
@@ -306,11 +319,13 @@ export interface FileRoutesById {
   '/_appbar': typeof AppbarRouteWithChildren
   '/(auth)/login': typeof authLoginRoute
   '/_appbar/_admin': typeof AppbarAdminRouteWithChildren
+  '/_appbar/_fuel': typeof AppbarFuelRouteWithChildren
   '/_appbar/_sidebar': typeof AppbarSidebarRouteWithChildren
-  '/_appbar/fuel-invoicing': typeof AppbarFuelInvoicingRoute
   '/_appbar/hub': typeof AppbarHubRoute
   '/_appbar/': typeof AppbarIndexRoute
   '/_appbar/_admin/_sidebar': typeof AppbarAdminSidebarRouteWithChildren
+  '/_appbar/_fuel/fuel-invoicing': typeof AppbarFuelFuelInvoicingRoute
+  '/_appbar/_fuel/kardpoll': typeof AppbarFuelKardpollRoute
   '/_appbar/_sidebar/cipher': typeof AppbarSidebarCipherRouteWithChildren
   '/_appbar/_sidebar/hub': typeof AppbarSidebarHubRouteWithChildren
   '/_appbar/_sidebar/inventory': typeof AppbarSidebarInventoryRouteWithChildren
@@ -344,8 +359,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
-    | '/fuel-invoicing'
     | '/hub'
+    | '/fuel-invoicing'
+    | '/kardpoll'
     | '/cipher'
     | '/inventory'
     | '/settings'
@@ -376,8 +392,9 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/'
-    | '/fuel-invoicing'
     | '/hub'
+    | '/fuel-invoicing'
+    | '/kardpoll'
     | '/cipher'
     | '/inventory'
     | '/settings'
@@ -408,11 +425,13 @@ export interface FileRouteTypes {
     | '/_appbar'
     | '/(auth)/login'
     | '/_appbar/_admin'
+    | '/_appbar/_fuel'
     | '/_appbar/_sidebar'
-    | '/_appbar/fuel-invoicing'
     | '/_appbar/hub'
     | '/_appbar/'
     | '/_appbar/_admin/_sidebar'
+    | '/_appbar/_fuel/fuel-invoicing'
+    | '/_appbar/_fuel/kardpoll'
     | '/_appbar/_sidebar/cipher'
     | '/_appbar/_sidebar/hub'
     | '/_appbar/_sidebar/inventory'
@@ -470,18 +489,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppbarHubRouteImport
       parentRoute: typeof AppbarRoute
     }
-    '/_appbar/fuel-invoicing': {
-      id: '/_appbar/fuel-invoicing'
-      path: '/fuel-invoicing'
-      fullPath: '/fuel-invoicing'
-      preLoaderRoute: typeof AppbarFuelInvoicingRouteImport
-      parentRoute: typeof AppbarRoute
-    }
     '/_appbar/_sidebar': {
       id: '/_appbar/_sidebar'
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppbarSidebarRouteImport
+      parentRoute: typeof AppbarRoute
+    }
+    '/_appbar/_fuel': {
+      id: '/_appbar/_fuel'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppbarFuelRouteImport
       parentRoute: typeof AppbarRoute
     }
     '/_appbar/_admin': {
@@ -525,6 +544,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/cipher'
       preLoaderRoute: typeof AppbarSidebarCipherRouteImport
       parentRoute: typeof AppbarSidebarRoute
+    }
+    '/_appbar/_fuel/kardpoll': {
+      id: '/_appbar/_fuel/kardpoll'
+      path: '/kardpoll'
+      fullPath: '/kardpoll'
+      preLoaderRoute: typeof AppbarFuelKardpollRouteImport
+      parentRoute: typeof AppbarFuelRoute
+    }
+    '/_appbar/_fuel/fuel-invoicing': {
+      id: '/_appbar/_fuel/fuel-invoicing'
+      path: '/fuel-invoicing'
+      fullPath: '/fuel-invoicing'
+      preLoaderRoute: typeof AppbarFuelFuelInvoicingRouteImport
+      parentRoute: typeof AppbarFuelRoute
     }
     '/_appbar/_admin/_sidebar': {
       id: '/_appbar/_admin/_sidebar'
@@ -820,6 +853,20 @@ const AppbarAdminRouteWithChildren = AppbarAdminRoute._addFileChildren(
   AppbarAdminRouteChildren,
 )
 
+interface AppbarFuelRouteChildren {
+  AppbarFuelFuelInvoicingRoute: typeof AppbarFuelFuelInvoicingRoute
+  AppbarFuelKardpollRoute: typeof AppbarFuelKardpollRoute
+}
+
+const AppbarFuelRouteChildren: AppbarFuelRouteChildren = {
+  AppbarFuelFuelInvoicingRoute: AppbarFuelFuelInvoicingRoute,
+  AppbarFuelKardpollRoute: AppbarFuelKardpollRoute,
+}
+
+const AppbarFuelRouteWithChildren = AppbarFuelRoute._addFileChildren(
+  AppbarFuelRouteChildren,
+)
+
 interface AppbarSidebarCipherRouteChildren {
   AppbarSidebarCipherLockRoute: typeof AppbarSidebarCipherLockRoute
   AppbarSidebarCipherUnlockRoute: typeof AppbarSidebarCipherUnlockRoute
@@ -898,16 +945,16 @@ const AppbarSidebarRouteWithChildren = AppbarSidebarRoute._addFileChildren(
 
 interface AppbarRouteChildren {
   AppbarAdminRoute: typeof AppbarAdminRouteWithChildren
+  AppbarFuelRoute: typeof AppbarFuelRouteWithChildren
   AppbarSidebarRoute: typeof AppbarSidebarRouteWithChildren
-  AppbarFuelInvoicingRoute: typeof AppbarFuelInvoicingRoute
   AppbarHubRoute: typeof AppbarHubRoute
   AppbarIndexRoute: typeof AppbarIndexRoute
 }
 
 const AppbarRouteChildren: AppbarRouteChildren = {
   AppbarAdminRoute: AppbarAdminRouteWithChildren,
+  AppbarFuelRoute: AppbarFuelRouteWithChildren,
   AppbarSidebarRoute: AppbarSidebarRouteWithChildren,
-  AppbarFuelInvoicingRoute: AppbarFuelInvoicingRoute,
   AppbarHubRoute: AppbarHubRoute,
   AppbarIndexRoute: AppbarIndexRoute,
 }

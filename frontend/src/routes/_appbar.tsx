@@ -74,7 +74,9 @@ function RouteComponent() {
   ]
   const section = location.pathname.split('/')[1] ?? ''
   const isAdminActive = adminSections.includes(section)
-  const isFuelActive = !!matchRoute({ to: '/fuel-invoicing', fuzzy: true })
+  const isFuelActive =
+    !!matchRoute({ to: '/fuel-invoicing', fuzzy: true }) ||
+    !!matchRoute({ to: '/kardpoll', fuzzy: true })
   const isCipherActive = !!matchRoute({ to: '/cipher', fuzzy: true })
   const isInventoryActive = !!matchRoute({ to: '/inventory', fuzzy: true })
   const isSettingsActive = !!matchRoute({ to: '/settings', fuzzy: true })
@@ -124,7 +126,7 @@ function RouteComponent() {
                   <Fuel className="h-5 w-5" />
                 </Link>
               </TooltipTrigger>
-              <TooltipContent side="right">Fuel Invoicing</TooltipContent>
+              <TooltipContent side="right">Fuel</TooltipContent>
             </Tooltip>
           )}
           {can('cipher', 'read') && (

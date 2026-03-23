@@ -1,6 +1,8 @@
 const express = require('express')
 const multer = require('multer')
 // const { BlobServiceClient } = require('@azure/storage-blob')
+const { authenticate, requirePermission } = require('../../middleware/auth')
+const Kardpoll = require('./kardpoll.model')
 
 const router = express.Router()
 const upload = multer({ storage: multer.memoryStorage() })
@@ -37,5 +39,26 @@ router.post('/fuel-invoicing/upload', upload.single('file'), async (req, res) =>
     return res.status(500).json({ message: 'Failed to process file.' })
   }
 })
+
+router.post(
+  '/fuel-invoicing/parse-kardpoll-excel',
+  authenticate,
+  requirePermission('fuelInvoicing', 'create'),
+  async (req, res) => {
+    const { site, date, totalSales, totalLitres } = req.body
+
+    if (!site || !date || !totalSales || !totalLitres) {
+      return res.status(400).json({ message: 'site, date, totalSales, and totalLitres are required.' })
+    }
+
+    try {
+      const entry = await Kardpoll.create({ site, date, totalSales, totalLitres })
+      return res.status(201).json(entry)
+    } catch (err) {
+      console.error('[fuel-invoicing/parse-kardpoll-excel] error:', err)
+      return res.status(500).json({ message: 'Failed to save kardpoll entry.' })
+    }
+  },
+)
 
 module.exports = router
