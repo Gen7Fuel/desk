@@ -56,6 +56,12 @@
         "roles": { "actions": ["create", "read", "update", "delete"] }
       }
     },
+    "accounting": {
+      "actions": ["read"],
+      "submodules": {
+        "fuelRec": { "actions": ["read", "delete", "requestAgain"] }
+      }
+    },
     "hub": {
       "actions": ["read"],
       "submodules": {
