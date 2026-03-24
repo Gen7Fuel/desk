@@ -2,8 +2,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { FileSpreadsheet, UploadCloud } from 'lucide-react'
 import type ExcelJS from 'exceljs'
-import { can } from '@/lib/permissions'
-import { apiFetch } from '@/lib/api'
+import { can, getTokenPayload } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import { SitePicker } from '@/components/custom/SitePicker'
 import { Button } from '@/components/ui/button'
@@ -21,6 +20,7 @@ interface KardpollData {
   totalSales: string
   totalLitres: string
   date: string
+  isoDate: string
 }
 
 function formatDisplayDate(d: Date): string {
@@ -51,6 +51,9 @@ function extractKardpollData(rows: Array<Row>): KardpollData {
   const rawDate = rows[2]?.[0]
   const parsed = toDate(rawDate)
   const date = parsed ? formatDisplayDate(parsed) : String(rawDate ?? '').trim()
+  const isoDate = parsed
+    ? `${parsed.getUTCFullYear()}-${String(parsed.getUTCMonth() + 1).padStart(2, '0')}-${String(parsed.getUTCDate()).padStart(2, '0')}`
+    : ''
 
   for (let i = rows.length - 1; i >= 0; i--) {
     const row = rows[i]
@@ -78,7 +81,7 @@ function extractKardpollData(rows: Array<Row>): KardpollData {
     if (totalSales && totalLitres) break
   }
 
-  return { totalSales, totalLitres, date }
+  return { totalSales, totalLitres, date, isoDate }
 }
 
 function RouteComponent() {
@@ -151,10 +154,28 @@ function RouteComponent() {
     setSubmitError('')
     setSubmitSuccess(false)
     try {
-      const res = await apiFetch('/api/fuel-invoicing/parse-kardpoll-excel', {
-        method: 'POST',
-        body: JSON.stringify({ site, date: data.date, totalSales: data.totalSales, totalLitres: data.totalLitres }),
-      })
+      const payload = getTokenPayload() as
+        | (ReturnType<typeof getTokenPayload> & { externalToken?: string })
+        | null
+      const externalToken = payload?.externalToken
+      if (!externalToken) throw new Error('No external token available.')
+
+      const res = await fetch(
+        'https://app.gen7fuel.com/api/cash-rec/parse-kardpoll-excel',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${externalToken}`,
+          },
+          body: JSON.stringify({
+            site,
+            date: data.isoDate,
+            totalSales: data.totalSales,
+            totalLitres: data.totalLitres,
+          }),
+        },
+      )
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         throw new Error(body.error || body.message || 'Submission failed.')
