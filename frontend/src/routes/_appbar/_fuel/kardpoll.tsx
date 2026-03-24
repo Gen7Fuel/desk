@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { FileSpreadsheet, UploadCloud } from 'lucide-react'
-import { read, utils } from 'xlsx'
+import type ExcelJS from 'exceljs'
 import { can, getTokenPayload } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import { SitePicker } from '@/components/custom/SitePicker'
@@ -97,30 +97,18 @@ function RouteComponent() {
     setFile(f)
     try {
       const buf = await f.arrayBuffer()
-      const wb = read(buf, { type: 'array' })
-      const ws = wb.Sheets[wb.SheetNames[0]]
+      const { default: ExcelJSLib } = await import('exceljs')
+      const wb = new ExcelJSLib.Workbook()
+      await wb.xlsx.load(buf)
+      const ws = wb.worksheets[0]
 
-      // Fix incorrect !ref — recompute range from all actual cells
-      const allCells = Object.keys(ws).filter((k) => !k.startsWith('!'))
-      if (allCells.length > 0) {
-        const range = allCells.reduce(
-          (r, cell) => {
-            const d = utils.decode_cell(cell)
-            r.s.r = Math.min(r.s.r, d.r)
-            r.s.c = Math.min(r.s.c, d.c)
-            r.e.r = Math.max(r.e.r, d.r)
-            r.e.c = Math.max(r.e.c, d.c)
-            return r
-          },
-          { s: { r: Infinity, c: Infinity }, e: { r: 0, c: 0 } },
-        )
-        ws['!ref'] = utils.encode_range(range)
-      }
-
-      const rows: Array<Row> = utils.sheet_to_json(ws, {
-        header: 1,
-        defval: '',
-        raw: true,
+      const rows: Array<Row> = []
+      ws.eachRow({ includeEmpty: false }, (row) => {
+        const vals: Array<unknown> = []
+        for (let c = 1; c <= ws.columnCount; c++) {
+          vals.push(row.getCell(c).value ?? '')
+        }
+        rows.push(vals)
       })
       const extracted = extractKardpollData(rows)
       if (!extracted.totalSales && !extracted.totalLitres) {
