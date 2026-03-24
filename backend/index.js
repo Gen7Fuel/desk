@@ -17,6 +17,7 @@ const roleRoutes = require('./apps/roles/role.routes')
 const userRoutes = require('./apps/users/user.routes')
 const sageRoutes = require('./apps/sage/sage.routes')
 const cdnRoutes = require('./apps/cdn/cdn.routes')
+const fuelRecRoutes = require('./apps/fuel-rec/fuel-rec.routes')
 
 const app = express()
 const port = 5000
@@ -48,6 +49,7 @@ apiRouter.use('/roles', roleRoutes)
 apiRouter.use('/users', userRoutes)
 apiRouter.use('/sage', sageRoutes)
 apiRouter.use(cdnRoutes)
+apiRouter.use(fuelRecRoutes)
 
 app.use('/api', apiRouter)
 
