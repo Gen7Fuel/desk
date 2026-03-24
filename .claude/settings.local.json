@@ -32,7 +32,9 @@
       "Bash(xargs cat:*)",
       "Bash(npm uninstall:*)",
       "Bash(node -e \":*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(npm info:*)",
+      "Bash(npm ls:*)"
     ]
   }
 }
