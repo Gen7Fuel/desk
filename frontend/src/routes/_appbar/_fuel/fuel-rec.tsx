@@ -138,7 +138,7 @@ function RouteComponent() {
   }
 
   const deleteEntry = async (e: BOLPhoto) => {
-    if (!can('accounting.fuelRec', 'delete')) return
+    if (!can('fuel.fuelRec', 'delete')) return
     if (
       !window.confirm(
         `Delete entry for ${e.site} on ${e.date}? This cannot be undone.`,
@@ -351,7 +351,7 @@ function RouteComponent() {
                         onClick={(ev) => ev.stopPropagation()}
                       >
                         <div className="flex items-center justify-center gap-2">
-                          {can('accounting.fuelRec', 'read') && (
+                          {can('fuel.fuelRec', 'read') && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -362,7 +362,7 @@ function RouteComponent() {
                             </Button>
                           )}
 
-                          {can('accounting.fuelRec', 'read') && (
+                          {can('fuel.fuelRec', 'read') && (
                             <Button
                               size="sm"
                               variant={
@@ -387,7 +387,7 @@ function RouteComponent() {
                             </Button>
                           )}
 
-                          {can('accounting.fuelRec', 'requestAgain') && (
+                          {can('fuel.fuelRec', 'requestAgain') && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -399,7 +399,7 @@ function RouteComponent() {
                             </Button>
                           )}
 
-                          {can('accounting.fuelRec', 'delete') && (
+                          {can('fuel.fuelRec', 'delete') && (
                             <Button
                               size="sm"
                               variant="outline"

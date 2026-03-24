@@ -112,7 +112,7 @@ function RouteComponent() {
             </TooltipTrigger>
             <TooltipContent side="right">Admin</TooltipContent>
           </Tooltip>
-          {can('fuelInvoicing', 'read') && (
+          {can('fuel.fuelInvoicing', 'read') && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link

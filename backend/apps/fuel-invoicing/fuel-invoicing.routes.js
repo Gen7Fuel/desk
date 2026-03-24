@@ -43,7 +43,7 @@ router.post('/fuel-invoicing/upload', upload.single('file'), async (req, res) =>
 router.post(
   '/fuel-invoicing/parse-kardpoll-excel',
   authenticate,
-  requirePermission('fuelInvoicing', 'create'),
+  requirePermission('fuel.fuelInvoicing', 'create'),
   async (req, res) => {
     const { site, date, totalSales, totalLitres } = req.body
 
