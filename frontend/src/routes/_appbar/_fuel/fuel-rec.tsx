@@ -351,37 +351,41 @@ function RouteComponent() {
                         onClick={(ev) => ev.stopPropagation()}
                       >
                         <div className="flex items-center justify-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => void generatePDF(e)}
-                            title="Download PDF"
-                          >
-                            <FileDown className="h-4 w-4" />
-                          </Button>
+                          {can('accounting.fuelRec', 'read') && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => void generatePDF(e)}
+                              title="Download PDF"
+                            >
+                              <FileDown className="h-4 w-4" />
+                            </Button>
+                          )}
 
-                          <Button
-                            size="sm"
-                            variant={
-                              rightPane?.type === 'comments' &&
-                              activeId === e._id
-                                ? 'default'
-                                : 'outline'
-                            }
-                            onClick={() => {
-                              setCommentText('')
-                              setRightPane({ type: 'comments', entry: e })
-                            }}
-                            title="Comments"
-                            className="relative"
-                          >
-                            <MessageSquareText className="h-4 w-4" />
-                            {e.comments && e.comments.length > 0 && (
-                              <span className="absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full border border-background bg-red-600 px-1 text-[10px] text-white">
-                                {e.comments.length}
-                              </span>
-                            )}
-                          </Button>
+                          {can('accounting.fuelRec', 'read') && (
+                            <Button
+                              size="sm"
+                              variant={
+                                rightPane?.type === 'comments' &&
+                                activeId === e._id
+                                  ? 'default'
+                                  : 'outline'
+                              }
+                              onClick={() => {
+                                setCommentText('')
+                                setRightPane({ type: 'comments', entry: e })
+                              }}
+                              title="Comments"
+                              className="relative"
+                            >
+                              <MessageSquareText className="h-4 w-4" />
+                              {e.comments && e.comments.length > 0 && (
+                                <span className="absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full border border-background bg-red-600 px-1 text-[10px] text-white">
+                                  {e.comments.length}
+                                </span>
+                              )}
+                            </Button>
+                          )}
 
                           {can('accounting.fuelRec', 'requestAgain') && (
                             <Button
