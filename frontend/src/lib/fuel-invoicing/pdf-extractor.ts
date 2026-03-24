@@ -150,16 +150,35 @@ export async function extractFieldsFromRects(
   const qtyGrossRaw = filterRegion(items, 290, 360, 127, 496)
   const freightValues = filterRegion(items, 480, 530, 127, 496)
 
-  // Column-based extraction for freightTotal and surcharges
-  const totalsLabels = filterRegion(items, 440, 520, 70, 120)
-  const totalsValues = filterRegion(items, 520, 585, 70, 120)
-  let freightTotal: string | null = null
-  let surcharges: string | null = null
-  for (let i = 0; i < totalsLabels.length; i++) {
-    const label = totalsLabels[i].toLowerCase()
-    if (label.includes('freight')) freightTotal = totalsValues[i] || null
-    if (label.includes('surcharge')) surcharges = totalsValues[i] || null
-  }
+  // Match each label to its value by y-coordinate proximity
+  const totalsArea = items.filter(
+    (item) => item.y >= 70 && item.y <= 120 && item.text.length > 0,
+  )
+  const findValueAtY = (labelY: number) =>
+    totalsArea
+      .filter((item) => item.x >= 520 && item.x <= 585)
+      .sort((a, b) => Math.abs(a.y - labelY) - Math.abs(b.y - labelY))[0]
+      ?.text ?? null
+
+  const freightLabelItem = totalsArea.find(
+    (item) =>
+      item.x >= 440 &&
+      item.x <= 520 &&
+      item.text.toLowerCase().includes('freight'),
+  )
+  const surchargesLabelItem = totalsArea.find(
+    (item) =>
+      item.x >= 440 &&
+      item.x <= 520 &&
+      item.text.toLowerCase().includes('surcharge'),
+  )
+
+  const freightTotal = freightLabelItem
+    ? findValueAtY(freightLabelItem.y)
+    : null
+  const surcharges = surchargesLabelItem
+    ? findValueAtY(surchargesLabelItem.y)
+    : null
 
   const qtyGrossValues = qtyGrossRaw.filter((_, i) => i % 2 === 0)
 
