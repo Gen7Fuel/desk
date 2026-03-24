@@ -1,8 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { FileSpreadsheet, UploadCloud } from 'lucide-react'
-import readXlsxFile from 'read-excel-file/browser'
-import type { Row } from 'read-excel-file/browser'
+import type ExcelJS from 'exceljs'
 import { can, getTokenPayload } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import { SitePicker } from '@/components/custom/SitePicker'
@@ -43,14 +42,14 @@ function toDate(raw: unknown): Date | null {
   return null
 }
 
+type Row = Array<unknown>
+
 function extractKardpollData(rows: Array<Row>): KardpollData {
   let totalSales = ''
   let totalLitres = ''
   const rawDate = rows[2]?.[0]
   const parsed = toDate(rawDate)
-  const date = parsed
-    ? formatDisplayDate(parsed)
-    : String(rawDate ?? '').trim()
+  const date = parsed ? formatDisplayDate(parsed) : String(rawDate ?? '').trim()
 
   for (let i = rows.length - 1; i >= 0; i--) {
     const row = rows[i]
@@ -97,7 +96,20 @@ function RouteComponent() {
     setData(null)
     setFile(f)
     try {
-      const rows = await readXlsxFile(f)
+      const buf = await f.arrayBuffer()
+      const { default: ExcelJSLib } = await import('exceljs')
+      const wb = new ExcelJSLib.Workbook()
+      await wb.xlsx.load(buf)
+      const ws = wb.worksheets[0]
+
+      const rows: Array<Row> = []
+      ws.eachRow({ includeEmpty: false }, (row) => {
+        const vals: Array<unknown> = []
+        for (let c = 1; c <= ws.columnCount; c++) {
+          vals.push(row.getCell(c).value ?? '')
+        }
+        rows.push(vals)
+      })
       const extracted = extractKardpollData(rows)
       if (!extracted.totalSales && !extracted.totalLitres) {
         setError(
