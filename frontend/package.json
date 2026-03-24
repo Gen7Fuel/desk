@@ -37,6 +37,9 @@
     "vite-tsconfig-paths": "^6.0.2",
     "xlsx": "^0.18.5"
   },
+  "overrides": {
+    "h3-v2": "npm:h3@2.0.1-rc.19"
+  },
   "devDependencies": {
     "@tanstack/devtools-vite": "^0.3.11",
     "@tanstack/eslint-config": "^0.3.0",
