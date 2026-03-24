@@ -34,7 +34,11 @@
       "Bash(node -e \":*)",
       "Bash(node:*)",
       "Bash(npm info:*)",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "Bash(xargs grep:*)",
+      "Bash(find /c/Users/MohammadHasan/workspace/desk/frontend/src -name AuthContext* -o -name auth*context*)",
+      "Bash(find /c/Users/MohammadHasan/workspace/desk/frontend/src -name permissions*)",
+      "Bash(find /c/Users/MohammadHasan/workspace/thehub/backend -name *fuel*)"
     ]
   }
 }
