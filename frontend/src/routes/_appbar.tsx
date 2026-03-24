@@ -76,11 +76,56 @@ function RouteComponent() {
   const isAdminActive = adminSections.includes(section)
   const isFuelActive =
     !!matchRoute({ to: '/fuel-invoicing', fuzzy: true }) ||
-    !!matchRoute({ to: '/kardpoll', fuzzy: true })
+    !!matchRoute({ to: '/kardpoll', fuzzy: true }) ||
+    !!matchRoute({ to: '/fuel-rec', fuzzy: true })
   const isCipherActive = !!matchRoute({ to: '/cipher', fuzzy: true })
   const isInventoryActive = !!matchRoute({ to: '/inventory', fuzzy: true })
   const isSettingsActive = !!matchRoute({ to: '/settings', fuzzy: true })
   const isHubActive = location.pathname.startsWith('/hub')
+
+  const adminTo =
+    [
+      { path: '/personnel', perm: 'personnel' },
+      { path: '/access/resources', perm: 'access' },
+      { path: '/assets/devices', perm: 'assets' },
+      { path: '/credentials/categories', perm: 'credentials' },
+      { path: '/subscriptions/categories', perm: 'subscriptions' },
+    ].find((r) => can(r.perm, 'read'))?.path ?? '/personnel'
+
+  const fuelTo =
+    [
+      { path: '/fuel-invoicing', perm: 'fuel.fuelInvoicing' },
+      { path: '/fuel-rec', perm: 'fuel.fuelRec' },
+      { path: '/kardpoll', perm: 'fuel.fuelInvoicing' },
+    ].find((r) => can(r.perm, 'read'))?.path ?? '/fuel-invoicing'
+
+  const cipherTo =
+    [
+      { path: '/cipher/lock', perm: 'cipher.lock' },
+      { path: '/cipher/unlock', perm: 'cipher.unlock' },
+    ].find((r) => can(r.perm, 'read'))?.path ?? '/cipher/lock'
+
+  const inventoryTo =
+    [
+      {
+        path: '/inventory/coremark-initial-order',
+        perm: 'inventory.coremarkInitialOrder',
+      },
+    ].find((r) => can(r.perm, 'read'))?.path ??
+    '/inventory/coremark-initial-order'
+
+  const hubTo =
+    [
+      { path: '/hub/cdn', perm: 'hub.cdn' },
+      { path: '/hub/payables', perm: 'hub.payables' },
+      { path: '/hub/receivables', perm: 'hub.receivables' },
+    ].find((r) => can(r.perm, 'read'))?.path ?? '/hub/cdn'
+
+  const settingsTo =
+    [
+      { path: '/settings/users', perm: 'settings.users' },
+      { path: '/settings/roles', perm: 'settings.roles' },
+    ].find((r) => can(r.perm, 'read'))?.path ?? '/settings/users'
 
   return (
     <div className="flex h-screen">
@@ -101,7 +146,7 @@ function RouteComponent() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Link
-                to="/personnel"
+                to={adminTo}
                 className={cn(
                   'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
                   isAdminActive && 'bg-accent/80 text-accent-foreground',
@@ -116,8 +161,10 @@ function RouteComponent() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link
-                  to="/fuel-invoicing"
-                  search={{ selected: '' }}
+                  to={fuelTo}
+                  search={
+                    fuelTo === '/fuel-invoicing' ? { selected: '' } : undefined
+                  }
                   className={cn(
                     'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
                     isFuelActive && 'bg-accent/80 text-accent-foreground',
@@ -133,8 +180,7 @@ function RouteComponent() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link
-                  to="/cipher"
-                  search={{ selected: '' }}
+                  to={cipherTo}
                   className={cn(
                     'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
                     isCipherActive && 'bg-accent/80 text-accent-foreground',
@@ -150,7 +196,7 @@ function RouteComponent() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link
-                  to="/inventory"
+                  to={inventoryTo}
                   className={cn(
                     'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
                     isInventoryActive && 'bg-accent/80 text-accent-foreground',
@@ -166,7 +212,7 @@ function RouteComponent() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link
-                  to="/hub/cdn"
+                  to={hubTo}
                   className={cn(
                     'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
                     isHubActive && 'bg-accent/80 text-accent-foreground',
@@ -183,12 +229,16 @@ function RouteComponent() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
-                    to="/settings/users"
+                    to={settingsTo}
+                    search={
+                      settingsTo === '/settings/users'
+                        ? { selected: 'users' }
+                        : undefined
+                    }
                     className={cn(
                       'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
                       isSettingsActive && 'bg-accent/80 text-accent-foreground',
                     )}
-                    search={{ selected: 'users' }}
                   >
                     <Settings className="h-5 w-5" />
                   </Link>
