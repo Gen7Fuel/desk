@@ -141,7 +141,7 @@ export async function createBill(
 
   const sharedLineDimensions = {
     dimensions: {
-      location: { id: 'A090' },
+      location: { id: LOCATION_ID },
       vendor: { id: 'V00674' },
     },
     memo: referenceNumber,
@@ -210,6 +210,8 @@ export async function createBill(
 
 // ─── Step 3 ──────────────────────────────────────────────────────────────────
 
+const LOCATION_ID = 'A210'
+
 const CUSTOMER_ID_MAP: Record<string, string> = {
   'Nipissing Gen7 LP': 'C00139',
   'Smokeys Gen7 LP': 'C00141',
@@ -269,7 +271,7 @@ export async function createInvoice(
       glAccount: { id: '40010' },
       memo: entry.product,
       dimensions: {
-        location: { id: 'A090' },
+        location: { id: LOCATION_ID },
         customer: { id: customerId },
       },
       taxEntries: invoiceTaxEntry,
@@ -284,7 +286,7 @@ export async function createInvoice(
     glAccount: { id: '40700' },
     memo: `Total Freight Charges on BOL # ${manifest} - ${shipToLP}`,
     dimensions: {
-      location: { id: 'A090' },
+      location: { id: LOCATION_ID },
       customer: { id: customerId },
     },
     taxEntries: invoiceTaxEntry,
