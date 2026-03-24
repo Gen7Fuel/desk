@@ -1,8 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { FileSpreadsheet, UploadCloud } from 'lucide-react'
-import readXlsxFile from 'read-excel-file/browser'
-import type { Row } from 'read-excel-file/browser'
+import { read, utils } from 'xlsx'
 import { can, getTokenPayload } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import { SitePicker } from '@/components/custom/SitePicker'
@@ -42,6 +41,8 @@ function toDate(raw: unknown): Date | null {
   if (typeof raw === 'number') return new Date((raw - 25569) * 86400000)
   return null
 }
+
+type Row = Array<unknown>
 
 function extractKardpollData(rows: Array<Row>): KardpollData {
   let totalSales = ''
@@ -97,7 +98,32 @@ function RouteComponent() {
     setData(null)
     setFile(f)
     try {
-      const rows = await readXlsxFile(f)
+      const buf = await f.arrayBuffer()
+      const wb = read(buf, { type: 'array' })
+      const ws = wb.Sheets[wb.SheetNames[0]]
+
+      // Fix incorrect !ref — recompute range from all actual cells
+      const allCells = Object.keys(ws).filter((k) => !k.startsWith('!'))
+      if (allCells.length > 0) {
+        const range = allCells.reduce(
+          (r, cell) => {
+            const d = utils.decode_cell(cell)
+            r.s.r = Math.min(r.s.r, d.r)
+            r.s.c = Math.min(r.s.c, d.c)
+            r.e.r = Math.max(r.e.r, d.r)
+            r.e.c = Math.max(r.e.c, d.c)
+            return r
+          },
+          { s: { r: Infinity, c: Infinity }, e: { r: 0, c: 0 } },
+        )
+        ws['!ref'] = utils.encode_range(range)
+      }
+
+      const rows: Array<Row> = utils.sheet_to_json(ws, {
+        header: 1,
+        defval: '',
+        raw: true,
+      })
       const extracted = extractKardpollData(rows)
       if (!extracted.totalSales && !extracted.totalLitres) {
         setError(
