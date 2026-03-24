@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 export const Route = createFileRoute('/_appbar/_fuel/fuel-invoicing')({
   component: RouteComponent,
   beforeLoad: () => {
-    if (typeof window !== 'undefined' && !can('fuelInvoicing', 'read')) {
+    if (typeof window !== 'undefined' && !can('fuel.fuelInvoicing', 'read')) {
       throw redirect({ to: '/' })
     }
   },
