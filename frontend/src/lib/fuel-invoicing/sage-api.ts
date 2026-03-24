@@ -151,7 +151,7 @@ export async function createBill(
   }
 
   const body = {
-    billNumber: `Bill - ${manifest}`,
+    billNumber: fields.invoiceNumber || `Bill - ${manifest}`,
     vendor: { id: 'V00674' },
     referenceNumber,
     description: referenceNumber,
@@ -308,6 +308,7 @@ export async function createInvoice(
       },
     },
     attachment: { key: attachmentKey },
+    state: 'draft',
     lines: [...productLines, freightLine],
   }
 
