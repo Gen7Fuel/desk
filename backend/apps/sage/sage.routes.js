@@ -3,6 +3,7 @@ const router = express.Router()
 const { authenticate } = require('../../middleware/auth')
 
 const SAGE_BASE = 'https://api.intacct.com/ia/api/v1/'
+const LOCATION_ID = 'A210'
 
 /**
  * POST /sage/connect
@@ -112,7 +113,7 @@ router.post('/bill', authenticate, async (req, res) => {
       headers: {
         Authorization: `Bearer ${sageToken}`,
         'Content-Type': 'application/json',
-        'X-IA-API-Param-Entity': 'A090',
+        'X-IA-API-Param-Entity': LOCATION_ID,
       },
       body: JSON.stringify(req.body),
     })
@@ -152,7 +153,7 @@ router.post('/invoice', authenticate, async (req, res) => {
       headers: {
         Authorization: `Bearer ${sageToken}`,
         'Content-Type': 'application/json',
-        'X-IA-API-Param-Entity': 'A090',
+        'X-IA-API-Param-Entity': LOCATION_ID,
       },
       body: JSON.stringify(req.body),
     })
