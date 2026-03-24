@@ -161,14 +161,24 @@ export async function extractFieldsFromRects(
       ?.text ?? null
 
   const freightLabelItem = totalsArea.find(
-    (item) => item.x >= 440 && item.x <= 520 && item.text.toLowerCase().includes('freight'),
+    (item) =>
+      item.x >= 440 &&
+      item.x <= 520 &&
+      item.text.toLowerCase().includes('freight'),
   )
   const surchargesLabelItem = totalsArea.find(
-    (item) => item.x >= 440 && item.x <= 520 && item.text.toLowerCase().includes('surcharge'),
+    (item) =>
+      item.x >= 440 &&
+      item.x <= 520 &&
+      item.text.toLowerCase().includes('surcharge'),
   )
 
-  const freightTotal = freightLabelItem ? findValueAtY(freightLabelItem.y) : null
-  const surcharges = surchargesLabelItem ? findValueAtY(surchargesLabelItem.y) : null
+  const freightTotal = freightLabelItem
+    ? findValueAtY(freightLabelItem.y)
+    : null
+  const surcharges = surchargesLabelItem
+    ? findValueAtY(surchargesLabelItem.y)
+    : null
 
   const qtyGrossValues = qtyGrossRaw.filter((_, i) => i % 2 === 0)
 

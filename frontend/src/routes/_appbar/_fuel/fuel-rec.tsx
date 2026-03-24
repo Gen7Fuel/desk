@@ -9,7 +9,13 @@ import {
   RefreshCcw,
   Trash2,
 } from 'lucide-react'
-import { Document, Page, Image as PdfImage, StyleSheet, pdf } from '@react-pdf/renderer'
+import {
+  Document,
+  Page,
+  Image as PdfImage,
+  StyleSheet,
+  pdf,
+} from '@react-pdf/renderer'
 import { can, getTokenPayload } from '@/lib/permissions'
 import { SitePicker } from '@/components/custom/SitePicker'
 import { Button } from '@/components/ui/button'
@@ -60,8 +66,8 @@ const pdfStyles = StyleSheet.create({
 })
 
 function RouteComponent() {
-  const [from, setFrom] = React.useState(() =>
-    subDays(new Date(), 6).toISOString().split('T')[0],
+  const [from, setFrom] = React.useState(
+    () => subDays(new Date(), 6).toISOString().split('T')[0],
   )
   const [to, setTo] = React.useState(todayIso)
   const [site, setSite] = React.useState('Rankin')
@@ -125,27 +131,45 @@ function RouteComponent() {
       const blob = await instance.toBlob()
       window.open(URL.createObjectURL(blob))
     } catch (err) {
-      alert(`PDF generation failed: ${err instanceof Error ? err.message : String(err)}`)
+      alert(
+        `PDF generation failed: ${err instanceof Error ? err.message : String(err)}`,
+      )
     }
   }
 
   const deleteEntry = async (e: BOLPhoto) => {
     if (!can('accounting.fuelRec', 'delete')) return
-    if (!window.confirm(`Delete entry for ${e.site} on ${e.date}? This cannot be undone.`))
+    if (
+      !window.confirm(
+        `Delete entry for ${e.site} on ${e.date}? This cannot be undone.`,
+      )
+    )
       return
     try {
       setPending((prev) => new Set(prev).add(e._id))
-      const res = await fetch(`${HUB}/api/fuel-rec/${encodeURIComponent(e._id)}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${getExternalToken()}` },
-      })
-      if (!res.ok) throw new Error((await res.text().catch(() => '')) || `HTTP ${res.status}`)
+      const res = await fetch(
+        `${HUB}/api/fuel-rec/${encodeURIComponent(e._id)}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${getExternalToken()}` },
+        },
+      )
+      if (!res.ok)
+        throw new Error(
+          (await res.text().catch(() => '')) || `HTTP ${res.status}`,
+        )
       setEntries((prev) => prev.filter((x) => x._id !== e._id))
       if (rightPane?.entry._id === e._id) setRightPane(null)
     } catch (err) {
-      alert(`Delete failed: ${err instanceof Error ? err.message : String(err)}`)
+      alert(
+        `Delete failed: ${err instanceof Error ? err.message : String(err)}`,
+      )
     } finally {
-      setPending((prev) => { const next = new Set(prev); next.delete(e._id); return next })
+      setPending((prev) => {
+        const next = new Set(prev)
+        next.delete(e._id)
+        return next
+      })
     }
   }
 
@@ -160,12 +184,21 @@ function RouteComponent() {
         },
         body: JSON.stringify({ site: e.site, date: e.date }),
       })
-      if (!res.ok) throw new Error((await res.text().catch(() => '')) || `HTTP ${res.status}`)
+      if (!res.ok)
+        throw new Error(
+          (await res.text().catch(() => '')) || `HTTP ${res.status}`,
+        )
       alert(`Retake request sent for ${e.site} on ${e.date}.`)
     } catch (err) {
-      alert(`Retake request failed: ${err instanceof Error ? err.message : String(err)}`)
+      alert(
+        `Retake request failed: ${err instanceof Error ? err.message : String(err)}`,
+      )
     } finally {
-      setPending((prev) => { const next = new Set(prev); next.delete(e._id); return next })
+      setPending((prev) => {
+        const next = new Set(prev)
+        next.delete(e._id)
+        return next
+      })
     }
   }
 
@@ -209,22 +242,33 @@ function RouteComponent() {
 
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">From</span>
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                From
+              </span>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className={cn('w-[160px] justify-start text-left font-normal', !from && 'text-muted-foreground')}
+                    className={cn(
+                      'w-[160px] justify-start text-left font-normal',
+                      !from && 'text-muted-foreground',
+                    )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {from ? format(parseISO(from), 'PPP') : <span>Pick a date</span>}
+                    {from ? (
+                      format(parseISO(from), 'PPP')
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={from ? parseISO(from) : undefined}
-                    onSelect={(date) => setFrom(date ? format(date, 'yyyy-MM-dd') : '')}
+                    onSelect={(date) =>
+                      setFrom(date ? format(date, 'yyyy-MM-dd') : '')
+                    }
                     initialFocus
                   />
                 </PopoverContent>
@@ -232,22 +276,33 @@ function RouteComponent() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">To</span>
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                To
+              </span>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className={cn('w-[160px] justify-start text-left font-normal', !to && 'text-muted-foreground')}
+                    className={cn(
+                      'w-[160px] justify-start text-left font-normal',
+                      !to && 'text-muted-foreground',
+                    )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {to ? format(parseISO(to), 'PPP') : <span>Pick a date</span>}
+                    {to ? (
+                      format(parseISO(to), 'PPP')
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={to ? parseISO(to) : undefined}
-                    onSelect={(date) => setTo(date ? format(date, 'yyyy-MM-dd') : '')}
+                    onSelect={(date) =>
+                      setTo(date ? format(date, 'yyyy-MM-dd') : '')
+                    }
                     initialFocus
                   />
                 </PopoverContent>
@@ -272,7 +327,9 @@ function RouteComponent() {
               <thead className="bg-muted/50">
                 <tr>
                   <th className="px-4 py-2 text-left font-medium">Date</th>
-                  <th className="px-4 py-2 text-left font-medium">BOL Number</th>
+                  <th className="px-4 py-2 text-left font-medium">
+                    BOL Number
+                  </th>
                   <th className="px-4 py-2 text-center font-medium">Actions</th>
                 </tr>
               </thead>
@@ -289,7 +346,10 @@ function RouteComponent() {
                     >
                       <td className="px-4 py-2 font-mono">{e.date}</td>
                       <td className="px-4 py-2">{e.bolNumber || '—'}</td>
-                      <td className="px-4 py-2 text-center" onClick={(ev) => ev.stopPropagation()}>
+                      <td
+                        className="px-4 py-2 text-center"
+                        onClick={(ev) => ev.stopPropagation()}
+                      >
                         <div className="flex items-center justify-center gap-2">
                           <Button
                             size="sm"
@@ -302,7 +362,12 @@ function RouteComponent() {
 
                           <Button
                             size="sm"
-                            variant={rightPane?.type === 'comments' && activeId === e._id ? 'default' : 'outline'}
+                            variant={
+                              rightPane?.type === 'comments' &&
+                              activeId === e._id
+                                ? 'default'
+                                : 'outline'
+                            }
                             onClick={() => {
                               setCommentText('')
                               setRightPane({ type: 'comments', entry: e })
@@ -348,7 +413,10 @@ function RouteComponent() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
+                    <td
+                      colSpan={3}
+                      className="px-4 py-8 text-center text-muted-foreground"
+                    >
                       No entries found.
                     </td>
                   </tr>
@@ -371,13 +439,17 @@ function RouteComponent() {
           <div className="flex h-full flex-col gap-4 p-4">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">
-                {rightPane.entry.date} — {rightPane.entry.bolNumber || 'No BOL #'}
+                {rightPane.entry.date} —{' '}
+                {rightPane.entry.bolNumber || 'No BOL #'}
               </span>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  window.open(`${HUB}/cdn/download/${rightPane.entry.filename}`, '_blank')
+                  window.open(
+                    `${HUB}/cdn/download/${rightPane.entry.filename}`,
+                    '_blank',
+                  )
                 }
               >
                 <ExternalLink className="mr-1 h-4 w-4" />
@@ -401,15 +473,20 @@ function RouteComponent() {
             </span>
 
             <div className="flex-1 space-y-3 overflow-y-auto pr-1">
-              {rightPane.entry.comments && rightPane.entry.comments.length > 0 ? (
+              {rightPane.entry.comments &&
+              rightPane.entry.comments.length > 0 ? (
                 rightPane.entry.comments.map((c, i) => (
                   <div
                     key={i}
                     className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-sm"
                   >
                     <div className="mb-1 flex justify-between text-[11px] text-slate-500">
-                      <span className="font-bold text-slate-700">{c.user || 'User'}</span>
-                      <span>{format(new Date(c.createdAt), 'MMM d, h:mm a')}</span>
+                      <span className="font-bold text-slate-700">
+                        {c.user || 'User'}
+                      </span>
+                      <span>
+                        {format(new Date(c.createdAt), 'MMM d, h:mm a')}
+                      </span>
                     </div>
                     <p className="leading-relaxed text-slate-800">{c.text}</p>
                   </div>
