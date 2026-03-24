@@ -3,7 +3,11 @@ import { CalendarIcon } from 'lucide-react'
 import type { DateRange } from 'react-day-picker'
 import { cn } from '@/lib/utils'
 import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 
 export function DatePickerWithRange({
   className,
@@ -28,7 +32,8 @@ export function DatePickerWithRange({
             {date?.from ? (
               date.to ? (
                 <>
-                  {format(date.from, 'LLL dd, y')} - {format(date.to, 'LLL dd, y')}
+                  {format(date.from, 'LLL dd, y')} -{' '}
+                  {format(date.to, 'LLL dd, y')}
                 </>
               ) : (
                 format(date.from, 'LLL dd, y')

@@ -1,14 +1,34 @@
 import * as React from 'react'
-import { createFileRoute, useLoaderData, useNavigate } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  useLoaderData,
+  useNavigate,
+} from '@tanstack/react-router'
 import { format, subDays } from 'date-fns'
+import {
+  Document,
+  Page,
+  Image as PdfImage,
+  StyleSheet,
+  pdf,
+} from '@react-pdf/renderer'
+import {
+  ExternalLink,
+  MessageSquareText,
+  RefreshCcw,
+  Trash2,
+} from 'lucide-react'
 import type { DateRange } from 'react-day-picker'
 import { SitePicker } from '@/components/custom/SitePicker'
 import { DatePickerWithRange } from '@/components/custom/DatePickerWithRange'
-import { pdf, Document, Page, Image as PdfImage, StyleSheet } from '@react-pdf/renderer'
 import { Button } from '@/components/ui/button'
 import { can } from '@/lib/permissions'
-import { Trash2, MessageSquareText, RefreshCcw, ExternalLink } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 type BOLPhoto = {
   _id: string
@@ -26,7 +46,7 @@ type ListResponse = {
   from: string | null
   to: string | null
   count: number
-  entries: BOLPhoto[]
+  entries: Array<BOLPhoto>
 }
 
 const ymd = (d: Date) => format(d, 'yyyy-MM-dd')
@@ -46,15 +66,27 @@ export const Route = createFileRoute('/_appbar/_fuel/fuel-rec')({
       to: typeof search.to === 'string' ? search.to : ymd(today),
     } as Search
   },
-  loaderDeps: ({ search }) => ({ site: search.site, from: search.from, to: search.to }),
+  loaderDeps: ({ search }) => ({
+    site: search.site,
+    from: search.from,
+    to: search.to,
+  }),
   loader: async ({ deps }) => {
     const { site, from, to } = deps as Search
-    if (!site || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+    if (
+      !site ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(from) ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(to)
+    ) {
       return { site, from, to, data: null as ListResponse | null }
     }
     const res = await fetch(
       `/api/fuel-rec/list?site=${encodeURIComponent(site)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
-      { headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` } },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+        },
+      },
     )
     if (!res.ok) {
       const msg = await res.text().catch(() => '')
@@ -67,12 +99,7 @@ export const Route = createFileRoute('/_appbar/_fuel/fuel-rec')({
 })
 
 function RouteComponent() {
-  const { site, from, to, data } = useLoaderData({ from: Route.id }) as {
-    site: string
-    from: string
-    to: string
-    data: ListResponse | null
-  }
+  const { site, from, to, data } = useLoaderData({ from: Route.id })
   const navigate = useNavigate({ from: Route.fullPath })
   const setSearch = (next: Partial<Search>) =>
     navigate({ search: (prev: unknown) => ({ ...(prev as object), ...next }) })
@@ -83,9 +110,11 @@ function RouteComponent() {
     return f && t ? { from: f, to: t } : undefined
   }, [from, to])
 
-  const onRangeSet: React.Dispatch<React.SetStateAction<DateRange | undefined>> = (val) => {
+  const onRangeSet: React.Dispatch<
+    React.SetStateAction<DateRange | undefined>
+  > = (val) => {
     const next = typeof val === 'function' ? val(range) : val
-    if (!next?.from || !next?.to) return
+    if (!next.from || !next.to) return
     setSearch({ from: ymd(next.from), to: ymd(next.to) })
   }
 
@@ -111,13 +140,16 @@ function RouteComponent() {
   }
 
   const [pending, setPending] = React.useState<Set<string>>(() => new Set())
-  const [entries, setEntries] = React.useState<BOLPhoto[]>(() => data?.entries || [])
+  const [entries, setEntries] = React.useState<Array<BOLPhoto>>(
+    () => data?.entries || [],
+  )
   React.useEffect(() => {
     setEntries(data?.entries || [])
   }, [data])
 
   const [selectedImg, setSelectedImg] = React.useState<string | null>(null)
-  const [activeCommentEntry, setActiveCommentEntry] = React.useState<BOLPhoto | null>(null)
+  const [activeCommentEntry, setActiveCommentEntry] =
+    React.useState<BOLPhoto | null>(null)
   const [commentText, setCommentText] = React.useState('')
   const [commentPending, setCommentPending] = React.useState(false)
 
@@ -138,7 +170,9 @@ function RouteComponent() {
       }
       alert(`Retake request sent for ${e.site} on ${e.date}.`)
     } catch (err) {
-      alert(`Retake request failed: ${err instanceof Error ? err.message : String(err)}`)
+      alert(
+        `Retake request failed: ${err instanceof Error ? err.message : String(err)}`,
+      )
     } finally {
       setPending((prev) => {
         const next = new Set(prev)
@@ -149,16 +183,15 @@ function RouteComponent() {
   }
 
   const sanitizeSegment = (s?: string) => {
-    var n = (s ?? '').toString()
-    var invalid = '<>:"/\\|?*'
-    var out = ''
-    var prevSpace = false
-    for (var i = 0; i < n.length; i++) {
-      var ch = n[i]
-      var code = ch.charCodeAt(0)
-      var isInvalid = invalid.indexOf(ch) !== -1 || code < 32
-      var mapped = isInvalid ? ' ' : ch
-      var isSpace = mapped === ' '
+    const n = (s ?? '').toString()
+    const invalid = '<>:"/\\|?*'
+    let out = ''
+    let prevSpace = false
+    for (const ch of n) {
+      const code = ch.charCodeAt(0)
+      const isInvalid = invalid.indexOf(ch) !== -1 || code < 32
+      const mapped = isInvalid ? ' ' : ch
+      const isSpace = mapped === ' '
       if (isSpace) {
         if (!prevSpace && out.length > 0) {
           out += ' '
@@ -175,9 +208,9 @@ function RouteComponent() {
 
   const formatDesiredName = (e: BOLPhoto) => {
     const date = (e.date || '').trim()
-    const site = sanitizeSegment(e.site)
+    const siteName = sanitizeSegment(e.site)
     const bol = sanitizeSegment(e.bolNumber || '')
-    const parts = [date, site, bol].filter(Boolean)
+    const parts = [date, siteName, bol].filter(Boolean)
     return parts.join(' - ')
   }
 
@@ -205,13 +238,17 @@ function RouteComponent() {
       a.remove()
       URL.revokeObjectURL(url)
     } catch (err) {
-      alert(`PDF download failed: ${err instanceof Error ? err.message : String(err)}`)
+      alert(
+        `PDF download failed: ${err instanceof Error ? err.message : String(err)}`,
+      )
     }
   }
 
   const deleteEntry = async (e: BOLPhoto) => {
     if (!can('accounting.fuelRec', 'delete')) return
-    const ok = window.confirm(`Delete entry for ${e.site} on ${e.date}? This cannot be undone.`)
+    const ok = window.confirm(
+      `Delete entry for ${e.site} on ${e.date}? This cannot be undone.`,
+    )
     if (!ok) return
     try {
       setPending((prev) => new Set(prev).add(e._id))
@@ -228,7 +265,9 @@ function RouteComponent() {
       }
       setEntries((prev) => prev.filter((x) => x._id !== e._id))
     } catch (err) {
-      alert(`Delete failed: ${err instanceof Error ? err.message : String(err)}`)
+      alert(
+        `Delete failed: ${err instanceof Error ? err.message : String(err)}`,
+      )
     } finally {
       setPending((prev) => {
         const next = new Set(prev)
@@ -242,22 +281,30 @@ function RouteComponent() {
     if (!commentText.trim() || !activeCommentEntry) return
     setCommentPending(true)
     try {
-      const res = await fetch(`/api/fuel-rec/${encodeURIComponent(activeCommentEntry._id)}/comment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+      const res = await fetch(
+        `/api/fuel-rec/${encodeURIComponent(activeCommentEntry._id)}/comment`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+          },
+          body: JSON.stringify({ text: commentText }),
         },
-        body: JSON.stringify({ text: commentText }),
-      })
+      )
       if (!res.ok) throw new Error('Failed to save')
       const result = await res.json()
       setEntries((prev) =>
         prev.map((x) =>
-          x._id === activeCommentEntry._id ? { ...x, comments: result.comments } : x,
+          x._id === activeCommentEntry._id
+            ? { ...x, comments: result.comments }
+            : x,
         ),
       )
-      setActiveCommentEntry({ ...activeCommentEntry, comments: result.comments })
+      setActiveCommentEntry({
+        ...activeCommentEntry,
+        comments: result.comments,
+      })
       setCommentText('')
     } catch {
       alert('Failed to add comment')
@@ -279,16 +326,22 @@ function RouteComponent() {
         <DatePickerWithRange date={range} setDate={onRangeSet} />
       </div>
 
-      {!site && <div className="text-xs text-muted-foreground">Pick a site to view BOL entries.</div>}
+      {!site && (
+        <div className="text-xs text-muted-foreground">
+          Pick a site to view BOL entries.
+        </div>
+      )}
 
       {data && (
         <div className="space-y-2">
           <div className="text-sm text-muted-foreground">
-            Showing {entries.length} entr{entries.length === 1 ? 'y' : 'ies'} for {data.site} from{' '}
-            {data.from} to {data.to}
+            Showing {entries.length} entr{entries.length === 1 ? 'y' : 'ies'}{' '}
+            for {data.site} from {data.from} to {data.to}
           </div>
           {entries.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No entries found.</div>
+            <div className="text-sm text-muted-foreground">
+              No entries found.
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
@@ -311,11 +364,15 @@ function RouteComponent() {
                           alt={`${e.date} preview`}
                           className="w-16 h-16 object-cover rounded border cursor-pointer"
                           loading="lazy"
-                          onClick={() => setSelectedImg('/cdn/download/' + e.filename)}
+                          onClick={() =>
+                            setSelectedImg('/cdn/download/' + e.filename)
+                          }
                         />
                       </td>
                       <td className="px-2 py-2 space-x-3">
-                        <Button onClick={() => downloadPdfForEntry(e)}>PDF</Button>
+                        <Button onClick={() => downloadPdfForEntry(e)}>
+                          PDF
+                        </Button>
 
                         <Button
                           variant="outline"
@@ -388,7 +445,10 @@ function RouteComponent() {
             />
           </div>
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => window.open(selectedImg || '', '_blank')}>
+            <Button
+              variant="outline"
+              onClick={() => window.open(selectedImg || '', '_blank')}
+            >
               <ExternalLink className="h-4 w-4 mr-2" /> Open in New Tab
             </Button>
             <Button variant="secondary" onClick={() => setSelectedImg(null)}>
@@ -399,22 +459,30 @@ function RouteComponent() {
       </Dialog>
 
       {/* Comments Dialog */}
-      <Dialog open={!!activeCommentEntry} onOpenChange={() => setActiveCommentEntry(null)}>
+      <Dialog
+        open={!!activeCommentEntry}
+        onOpenChange={() => setActiveCommentEntry(null)}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Comments - {activeCommentEntry?.date}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-4">
             <div className="max-h-[300px] overflow-y-auto space-y-3 pr-2 border-b pb-4">
-              {activeCommentEntry?.comments && activeCommentEntry.comments.length > 0 ? (
+              {activeCommentEntry?.comments &&
+              activeCommentEntry.comments.length > 0 ? (
                 activeCommentEntry.comments.map((c, i) => (
                   <div
                     key={i}
                     className="p-3 rounded-lg bg-slate-50 border border-slate-100 text-sm"
                   >
                     <div className="flex justify-between text-[11px] text-slate-500 mb-1">
-                      <span className="font-bold text-slate-700">{c.user || 'User'}</span>
-                      <span>{format(new Date(c.createdAt), 'MMM d, h:mm a')}</span>
+                      <span className="font-bold text-slate-700">
+                        {c.user || 'User'}
+                      </span>
+                      <span>
+                        {format(new Date(c.createdAt), 'MMM d, h:mm a')}
+                      </span>
                     </div>
                     <p className="text-slate-800 leading-relaxed">{c.text}</p>
                   </div>
@@ -434,7 +502,10 @@ function RouteComponent() {
                 onChange={(e) => setCommentText(e.target.value)}
               />
               <div className="flex justify-end gap-2">
-                <Button variant="ghost" onClick={() => setActiveCommentEntry(null)}>
+                <Button
+                  variant="ghost"
+                  onClick={() => setActiveCommentEntry(null)}
+                >
                   Cancel
                 </Button>
                 <Button
