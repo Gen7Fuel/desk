@@ -49,9 +49,7 @@ function extractKardpollData(rows: Array<Row>): KardpollData {
   let totalLitres = ''
   const rawDate = rows[2]?.[0]
   const parsed = toDate(rawDate)
-  const date = parsed
-    ? formatDisplayDate(parsed)
-    : String(rawDate ?? '').trim()
+  const date = parsed ? formatDisplayDate(parsed) : String(rawDate ?? '').trim()
 
   for (let i = rows.length - 1; i >= 0; i--) {
     const row = rows[i]
