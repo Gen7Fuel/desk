@@ -2,7 +2,8 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { FileSpreadsheet, UploadCloud } from 'lucide-react'
 import type ExcelJS from 'exceljs'
-import { can, getTokenPayload } from '@/lib/permissions'
+import { can } from '@/lib/permissions'
+import { apiFetch } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { SitePicker } from '@/components/custom/SitePicker'
 import { Button } from '@/components/ui/button'
@@ -145,28 +146,14 @@ function RouteComponent() {
   }
 
   async function handleSubmit() {
-    if (!data || !file) return
+    if (!data) return
     setSubmitting(true)
     setSubmitError('')
     setSubmitSuccess(false)
     try {
-      const payload = getTokenPayload() as
-        | (ReturnType<typeof getTokenPayload> & { externalToken?: string })
-        | null
-      const externalToken = payload?.externalToken
-      if (!externalToken) throw new Error('No external token available.')
-
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('site', site)
-
-      const url = 'https://app.gen7fuel.com/api/cash-rec/parse-kardpoll-excel'
-      const res = await fetch(url, {
+      const res = await apiFetch('/api/fuel-invoicing/parse-kardpoll-excel', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${externalToken}`,
-        },
-        body: formData,
+        body: JSON.stringify({ site, date: data.date, totalSales: data.totalSales, totalLitres: data.totalLitres }),
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
