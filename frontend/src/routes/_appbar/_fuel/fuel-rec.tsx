@@ -1,34 +1,43 @@
 import * as React from 'react'
+import { createFileRoute } from '@tanstack/react-router'
+import { format, parseISO, subDays } from 'date-fns'
 import {
-  createFileRoute,
-  useLoaderData,
-  useNavigate,
-} from '@tanstack/react-router'
-import { format, subDays } from 'date-fns'
-import {
-  Document,
-  Page,
-  Image as PdfImage,
-  StyleSheet,
-  pdf,
-} from '@react-pdf/renderer'
-import {
+  CalendarIcon,
   ExternalLink,
+  FileDown,
   MessageSquareText,
   RefreshCcw,
   Trash2,
 } from 'lucide-react'
-import type { DateRange } from 'react-day-picker'
+import { Document, Page, Image as PdfImage, StyleSheet, pdf } from '@react-pdf/renderer'
+import { can, getTokenPayload } from '@/lib/permissions'
 import { SitePicker } from '@/components/custom/SitePicker'
-import { DatePickerWithRange } from '@/components/custom/DatePickerWithRange'
 import { Button } from '@/components/ui/button'
-import { can } from '@/lib/permissions'
+import { Calendar } from '@/components/ui/calendar'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
+import { Sidebar } from '@/components/sidebar'
+
+export const Route = createFileRoute('/_appbar/_fuel/fuel-rec')({
+  component: RouteComponent,
+})
+
+const HUB = 'https://app.gen7fuel.com'
+
+function todayIso(): string {
+  return new Date().toISOString().split('T')[0]
+}
+
+function getExternalToken(): string {
+  const payload = getTokenPayload() as
+    | (ReturnType<typeof getTokenPayload> & { externalToken?: string })
+    | null
+  return payload?.externalToken ?? ''
+}
 
 type BOLPhoto = {
   _id: string
@@ -37,95 +46,57 @@ type BOLPhoto = {
   filename: string
   bolNumber?: string
   createdAt?: string
-  updatedAt?: string
   comments?: Array<{ text: string; createdAt: string; user?: string }>
 }
-type Search = { site: string; from: string; to: string }
-type ListResponse = {
-  site: string
-  from: string | null
-  to: string | null
-  count: number
-  entries: Array<BOLPhoto>
-}
 
-const ymd = (d: Date) => format(d, 'yyyy-MM-dd')
-const parseYmd = (s?: string) => {
-  if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return undefined
-  const [y, m, d] = s.split('-').map(Number)
-  return new Date(y, m - 1, d)
-}
+type RightPane =
+  | { type: 'image'; entry: BOLPhoto }
+  | { type: 'comments'; entry: BOLPhoto }
+  | null
 
-export const Route = createFileRoute('/_appbar/_fuel/fuel-rec')({
-  validateSearch: (search: Record<string, unknown>) => {
-    const today = new Date()
-    const last7From = subDays(today, 6)
-    return {
-      site: typeof search.site === 'string' ? search.site : 'Rankin',
-      from: typeof search.from === 'string' ? search.from : ymd(last7From),
-      to: typeof search.to === 'string' ? search.to : ymd(today),
-    } as Search
-  },
-  loaderDeps: ({ search }) => ({
-    site: search.site,
-    from: search.from,
-    to: search.to,
-  }),
-  loader: async ({ deps }) => {
-    const { site, from, to } = deps as Search
-    if (
-      !site ||
-      !/^\d{4}-\d{2}-\d{2}$/.test(from) ||
-      !/^\d{4}-\d{2}-\d{2}$/.test(to)
-    ) {
-      return { site, from, to, data: null as ListResponse | null }
-    }
-    const res = await fetch(
-      `/api/fuel-rec/list?site=${encodeURIComponent(site)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-        },
-      },
-    )
-    if (!res.ok) {
-      const msg = await res.text().catch(() => '')
-      throw new Error(msg || `HTTP ${res.status}`)
-    }
-    const data = (await res.json()) as ListResponse
-    return { site, from, to, data }
-  },
-  component: RouteComponent,
+const pdfStyles = StyleSheet.create({
+  page: { padding: 16 },
+  image: { width: '100%', height: '100%', objectFit: 'contain' },
 })
 
 function RouteComponent() {
-  const { site, from, to, data } = useLoaderData({ from: Route.id })
-  const navigate = useNavigate({ from: Route.fullPath })
-  const setSearch = (next: Partial<Search>) =>
-    navigate({ search: (prev: unknown) => ({ ...(prev as object), ...next }) })
+  const [from, setFrom] = React.useState(() =>
+    subDays(new Date(), 6).toISOString().split('T')[0],
+  )
+  const [to, setTo] = React.useState(todayIso)
+  const [site, setSite] = React.useState('Rankin')
+  const [entries, setEntries] = React.useState<Array<BOLPhoto>>([])
+  const [loading, setLoading] = React.useState(false)
+  const [pending, setPending] = React.useState<Set<string>>(() => new Set())
+  const [rightPane, setRightPane] = React.useState<RightPane>(null)
+  const [commentText, setCommentText] = React.useState('')
+  const [commentPending, setCommentPending] = React.useState(false)
 
-  const range: DateRange | undefined = React.useMemo(() => {
-    const f = parseYmd(from)
-    const t = parseYmd(to)
-    return f && t ? { from: f, to: t } : undefined
-  }, [from, to])
-
-  const onRangeSet: React.Dispatch<
-    React.SetStateAction<DateRange | undefined>
-  > = (val) => {
-    const next = typeof val === 'function' ? val(range) : val
-    if (!next.from || !next.to) return
-    setSearch({ from: ymd(next.from), to: ymd(next.to) })
+  const fetchEntries = async () => {
+    if (!from || !to || !site) return
+    setLoading(true)
+    try {
+      const res = await fetch(
+        `${HUB}/api/fuel-rec/list?site=${encodeURIComponent(site)}&from=${from}&to=${to}`,
+        { headers: { Authorization: `Bearer ${getExternalToken()}` } },
+      )
+      const data: unknown = await res.json()
+      setEntries(
+        Array.isArray((data as { entries?: unknown }).entries)
+          ? (data as { entries: Array<BOLPhoto> }).entries
+          : [],
+      )
+    } catch {
+      setEntries([])
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const styles = React.useMemo(
-    () =>
-      StyleSheet.create({
-        page: { padding: 16 },
-        image: { width: '100%', height: '100%', objectFit: 'contain' },
-      }),
-    [],
-  )
+  React.useEffect(() => {
+    void fetchEntries()
+    setRightPane(null)
+  }, [from, to, site])
 
   const fetchAsDataUrl = async (url: string): Promise<string> => {
     const res = await fetch(url)
@@ -139,172 +110,86 @@ function RouteComponent() {
     })
   }
 
-  const [pending, setPending] = React.useState<Set<string>>(() => new Set())
-  const [entries, setEntries] = React.useState<Array<BOLPhoto>>(
-    () => data?.entries || [],
-  )
-  React.useEffect(() => {
-    setEntries(data?.entries || [])
-  }, [data])
-
-  const [selectedImg, setSelectedImg] = React.useState<string | null>(null)
-  const [activeCommentEntry, setActiveCommentEntry] =
-    React.useState<BOLPhoto | null>(null)
-  const [commentText, setCommentText] = React.useState('')
-  const [commentPending, setCommentPending] = React.useState(false)
-
-  const requestAgain = async (e: BOLPhoto) => {
+  const generatePDF = async (e: BOLPhoto) => {
     try {
-      setPending((prev) => new Set(prev).add(e._id))
-      const res = await fetch('/api/fuel-rec/request-again', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-        },
-        body: JSON.stringify({ site: e.site, date: e.date }),
-      })
-      if (!res.ok) {
-        const msg = await res.text().catch(() => '')
-        throw new Error(msg || `HTTP ${res.status}`)
-      }
-      alert(`Retake request sent for ${e.site} on ${e.date}.`)
-    } catch (err) {
-      alert(
-        `Retake request failed: ${err instanceof Error ? err.message : String(err)}`,
-      )
-    } finally {
-      setPending((prev) => {
-        const next = new Set(prev)
-        next.delete(e._id)
-        return next
-      })
-    }
-  }
-
-  const sanitizeSegment = (s?: string) => {
-    const n = (s ?? '').toString()
-    const invalid = '<>:"/\\|?*'
-    let out = ''
-    let prevSpace = false
-    for (const ch of n) {
-      const code = ch.charCodeAt(0)
-      const isInvalid = invalid.indexOf(ch) !== -1 || code < 32
-      const mapped = isInvalid ? ' ' : ch
-      const isSpace = mapped === ' '
-      if (isSpace) {
-        if (!prevSpace && out.length > 0) {
-          out += ' '
-        }
-        prevSpace = true
-      } else {
-        out += mapped
-        prevSpace = false
-      }
-    }
-    if (out.endsWith(' ')) out = out.slice(0, -1)
-    return out
-  }
-
-  const formatDesiredName = (e: BOLPhoto) => {
-    const date = (e.date || '').trim()
-    const siteName = sanitizeSegment(e.site)
-    const bol = sanitizeSegment(e.bolNumber || '')
-    const parts = [date, siteName, bol].filter(Boolean)
-    return parts.join(' - ')
-  }
-
-  const downloadPdfForEntry = async (e: BOLPhoto) => {
-    try {
-      const imgUrl = `/cdn/download/${e.filename}`
-      const dataUrl = await fetchAsDataUrl(imgUrl)
-      const Doc = (
+      const dataUrl = await fetchAsDataUrl(`${HUB}/cdn/download/${e.filename}`)
+      const doc = (
         <Document>
-          <Page size="A4" style={styles.page}>
-            <PdfImage src={dataUrl} style={styles.image} />
+          <Page size="A4" style={pdfStyles.page}>
+            <PdfImage src={dataUrl} style={pdfStyles.image} />
           </Page>
         </Document>
       )
-      const blob = await pdf(Doc).toBlob()
-      const a = document.createElement('a')
-      const url = URL.createObjectURL(blob)
-      a.href = url
-      const dot = e.filename.lastIndexOf('.')
-      const base = dot > 0 ? e.filename.slice(0, dot) : e.filename
-      const desired = formatDesiredName(e) || base
-      a.download = `${desired}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
+      const instance = pdf(<></>)
+      instance.updateContainer(doc)
+      const blob = await instance.toBlob()
+      window.open(URL.createObjectURL(blob))
     } catch (err) {
-      alert(
-        `PDF download failed: ${err instanceof Error ? err.message : String(err)}`,
-      )
+      alert(`PDF generation failed: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 
   const deleteEntry = async (e: BOLPhoto) => {
     if (!can('accounting.fuelRec', 'delete')) return
-    const ok = window.confirm(
-      `Delete entry for ${e.site} on ${e.date}? This cannot be undone.`,
-    )
-    if (!ok) return
+    if (!window.confirm(`Delete entry for ${e.site} on ${e.date}? This cannot be undone.`))
+      return
     try {
       setPending((prev) => new Set(prev).add(e._id))
-      const res = await fetch(`/api/fuel-rec/${encodeURIComponent(e._id)}`, {
+      const res = await fetch(`${HUB}/api/fuel-rec/${encodeURIComponent(e._id)}`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-          'X-Required-Permission': 'accounting.fuelRec.delete',
-        },
+        headers: { Authorization: `Bearer ${getExternalToken()}` },
       })
-      if (!res.ok) {
-        const msg = await res.text().catch(() => '')
-        throw new Error(msg || `HTTP ${res.status}`)
-      }
+      if (!res.ok) throw new Error((await res.text().catch(() => '')) || `HTTP ${res.status}`)
       setEntries((prev) => prev.filter((x) => x._id !== e._id))
+      if (rightPane?.entry._id === e._id) setRightPane(null)
     } catch (err) {
-      alert(
-        `Delete failed: ${err instanceof Error ? err.message : String(err)}`,
-      )
+      alert(`Delete failed: ${err instanceof Error ? err.message : String(err)}`)
     } finally {
-      setPending((prev) => {
-        const next = new Set(prev)
-        next.delete(e._id)
-        return next
+      setPending((prev) => { const next = new Set(prev); next.delete(e._id); return next })
+    }
+  }
+
+  const requestAgain = async (e: BOLPhoto) => {
+    try {
+      setPending((prev) => new Set(prev).add(e._id))
+      const res = await fetch(`${HUB}/api/fuel-rec/request-again`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getExternalToken()}`,
+        },
+        body: JSON.stringify({ site: e.site, date: e.date }),
       })
+      if (!res.ok) throw new Error((await res.text().catch(() => '')) || `HTTP ${res.status}`)
+      alert(`Retake request sent for ${e.site} on ${e.date}.`)
+    } catch (err) {
+      alert(`Retake request failed: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setPending((prev) => { const next = new Set(prev); next.delete(e._id); return next })
     }
   }
 
   const handleCommentSave = async () => {
-    if (!commentText.trim() || !activeCommentEntry) return
+    if (!commentText.trim() || rightPane?.type !== 'comments') return
+    const entry = rightPane.entry
     setCommentPending(true)
     try {
       const res = await fetch(
-        `/api/fuel-rec/${encodeURIComponent(activeCommentEntry._id)}/comment`,
+        `${HUB}/api/fuel-rec/${encodeURIComponent(entry._id)}/comment`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+            Authorization: `Bearer ${getExternalToken()}`,
           },
           body: JSON.stringify({ text: commentText }),
         },
       )
       if (!res.ok) throw new Error('Failed to save')
       const result = await res.json()
-      setEntries((prev) =>
-        prev.map((x) =>
-          x._id === activeCommentEntry._id
-            ? { ...x, comments: result.comments }
-            : x,
-        ),
-      )
-      setActiveCommentEntry({
-        ...activeCommentEntry,
-        comments: result.comments,
-      })
+      const updated = { ...entry, comments: result.comments }
+      setEntries((prev) => prev.map((x) => (x._id === entry._id ? updated : x)))
+      setRightPane({ type: 'comments', entry: updated })
       setCommentText('')
     } catch {
       alert('Failed to add comment')
@@ -313,189 +198,232 @@ function RouteComponent() {
     }
   }
 
+  const activeId = rightPane?.entry._id
+
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex flex-col sm:flex-row items-center gap-4">
-        <SitePicker
-          value={site}
-          onValueChange={(v) => setSearch({ site: v })}
-          placeholder="Pick a site"
-          label="Site"
-          className="w-[240px]"
-        />
-        <DatePickerWithRange date={range} setDate={onRangeSet} />
-      </div>
+    <div className="flex h-full">
+      {/* Left pane — list */}
+      <Sidebar className="w-1/2 overflow-hidden">
+        <div className="flex flex-col gap-4 border-b p-4">
+          <h2 className="text-2xl font-semibold">Fuel Rec</h2>
 
-      {!site && (
-        <div className="text-xs text-muted-foreground">
-          Pick a site to view BOL entries.
-        </div>
-      )}
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">From</span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn('w-[160px] justify-start text-left font-normal', !from && 'text-muted-foreground')}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {from ? format(parseISO(from), 'PPP') : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={from ? parseISO(from) : undefined}
+                    onSelect={(date) => setFrom(date ? format(date, 'yyyy-MM-dd') : '')}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
 
-      {data && (
-        <div className="space-y-2">
-          <div className="text-sm text-muted-foreground">
-            Showing {entries.length} entr{entries.length === 1 ? 'y' : 'ies'}{' '}
-            for {data.site} from {data.from} to {data.to}
+            <div className="flex flex-col gap-1">
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">To</span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn('w-[160px] justify-start text-left font-normal', !to && 'text-muted-foreground')}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {to ? format(parseISO(to), 'PPP') : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={to ? parseISO(to) : undefined}
+                    onSelect={(date) => setTo(date ? format(date, 'yyyy-MM-dd') : '')}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <SitePicker value={site} onValueChange={setSite} />
           </div>
-          {entries.length === 0 ? (
-            <div className="text-sm text-muted-foreground">
-              No entries found.
+
+          <div className="rounded-md bg-muted/50 px-4 py-2 text-sm font-medium">
+            Total Entries: {entries.length}
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-auto">
+          {loading ? (
+            <div className="flex h-full items-center justify-center text-muted-foreground">
+              Loading…
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="text-left border-b">
-                    <th className="px-2 py-2">Date</th>
-                    <th className="px-2 py-2">BOL Number</th>
-                    <th className="px-2 py-2">Preview</th>
-                    <th className="px-2 py-2">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {entries.map((e) => (
-                    <tr key={e._id} className="border-b">
-                      <td className="px-2 py-2 font-mono">{e.date}</td>
-                      <td className="px-2 py-2">{e.bolNumber || '—'}</td>
-                      <td className="px-2 py-2">
-                        <img
-                          src={`/cdn/download/${e.filename}`}
-                          alt={`${e.date} preview`}
-                          className="w-16 h-16 object-cover rounded border cursor-pointer"
-                          loading="lazy"
-                          onClick={() =>
-                            setSelectedImg('/cdn/download/' + e.filename)
-                          }
-                        />
-                      </td>
-                      <td className="px-2 py-2 space-x-3">
-                        <Button onClick={() => downloadPdfForEntry(e)}>
-                          PDF
-                        </Button>
-
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => setActiveCommentEntry(e)}
-                          title="Comments"
-                          aria-label="Comments"
-                          className="relative"
-                        >
-                          <MessageSquareText className="h-4 w-4" />
-                          <span className="sr-only">Comments</span>
-                          {e.comments && e.comments.length > 0 && (
-                            <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full px-1.5 min-w-[1.25rem] h-5 flex items-center justify-center border border-white">
-                              {e.comments.length}
-                            </span>
-                          )}
-                        </Button>
-
-                        {can('accounting.fuelRec', 'requestAgain') && (
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="px-4 py-2 text-left font-medium">Date</th>
+                  <th className="px-4 py-2 text-left font-medium">BOL Number</th>
+                  <th className="px-4 py-2 text-center font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.length > 0 ? (
+                  entries.map((e) => (
+                    <tr
+                      key={e._id}
+                      className={cn(
+                        'cursor-pointer border-t hover:bg-muted/30',
+                        activeId === e._id && 'bg-accent/80',
+                      )}
+                      onClick={() => setRightPane({ type: 'image', entry: e })}
+                    >
+                      <td className="px-4 py-2 font-mono">{e.date}</td>
+                      <td className="px-4 py-2">{e.bolNumber || '—'}</td>
+                      <td className="px-4 py-2 text-center" onClick={(ev) => ev.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-2">
                           <Button
+                            size="sm"
                             variant="outline"
-                            size="icon"
-                            onClick={() => requestAgain(e)}
-                            disabled={pending.has(e._id)}
-                            title="Request Again"
-                            aria-label="Request Again"
+                            onClick={() => void generatePDF(e)}
+                            title="Download PDF"
                           >
-                            {pending.has(e._id) ? (
-                              <span className="text-xs">…</span>
-                            ) : (
-                              <RefreshCcw className="h-4 w-4" />
+                            <FileDown className="h-4 w-4" />
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant={rightPane?.type === 'comments' && activeId === e._id ? 'default' : 'outline'}
+                            onClick={() => {
+                              setCommentText('')
+                              setRightPane({ type: 'comments', entry: e })
+                            }}
+                            title="Comments"
+                            className="relative"
+                          >
+                            <MessageSquareText className="h-4 w-4" />
+                            {e.comments && e.comments.length > 0 && (
+                              <span className="absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full border border-background bg-red-600 px-1 text-[10px] text-white">
+                                {e.comments.length}
+                              </span>
                             )}
                           </Button>
-                        )}
 
-                        {can('accounting.fuelRec', 'delete') && (
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => deleteEntry(e)}
-                            disabled={pending.has(e._id)}
-                            title="Delete"
-                            aria-label="Delete"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Delete</span>
-                          </Button>
-                        )}
+                          {can('accounting.fuelRec', 'requestAgain') && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => void requestAgain(e)}
+                              disabled={pending.has(e._id)}
+                              title="Request Again"
+                            >
+                              <RefreshCcw className="h-4 w-4" />
+                            </Button>
+                          )}
+
+                          {can('accounting.fuelRec', 'delete') && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-destructive hover:bg-destructive/10"
+                              onClick={() => void deleteEntry(e)}
+                              disabled={pending.has(e._id)}
+                              title="Delete"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
+                      No entries found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           )}
         </div>
-      )}
+      </Sidebar>
 
-      {/* Image Viewer Dialog */}
-      <Dialog open={!!selectedImg} onOpenChange={() => setSelectedImg(null)}>
-        <DialogContent className="max-w-4xl max-h-[95vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle>BOL Preview</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
-            <img
-              src={selectedImg || ''}
-              className="max-w-full max-h-[70vh] object-contain"
-              alt="BOL Preview"
-            />
+      {/* Right pane — image or comments */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {!rightPane && (
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+            Select a row to view the BOL image.
           </div>
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              variant="outline"
-              onClick={() => window.open(selectedImg || '', '_blank')}
-            >
-              <ExternalLink className="h-4 w-4 mr-2" /> Open in New Tab
-            </Button>
-            <Button variant="secondary" onClick={() => setSelectedImg(null)}>
-              Close
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        )}
 
-      {/* Comments Dialog */}
-      <Dialog
-        open={!!activeCommentEntry}
-        onOpenChange={() => setActiveCommentEntry(null)}
-      >
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Comments - {activeCommentEntry?.date}</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-4">
-            <div className="max-h-[300px] overflow-y-auto space-y-3 pr-2 border-b pb-4">
-              {activeCommentEntry?.comments &&
-              activeCommentEntry.comments.length > 0 ? (
-                activeCommentEntry.comments.map((c, i) => (
+        {rightPane?.type === 'image' && (
+          <div className="flex h-full flex-col gap-4 p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">
+                {rightPane.entry.date} — {rightPane.entry.bolNumber || 'No BOL #'}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  window.open(`${HUB}/cdn/download/${rightPane.entry.filename}`, '_blank')
+                }
+              >
+                <ExternalLink className="mr-1 h-4 w-4" />
+                Open in New Tab
+              </Button>
+            </div>
+            <div className="flex flex-1 items-center justify-center overflow-hidden rounded-md bg-muted">
+              <img
+                src={`${HUB}/cdn/download/${rightPane.entry.filename}`}
+                alt="BOL Preview"
+                className="max-h-full max-w-full object-contain"
+              />
+            </div>
+          </div>
+        )}
+
+        {rightPane?.type === 'comments' && (
+          <div className="flex h-full flex-col gap-4 p-4">
+            <span className="text-sm font-medium">
+              Comments — {rightPane.entry.date}
+            </span>
+
+            <div className="flex-1 space-y-3 overflow-y-auto pr-1">
+              {rightPane.entry.comments && rightPane.entry.comments.length > 0 ? (
+                rightPane.entry.comments.map((c, i) => (
                   <div
                     key={i}
-                    className="p-3 rounded-lg bg-slate-50 border border-slate-100 text-sm"
+                    className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-sm"
                   >
-                    <div className="flex justify-between text-[11px] text-slate-500 mb-1">
-                      <span className="font-bold text-slate-700">
-                        {c.user || 'User'}
-                      </span>
-                      <span>
-                        {format(new Date(c.createdAt), 'MMM d, h:mm a')}
-                      </span>
+                    <div className="mb-1 flex justify-between text-[11px] text-slate-500">
+                      <span className="font-bold text-slate-700">{c.user || 'User'}</span>
+                      <span>{format(new Date(c.createdAt), 'MMM d, h:mm a')}</span>
                     </div>
-                    <p className="text-slate-800 leading-relaxed">{c.text}</p>
+                    <p className="leading-relaxed text-slate-800">{c.text}</p>
                   </div>
                 ))
               ) : (
-                <p className="text-center text-slate-400 text-sm py-10">
+                <p className="py-10 text-center text-sm text-muted-foreground">
                   No comments on this record yet.
                 </p>
               )}
             </div>
-            <div className="space-y-3">
+
+            <div className="space-y-2 border-t pt-4">
               <textarea
-                className="w-full border rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                className="w-full resize-none rounded-md border p-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                 rows={3}
                 placeholder="Write a comment..."
                 value={commentText}
@@ -503,12 +431,7 @@ function RouteComponent() {
               />
               <div className="flex justify-end gap-2">
                 <Button
-                  variant="ghost"
-                  onClick={() => setActiveCommentEntry(null)}
-                >
-                  Cancel
-                </Button>
-                <Button
+                  size="sm"
                   onClick={handleCommentSave}
                   disabled={commentPending || !commentText.trim()}
                 >
@@ -517,8 +440,8 @@ function RouteComponent() {
               </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        )}
+      </div>
     </div>
   )
 }
