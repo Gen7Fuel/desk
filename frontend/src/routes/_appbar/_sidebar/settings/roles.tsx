@@ -63,6 +63,40 @@ function buildDefaultPerms(
   return perms
 }
 
+/**
+ * Merge saved role permissions onto a fresh manifest-shaped default.
+ * Keys not in the manifest are dropped; new manifest keys get false defaults.
+ */
+function mergeWithManifest(
+  manifest: ReturnType<typeof buildManifestShape>,
+  saved: Record<string, unknown>,
+): Record<string, unknown> {
+  const base = buildDefaultPerms(manifest)
+  for (const [mod, def] of Object.entries(manifest.modules)) {
+    const savedMod = saved[mod]
+    if (!savedMod || typeof savedMod !== 'object') continue
+    const modPerms = base[mod] as Record<string, unknown>
+    if (def.actions) {
+      for (const a of def.actions) {
+        if (typeof (savedMod as Record<string, unknown>)[a] === 'boolean')
+          modPerms[a] = (savedMod as Record<string, unknown>)[a]
+      }
+    }
+    if (def.submodules) {
+      for (const [sub, subDef] of Object.entries(def.submodules)) {
+        const savedSub = (savedMod as Record<string, unknown>)[sub]
+        if (!savedSub || typeof savedSub !== 'object') continue
+        const subPerms = modPerms[sub] as Record<string, unknown>
+        for (const a of subDef.actions) {
+          if (typeof (savedSub as Record<string, unknown>)[a] === 'boolean')
+            subPerms[a] = (savedSub as Record<string, unknown>)[a]
+        }
+      }
+    }
+  }
+  return base
+}
+
 function buildManifestShape(m: unknown) {
   return m as {
     modules: Record<
@@ -318,8 +352,8 @@ function RoleDetail({
 }) {
   const [name, setName] = useState(role.name)
   const [description, setDescription] = useState(role.description)
-  const [permissions, setPermissions] = useState<Record<string, unknown>>(
-    role.permissions,
+  const [permissions, setPermissions] = useState<Record<string, unknown>>(() =>
+    mergeWithManifest(manifest, role.permissions),
   )
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
