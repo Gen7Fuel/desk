@@ -4,7 +4,7 @@ const DeviceKind = require('./deviceKind.model')
 const { authenticate, requirePermission } = require('../../middleware/auth')
 
 // Get all device kinds
-router.get('/', authenticate, requirePermission('assets.devices', 'read'), async (req, res) => {
+router.get('/', authenticate, requirePermission('admin.assets.devices', 'read'), async (req, res) => {
   try {
     const kinds = await DeviceKind.find()
     res.json(kinds)
@@ -14,7 +14,7 @@ router.get('/', authenticate, requirePermission('assets.devices', 'read'), async
 })
 
 // Create device kind
-router.post('/', authenticate, requirePermission('assets.devices', 'create'), async (req, res) => {
+router.post('/', authenticate, requirePermission('admin.assets.devices', 'create'), async (req, res) => {
   try {
     const { name } = req.body
     const kind = await DeviceKind.create({ name })
@@ -25,7 +25,7 @@ router.post('/', authenticate, requirePermission('assets.devices', 'create'), as
 })
 
 // Update device kind
-router.put('/:id', authenticate, requirePermission('assets.devices', 'update'), async (req, res) => {
+router.put('/:id', authenticate, requirePermission('admin.assets.devices', 'update'), async (req, res) => {
   try {
     const { name } = req.body
     const kind = await DeviceKind.findByIdAndUpdate(req.params.id, { name }, { returnDocument: 'after' })
@@ -37,7 +37,7 @@ router.put('/:id', authenticate, requirePermission('assets.devices', 'update'), 
 })
 
 // Delete device kind
-router.delete('/:id', authenticate, requirePermission('assets.devices', 'delete'), async (req, res) => {
+router.delete('/:id', authenticate, requirePermission('admin.assets.devices', 'delete'), async (req, res) => {
   try {
     const kind = await DeviceKind.findByIdAndDelete(req.params.id)
     if (!kind) return res.status(404).json({ error: 'Not found' })

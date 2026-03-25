@@ -29,7 +29,7 @@ export const Route = createFileRoute(
   beforeLoad: () => {
     if (
       typeof window !== 'undefined' &&
-      !can('credentials.categories', 'read')
+      !can('admin.credentials.categories', 'read')
     ) {
       throw redirect({ to: '/' })
     }

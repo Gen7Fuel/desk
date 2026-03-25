@@ -27,7 +27,10 @@ export const Route = createFileRoute('/_appbar/_admin/_sidebar/assets/devices')(
   {
     component: RouteComponent,
     beforeLoad: () => {
-      if (typeof window !== 'undefined' && !can('assets.devices', 'read')) {
+      if (
+        typeof window !== 'undefined' &&
+        !can('admin.assets.devices', 'read')
+      ) {
         throw redirect({ to: '/' })
       }
     },

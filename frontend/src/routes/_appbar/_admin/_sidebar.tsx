@@ -6,54 +6,60 @@ const sidebarLinks: Record<
   string,
   Array<{ label: string; path: string; permission: string }>
 > = {
-  personnel: [{ label: 'List', path: '/personnel', permission: 'personnel' }],
+  personnel: [
+    { label: 'List', path: '/personnel', permission: 'admin.personnel' },
+  ],
   access: [
     {
       label: 'Resources',
       path: '/access/resources',
-      permission: 'access.resources',
+      permission: 'admin.access.resources',
     },
     {
       label: 'Personnel',
       path: '/access/personnel',
-      permission: 'access.personnel',
+      permission: 'admin.access.personnel',
     },
   ],
   assets: [
-    { label: 'Devices', path: '/assets/devices', permission: 'assets.devices' },
+    {
+      label: 'Devices',
+      path: '/assets/devices',
+      permission: 'admin.assets.devices',
+    },
     {
       label: 'Personnel',
       path: '/assets/personnel',
-      permission: 'assets.personnel',
+      permission: 'admin.assets.personnel',
     },
     {
       label: 'Location',
       path: '/assets/location',
-      permission: 'assets.location',
+      permission: 'admin.assets.location',
     },
   ],
   credentials: [
     {
       label: 'Categories',
       path: '/credentials/categories',
-      permission: 'credentials.categories',
+      permission: 'admin.credentials.categories',
     },
     {
       label: 'Credentials',
       path: '/credentials/list',
-      permission: 'credentials.list',
+      permission: 'admin.credentials.list',
     },
   ],
   subscriptions: [
     {
       label: 'Categories',
       path: '/subscriptions/categories',
-      permission: 'subscriptions.categories',
+      permission: 'admin.subscriptions.categories',
     },
     {
       label: 'Subscriptions',
       path: '/subscriptions/list',
-      permission: 'subscriptions.list',
+      permission: 'admin.subscriptions.list',
     },
   ],
 }

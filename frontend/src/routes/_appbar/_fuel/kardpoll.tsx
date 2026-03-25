@@ -115,7 +115,9 @@ function RouteComponent() {
         rows.push(vals)
       })
       const extracted = extractKardpollData(rows)
-      if (!extracted.totalSales && !extracted.totalLitres) {
+      if (!extracted.isoDate) {
+        setError('No data found.')
+      } else if (!extracted.totalSales && !extracted.totalLitres) {
         setError(
           'Could not find "Total Sales" or "Total Volume" rows in the file.',
         )

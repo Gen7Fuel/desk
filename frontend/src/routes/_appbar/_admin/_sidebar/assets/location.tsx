@@ -139,7 +139,10 @@ export const Route = createFileRoute(
 )({
   component: RouteComponent,
   beforeLoad: () => {
-    if (typeof window !== 'undefined' && !can('assets.location', 'read')) {
+    if (
+      typeof window !== 'undefined' &&
+      !can('admin.assets.location', 'read')
+    ) {
       throw redirect({ to: '/' })
     }
   },

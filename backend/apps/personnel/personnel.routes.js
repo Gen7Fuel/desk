@@ -5,7 +5,7 @@ const ResourceKind = require('../access/resourceKind.model')
 const { authenticate, requirePermission } = require('../../middleware/auth')
 
 // Get all personnel
-router.get('/', authenticate, requirePermission('personnel', 'read'), async (req, res) => {
+router.get('/', authenticate, requirePermission('admin.personnel', 'read'), async (req, res) => {
   try {
     const people = await Personnel.find()
     res.json(people)
@@ -15,7 +15,7 @@ router.get('/', authenticate, requirePermission('personnel', 'read'), async (req
 })
 
 // Get one personnel by id
-router.get('/:id', authenticate, requirePermission('personnel', 'read'), async (req, res) => {
+router.get('/:id', authenticate, requirePermission('admin.personnel', 'read'), async (req, res) => {
   try {
     const person = await Personnel.findById(req.params.id)
     if (!person) return res.status(404).json({ error: 'Not found' })
@@ -41,7 +41,7 @@ async function validateResourceTypes(resources = []) {
 }
 
 // Create personnel
-router.post('/', authenticate, requirePermission('personnel', 'create'), async (req, res) => {
+router.post('/', authenticate, requirePermission('admin.personnel', 'create'), async (req, res) => {
   try {
     // Validate resource types, if provided
     if (req.body && Array.isArray(req.body.resources)) {
@@ -56,7 +56,7 @@ router.post('/', authenticate, requirePermission('personnel', 'create'), async (
 })
 
 // Update personnel
-router.put('/:id', authenticate, requirePermission('personnel', 'update'), async (req, res) => {
+router.put('/:id', authenticate, requirePermission('admin.personnel', 'update'), async (req, res) => {
   try {
     // Validate resource types, if provided
     if (req.body && Array.isArray(req.body.resources)) {
@@ -72,7 +72,7 @@ router.put('/:id', authenticate, requirePermission('personnel', 'update'), async
 })
 
 // Delete personnel
-router.delete('/:id', authenticate, requirePermission('personnel', 'delete'), async (req, res) => {
+router.delete('/:id', authenticate, requirePermission('admin.personnel', 'delete'), async (req, res) => {
   try {
     const person = await Personnel.findByIdAndDelete(req.params.id)
     if (!person) return res.status(404).json({ error: 'Not found' })

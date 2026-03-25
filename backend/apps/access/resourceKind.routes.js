@@ -5,7 +5,7 @@ const { authenticate, requirePermission } = require('../../middleware/auth')
 
 
 // Get all resource kinds (no order)
-router.get('/', authenticate, requirePermission('access.resources', 'read'), async (req, res) => {
+router.get('/', authenticate, requirePermission('admin.access.resources', 'read'), async (req, res) => {
   try {
     const kinds = await ResourceKind.find()
     res.json(kinds)
@@ -16,7 +16,7 @@ router.get('/', authenticate, requirePermission('access.resources', 'read'), asy
 
 
 // Create resource kind
-router.post('/', authenticate, requirePermission('access.resources', 'create'), async (req, res) => {
+router.post('/', authenticate, requirePermission('admin.access.resources', 'create'), async (req, res) => {
   try {
     const { name } = req.body
     const kind = await ResourceKind.create({ name })
@@ -28,7 +28,7 @@ router.post('/', authenticate, requirePermission('access.resources', 'create'), 
 
 
 // Update resource kind
-router.put('/:id', authenticate, requirePermission('access.resources', 'update'), async (req, res) => {
+router.put('/:id', authenticate, requirePermission('admin.access.resources', 'update'), async (req, res) => {
   try {
     const { name } = req.body
     const kind = await ResourceKind.findByIdAndUpdate(req.params.id, { name }, { returnDocument: 'after' })
@@ -40,7 +40,7 @@ router.put('/:id', authenticate, requirePermission('access.resources', 'update')
 })
 
 // Delete resource kind
-router.delete('/:id', authenticate, requirePermission('access.resources', 'delete'), async (req, res) => {
+router.delete('/:id', authenticate, requirePermission('admin.access.resources', 'delete'), async (req, res) => {
   try {
     const kind = await ResourceKind.findByIdAndDelete(req.params.id)
     if (!kind) return res.status(404).json({ error: 'Not found' })

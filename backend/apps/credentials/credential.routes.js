@@ -4,7 +4,7 @@ const Credential = require('./credential.model')
 const { authenticate, requirePermission } = require('../../middleware/auth')
 
 // Create a credential
-router.post('/credentials', authenticate, requirePermission('credentials.list', 'create'), async (req, res) => {
+router.post('/credentials', authenticate, requirePermission('admin.credentials.list', 'create'), async (req, res) => {
   try {
     const { name, category, url, username, password, notes } = req.body
     if (!name || !category || !username || !password) {
@@ -18,7 +18,7 @@ router.post('/credentials', authenticate, requirePermission('credentials.list', 
 })
 
 // Get all credentials
-router.get('/credentials', authenticate, requirePermission('credentials.list', 'read'), async (req, res) => {
+router.get('/credentials', authenticate, requirePermission('admin.credentials.list', 'read'), async (req, res) => {
   try {
     const creds = await Credential.find().sort({ category: 1, name: 1 })
     res.json(creds)
@@ -28,7 +28,7 @@ router.get('/credentials', authenticate, requirePermission('credentials.list', '
 })
 
 // Get a single credential
-router.get('/credentials/:id', authenticate, requirePermission('credentials.list', 'read'), async (req, res) => {
+router.get('/credentials/:id', authenticate, requirePermission('admin.credentials.list', 'read'), async (req, res) => {
   try {
     const cred = await Credential.findById(req.params.id)
     if (!cred) return res.status(404).json({ error: 'Not found' })
@@ -39,7 +39,7 @@ router.get('/credentials/:id', authenticate, requirePermission('credentials.list
 })
 
 // Update a credential
-router.put('/credentials/:id', authenticate, requirePermission('credentials.list', 'update'), async (req, res) => {
+router.put('/credentials/:id', authenticate, requirePermission('admin.credentials.list', 'update'), async (req, res) => {
   try {
     const { name, category, url, username, password, notes } = req.body
     const cred = await Credential.findByIdAndUpdate(
@@ -55,7 +55,7 @@ router.put('/credentials/:id', authenticate, requirePermission('credentials.list
 })
 
 // Delete a credential
-router.delete('/credentials/:id', authenticate, requirePermission('credentials.list', 'delete'), async (req, res) => {
+router.delete('/credentials/:id', authenticate, requirePermission('admin.credentials.list', 'delete'), async (req, res) => {
   try {
     const cred = await Credential.findByIdAndDelete(req.params.id)
     if (!cred) return res.status(404).json({ error: 'Not found' })
