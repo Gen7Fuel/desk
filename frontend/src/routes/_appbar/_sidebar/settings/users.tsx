@@ -492,29 +492,25 @@ function OverridesEditor({
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-type Manifest = {
-  modules: Record<
-    string,
-    {
-      actions?: Array<string>
-      submodules?: Record<string, { actions: Array<string> }>
+type Manifest = { modules: Record<string, ManifestNode> }
+
+function buildNodeFalse(def: ManifestNode): Record<string, unknown> {
+  const result: Record<string, unknown> = {}
+  if (def.actions) {
+    for (const a of def.actions) result[a] = false
+  }
+  if (def.submodules) {
+    for (const [sub, subDef] of Object.entries(def.submodules)) {
+      result[sub] = buildNodeFalse(subDef)
     }
-  >
+  }
+  return result
 }
 
 function buildAllFalse(manifest: Manifest): Record<string, unknown> {
   const result: Record<string, unknown> = {}
   for (const [mod, def] of Object.entries(manifest.modules)) {
-    if (def.actions) {
-      result[mod] = Object.fromEntries(def.actions.map((a) => [a, false]))
-    } else if (def.submodules) {
-      result[mod] = Object.fromEntries(
-        Object.entries(def.submodules).map(([sub, subDef]) => [
-          sub,
-          Object.fromEntries(subDef.actions.map((a) => [a, false])),
-        ]),
-      )
-    }
+    result[mod] = buildNodeFalse(def)
   }
   return result
 }
@@ -528,20 +524,10 @@ function deepMergePerms(
   for (const [key, val] of Object.entries(overrides)) {
     if (typeof val === 'object' && val !== null) {
       if (!result[key] || typeof result[key] !== 'object') result[key] = {}
-      for (const [subKey, subVal] of Object.entries(
+      result[key] = deepMergePerms(
+        result[key] as Record<string, unknown>,
         val as Record<string, unknown>,
-      )) {
-        if (typeof subVal === 'object' && subVal !== null) {
-          if (!(result[key] as Record<string, unknown>)[subKey])
-            (result[key] as Record<string, unknown>)[subKey] = {}
-          Object.assign(
-            (result[key] as Record<string, Record<string, unknown>>)[subKey],
-            subVal,
-          )
-        } else {
-          ;(result[key] as Record<string, unknown>)[subKey] = subVal
-        }
-      }
+      )
     } else {
       result[key] = val
     }
@@ -554,38 +540,19 @@ function diffPerms(
   resolved: Record<string, unknown>,
 ): Record<string, unknown> {
   const diff: Record<string, unknown> = {}
-  for (const [mod, val] of Object.entries(resolved)) {
-    const roleVal = rolePerms[mod]
-    if (typeof val === 'object' && val !== null) {
-      const modDiff: Record<string, unknown> = {}
-      for (const [key, keyVal] of Object.entries(
-        val as Record<string, unknown>,
-      )) {
-        if (typeof keyVal === 'object' && keyVal !== null) {
-          const roleSubVal =
-            roleVal && typeof roleVal === 'object'
-              ? (roleVal as Record<string, unknown>)[key]
-              : undefined
-          const subDiff: Record<string, unknown> = {}
-          for (const [action, actionVal] of Object.entries(
-            keyVal as Record<string, unknown>,
-          )) {
-            const roleAction =
-              roleSubVal && typeof roleSubVal === 'object'
-                ? (roleSubVal as Record<string, unknown>)[action]
-                : undefined
-            if (actionVal !== roleAction) subDiff[action] = actionVal
-          }
-          if (Object.keys(subDiff).length > 0) modDiff[key] = subDiff
-        } else {
-          const roleAction =
-            roleVal && typeof roleVal === 'object'
-              ? (roleVal as Record<string, unknown>)[key]
-              : undefined
-          if (keyVal !== roleAction) modDiff[key] = keyVal
-        }
-      }
-      if (Object.keys(modDiff).length > 0) diff[mod] = modDiff
+  for (const [key, resolvedVal] of Object.entries(resolved)) {
+    const roleVal = rolePerms[key]
+    if (typeof resolvedVal === 'boolean') {
+      if (resolvedVal !== roleVal) diff[key] = resolvedVal
+    } else if (typeof resolvedVal === 'object' && resolvedVal !== null) {
+      const subDiff = diffPerms(
+        (roleVal && typeof roleVal === 'object' ? roleVal : {}) as Record<
+          string,
+          unknown
+        >,
+        resolvedVal as Record<string, unknown>,
+      )
+      if (Object.keys(subDiff).length > 0) diff[key] = subDiff
     }
   }
   return diff
@@ -596,34 +563,18 @@ function countDiff(
   resolved: Record<string, unknown>,
 ): number {
   let count = 0
-  for (const [mod, val] of Object.entries(resolved)) {
-    const roleVal = rolePerms[mod]
-    if (typeof val === 'object' && val !== null) {
-      for (const [key, keyVal] of Object.entries(
-        val as Record<string, unknown>,
-      )) {
-        if (typeof keyVal === 'object' && keyVal !== null) {
-          const roleSubVal =
-            roleVal && typeof roleVal === 'object'
-              ? (roleVal as Record<string, unknown>)[key]
-              : undefined
-          for (const [action, actionVal] of Object.entries(
-            keyVal as Record<string, unknown>,
-          )) {
-            const roleAction =
-              roleSubVal && typeof roleSubVal === 'object'
-                ? (roleSubVal as Record<string, unknown>)[action]
-                : undefined
-            if (actionVal !== roleAction) count++
-          }
-        } else {
-          const roleAction =
-            roleVal && typeof roleVal === 'object'
-              ? (roleVal as Record<string, unknown>)[key]
-              : undefined
-          if (keyVal !== roleAction) count++
-        }
-      }
+  for (const [key, resolvedVal] of Object.entries(resolved)) {
+    const roleVal = rolePerms[key]
+    if (typeof resolvedVal === 'boolean') {
+      if (resolvedVal !== roleVal) count++
+    } else if (typeof resolvedVal === 'object' && resolvedVal !== null) {
+      count += countDiff(
+        (roleVal && typeof roleVal === 'object' ? roleVal : {}) as Record<
+          string,
+          unknown
+        >,
+        resolvedVal as Record<string, unknown>,
+      )
     }
   }
   return count
@@ -633,21 +584,64 @@ function countDiff(
 
 const ACTIONS = ['create', 'read', 'update', 'delete'] as const
 
+type ManifestNode = {
+  actions?: Array<string>
+  submodules?: Record<string, ManifestNode>
+}
+
+function SubTree({
+  path,
+  def,
+  getValue,
+  onChange,
+  showUndefined,
+}: {
+  path: Array<string>
+  def: ManifestNode
+  getValue: (path: Array<string>) => boolean | undefined
+  onChange: (path: Array<string>, value: boolean) => void
+  showUndefined: boolean
+}) {
+  return (
+    <>
+      {def.actions && (
+        <ActionRow
+          path={path}
+          actions={def.actions}
+          getValue={getValue}
+          onChange={onChange}
+          showUndefined={showUndefined}
+        />
+      )}
+      {def.submodules && (
+        <div className="space-y-1 pl-3">
+          {Object.entries(def.submodules).map(([key, subDef]) => (
+            <div key={key}>
+              <div className="mb-0.5 text-xs font-medium text-foreground/70">
+                {key}
+              </div>
+              <SubTree
+                path={[...path, key]}
+                def={subDef}
+                getValue={getValue}
+                onChange={onChange}
+                showUndefined={showUndefined}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  )
+}
+
 export function PermissionTree({
   manifest,
   getValue,
   onChange,
   showUndefined = false,
 }: {
-  manifest: {
-    modules: Record<
-      string,
-      {
-        actions?: Array<string>
-        submodules?: Record<string, { actions: Array<string> }>
-      }
-    >
-  }
+  manifest: { modules: Record<string, ManifestNode> }
   getValue: (path: Array<string>) => boolean | undefined
   onChange: (path: Array<string>, value: boolean) => void
   showUndefined?: boolean
@@ -659,33 +653,13 @@ export function PermissionTree({
           <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {mod}
           </div>
-          {def.actions && (
-            <ActionRow
-              path={[mod]}
-              actions={def.actions ?? ACTIONS}
-              getValue={getValue}
-              onChange={onChange}
-              showUndefined={showUndefined}
-            />
-          )}
-          {def.submodules && (
-            <div className="space-y-1 pl-3">
-              {Object.entries(def.submodules).map(([sub, subDef]) => (
-                <div key={sub}>
-                  <div className="mb-0.5 text-xs font-medium text-foreground/70">
-                    {sub}
-                  </div>
-                  <ActionRow
-                    path={[mod, sub]}
-                    actions={subDef.actions}
-                    getValue={getValue}
-                    onChange={onChange}
-                    showUndefined={showUndefined}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
+          <SubTree
+            path={[mod]}
+            def={def}
+            getValue={getValue}
+            onChange={onChange}
+            showUndefined={showUndefined}
+          />
         </div>
       ))}
     </div>

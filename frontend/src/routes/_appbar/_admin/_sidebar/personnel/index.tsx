@@ -34,7 +34,7 @@ interface Personnel {
 export const Route = createFileRoute('/_appbar/_admin/_sidebar/personnel/')({
   component: RouteComponent,
   beforeLoad: () => {
-    if (typeof window !== 'undefined' && !can('personnel', 'read')) {
+    if (typeof window !== 'undefined' && !can('admin.personnel', 'read')) {
       throw redirect({ to: '/' })
     }
   },
@@ -150,7 +150,7 @@ function RouteComponent() {
       <div className="flex flex-1 flex-col overflow-auto px-6 pt-4">
         <div className="mb-4 flex items-center gap-2">
           <h2 className="text-2xl font-semibold">Personnel</h2>
-          {(showForm || can('personnel', 'create')) && (
+          {(showForm || can('admin.personnel', 'create')) && (
             <Button
               variant={showForm ? 'outline' : 'default'}
               size="icon"
@@ -248,13 +248,13 @@ function RouteComponent() {
           />
           <div className="flex gap-2">
             {(editingIndex !== null
-              ? can('personnel', 'update')
-              : can('personnel', 'create')) && (
+              ? can('admin.personnel', 'update')
+              : can('admin.personnel', 'create')) && (
               <Button type="submit" className="flex-1">
                 {editingIndex !== null ? 'Update' : 'Add'}
               </Button>
             )}
-            {editingIndex !== null && can('personnel', 'delete') && (
+            {editingIndex !== null && can('admin.personnel', 'delete') && (
               <Button
                 type="button"
                 variant="destructive"

@@ -35,7 +35,10 @@ export const Route = createFileRoute(
 )({
   component: RouteComponent,
   beforeLoad: () => {
-    if (typeof window !== 'undefined' && !can('subscriptions.list', 'read')) {
+    if (
+      typeof window !== 'undefined' &&
+      !can('admin.subscriptions.list', 'read')
+    ) {
       throw redirect({ to: '/' })
     }
   },

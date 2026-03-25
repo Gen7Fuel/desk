@@ -4,18 +4,18 @@ import { can } from '@/lib/permissions'
 import { SidebarNavLinks } from '@/components/sidebar'
 
 const adminModules: Array<SidebarLink & { permission: string }> = [
-  { label: 'Personnel', path: '/personnel', permission: 'personnel' },
-  { label: 'Access', path: '/access/resources', permission: 'access' },
-  { label: 'Assets', path: '/assets/devices', permission: 'assets' },
+  { label: 'Personnel', path: '/personnel', permission: 'admin.personnel' },
+  { label: 'Access', path: '/access/resources', permission: 'admin.access' },
+  { label: 'Assets', path: '/assets/devices', permission: 'admin.assets' },
   {
     label: 'Credentials',
     path: '/credentials/categories',
-    permission: 'credentials',
+    permission: 'admin.credentials',
   },
   {
     label: 'Subscriptions',
     path: '/subscriptions/categories',
-    permission: 'subscriptions',
+    permission: 'admin.subscriptions',
   },
 ]
 

@@ -35,7 +35,10 @@ export const Route = createFileRoute(
 )({
   component: RouteComponent,
   beforeLoad: () => {
-    if (typeof window !== 'undefined' && !can('credentials.list', 'read')) {
+    if (
+      typeof window !== 'undefined' &&
+      !can('admin.credentials.list', 'read')
+    ) {
       throw redirect({ to: '/' })
     }
   },

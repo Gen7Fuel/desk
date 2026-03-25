@@ -42,25 +42,59 @@ export const Route = createFileRoute('/_appbar/_sidebar/settings/roles')({
   },
 })
 
+type ManifestNode = {
+  actions?: Array<string>
+  submodules?: Record<string, ManifestNode>
+}
+
+function buildManifestShape(m: unknown) {
+  return m as { modules: Record<string, ManifestNode> }
+}
+
+function buildNodePerms(def: ManifestNode): Record<string, unknown> {
+  const perms: Record<string, unknown> = {}
+  if (def.actions) {
+    for (const a of def.actions) perms[a] = false
+  }
+  if (def.submodules) {
+    for (const [key, subDef] of Object.entries(def.submodules)) {
+      perms[key] = buildNodePerms(subDef)
+    }
+  }
+  return perms
+}
+
 function buildDefaultPerms(
   manifest: ReturnType<typeof buildManifestShape>,
 ): Record<string, unknown> {
   const perms: Record<string, unknown> = {}
   for (const [mod, def] of Object.entries(manifest.modules)) {
-    const modPerms: Record<string, unknown> = {}
-    if (def.actions) {
-      for (const a of def.actions) modPerms[a] = false
-    }
-    if (def.submodules) {
-      for (const [sub, subDef] of Object.entries(def.submodules)) {
-        modPerms[sub] = Object.fromEntries(
-          subDef.actions.map((a) => [a, false]),
-        )
-      }
-    }
-    perms[mod] = modPerms
+    perms[mod] = buildNodePerms(def)
   }
   return perms
+}
+
+function mergeNode(
+  def: ManifestNode,
+  base: Record<string, unknown>,
+  saved: Record<string, unknown>,
+): void {
+  if (def.actions) {
+    for (const a of def.actions) {
+      if (typeof saved[a] === 'boolean') base[a] = saved[a]
+    }
+  }
+  if (def.submodules) {
+    for (const [key, subDef] of Object.entries(def.submodules)) {
+      const savedSub = saved[key]
+      if (!savedSub || typeof savedSub !== 'object') continue
+      mergeNode(
+        subDef,
+        base[key] as Record<string, unknown>,
+        savedSub as Record<string, unknown>,
+      )
+    }
+  }
 }
 
 /**
@@ -75,38 +109,13 @@ function mergeWithManifest(
   for (const [mod, def] of Object.entries(manifest.modules)) {
     const savedMod = saved[mod]
     if (!savedMod || typeof savedMod !== 'object') continue
-    const modPerms = base[mod] as Record<string, unknown>
-    if (def.actions) {
-      for (const a of def.actions) {
-        if (typeof (savedMod as Record<string, unknown>)[a] === 'boolean')
-          modPerms[a] = (savedMod as Record<string, unknown>)[a]
-      }
-    }
-    if (def.submodules) {
-      for (const [sub, subDef] of Object.entries(def.submodules)) {
-        const savedSub = (savedMod as Record<string, unknown>)[sub]
-        if (!savedSub || typeof savedSub !== 'object') continue
-        const subPerms = modPerms[sub] as Record<string, unknown>
-        for (const a of subDef.actions) {
-          if (typeof (savedSub as Record<string, unknown>)[a] === 'boolean')
-            subPerms[a] = (savedSub as Record<string, unknown>)[a]
-        }
-      }
-    }
+    mergeNode(
+      def,
+      base[mod] as Record<string, unknown>,
+      savedMod as Record<string, unknown>,
+    )
   }
   return base
-}
-
-function buildManifestShape(m: unknown) {
-  return m as {
-    modules: Record<
-      string,
-      {
-        actions?: Array<string>
-        submodules?: Record<string, { actions: Array<string> }>
-      }
-    >
-  }
 }
 
 function RouteComponent() {

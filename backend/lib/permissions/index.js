@@ -5,19 +5,23 @@ const manifest = require('./manifest.json')
  * @param {boolean} value – true for full access, false for no access
  * @returns {object}
  */
+function buildNodePerms(def, value) {
+  const perms = {}
+  if (def.actions) {
+    for (const action of def.actions) perms[action] = value
+  }
+  if (def.submodules) {
+    for (const [sub, subDef] of Object.entries(def.submodules)) {
+      perms[sub] = buildNodePerms(subDef, value)
+    }
+  }
+  return perms
+}
+
 function buildDefaultPermissions(value = false) {
   const perms = {}
   for (const [mod, def] of Object.entries(manifest.modules)) {
-    perms[mod] = {}
-    if (def.actions) {
-      for (const action of def.actions) perms[mod][action] = value
-    }
-    if (def.submodules) {
-      for (const [sub, subDef] of Object.entries(def.submodules)) {
-        perms[mod][sub] = {}
-        for (const action of subDef.actions) perms[mod][sub][action] = value
-      }
-    }
+    perms[mod] = buildNodePerms(def, value)
   }
   return perms
 }
@@ -29,26 +33,23 @@ function buildDefaultPermissions(value = false) {
  * @param {object} overrides – sparse override object from the user
  * @returns {object} resolved permissions
  */
-function resolvePermissions(rolePerms, overrides = {}) {
-  const result = JSON.parse(JSON.stringify(rolePerms)) // deep clone
-  console.log('[resolvePermissions] rolePerms fuelInvoicing:', JSON.stringify(rolePerms?.fuelInvoicing))
-  console.log('[resolvePermissions] overrides keys:', Object.keys(overrides))
-  for (const [key, val] of Object.entries(overrides)) {
+function deepMerge(target, source) {
+  const result = JSON.parse(JSON.stringify(target))
+  for (const [key, val] of Object.entries(source)) {
     if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
-      if (!result[key]) result[key] = {}
-      for (const [subKey, subVal] of Object.entries(val)) {
-        if (typeof subVal === 'object' && subVal !== null && !Array.isArray(subVal)) {
-          if (!result[key][subKey]) result[key][subKey] = {}
-          Object.assign(result[key][subKey], subVal)
-        } else {
-          result[key][subKey] = subVal
-        }
-      }
+      if (!result[key] || typeof result[key] !== 'object') result[key] = {}
+      result[key] = deepMerge(result[key], val)
     } else {
       result[key] = val
     }
   }
   return result
+}
+
+function resolvePermissions(rolePerms, overrides = {}) {
+  console.log('[resolvePermissions] rolePerms fuelInvoicing:', JSON.stringify(rolePerms?.fuelInvoicing))
+  console.log('[resolvePermissions] overrides keys:', Object.keys(overrides))
+  return deepMerge(JSON.parse(JSON.stringify(rolePerms)), overrides)
 }
 
 /**
@@ -57,6 +58,18 @@ function resolvePermissions(rolePerms, overrides = {}) {
  * @param {object} perms – permission object to validate
  * @returns {string[]} invalid paths
  */
+function validateNode(def, val, path, errors) {
+  if (typeof val !== 'object' || val === null) return
+  for (const [key, keyVal] of Object.entries(val)) {
+    if (def.actions && def.actions.includes(key)) continue
+    if (def.submodules && def.submodules[key]) {
+      validateNode(def.submodules[key], keyVal, `${path}.${key}`, errors)
+      continue
+    }
+    errors.push(`${path}.${key}`)
+  }
+}
+
 function validateAgainstManifest(perms) {
   const errors = []
   for (const [mod, val] of Object.entries(perms)) {
@@ -65,24 +78,7 @@ function validateAgainstManifest(perms) {
       errors.push(mod)
       continue
     }
-    if (typeof val !== 'object' || val === null) continue
-
-    for (const [key, keyVal] of Object.entries(val)) {
-      // leaf module (has actions directly)
-      if (modDef.actions && modDef.actions.includes(key)) continue
-      // parent module (has submodules)
-      if (modDef.submodules && modDef.submodules[key]) {
-        if (typeof keyVal === 'object' && keyVal !== null) {
-          for (const action of Object.keys(keyVal)) {
-            if (!modDef.submodules[key].actions.includes(action)) {
-              errors.push(`${mod}.${key}.${action}`)
-            }
-          }
-        }
-        continue
-      }
-      errors.push(`${mod}.${key}`)
-    }
+    validateNode(modDef, val, mod, errors)
   }
   return errors
 }
