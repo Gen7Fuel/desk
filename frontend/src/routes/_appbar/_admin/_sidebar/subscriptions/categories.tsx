@@ -27,7 +27,7 @@ export const Route = createFileRoute(
   beforeLoad: () => {
     if (
       typeof window !== 'undefined' &&
-      !can('subscriptions.categories', 'read')
+      !can('admin.subscriptions.categories', 'read')
     ) {
       throw redirect({ to: '/' })
     }

@@ -85,11 +85,11 @@ function RouteComponent() {
 
   const adminTo =
     [
-      { path: '/personnel', perm: 'personnel' },
-      { path: '/access/resources', perm: 'access' },
-      { path: '/assets/devices', perm: 'assets' },
-      { path: '/credentials/categories', perm: 'credentials' },
-      { path: '/subscriptions/categories', perm: 'subscriptions' },
+      { path: '/personnel', perm: 'admin.personnel' },
+      { path: '/access/resources', perm: 'admin.access' },
+      { path: '/assets/devices', perm: 'admin.assets' },
+      { path: '/credentials/categories', perm: 'admin.credentials' },
+      { path: '/subscriptions/categories', perm: 'admin.subscriptions' },
     ].find((r) => can(r.perm, 'read'))?.path ?? '/personnel'
 
   const fuelTo =

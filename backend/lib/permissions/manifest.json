@@ -1,29 +1,47 @@
 {
   "version": 1,
   "modules": {
+    "admin": {
+      "actions": ["read"],
+      "submodules": {
+        "personnel": { "actions": ["create", "read", "update", "delete"] },
+        "access": {
+          "actions": ["read"],
+          "submodules": {
+            "personnel": { "actions": ["create", "read", "update", "delete"] },
+            "resources": { "actions": ["create", "read", "update", "delete"] }
+          }
+        },
+        "assets": {
+          "actions": ["read"],
+          "submodules": {
+            "devices":   { "actions": ["create", "read", "update", "delete"] },
+            "location":  { "actions": ["create", "read", "update", "delete"] },
+            "personnel": { "actions": ["create", "read", "update", "delete"] }
+          }
+        },
+        "credentials": {
+          "actions": ["read"],
+          "submodules": {
+            "categories": { "actions": ["create", "read", "update", "delete"] },
+            "list":       { "actions": ["create", "read", "update", "delete"] }
+          }
+        },
+        "subscriptions": {
+          "actions": ["read"],
+          "submodules": {
+            "categories": { "actions": ["create", "read", "update", "delete"] },
+            "list":       { "actions": ["create", "read", "update", "delete"] }
+          }
+        }
+      }
+    },
     "fuel": {
       "actions": ["read"],
       "submodules": {
         "fuelInvoicing": { "actions": ["create", "read", "update", "delete"] },
+        "kardpoll":      { "actions": ["read"] },
         "fuelRec":       { "actions": ["read", "delete", "requestAgain"] }
-      }
-    },
-    "personnel": {
-      "actions": ["create", "read", "update", "delete"]
-    },
-    "access": {
-      "actions": ["read"],
-      "submodules": {
-        "personnel": { "actions": ["create", "read", "update", "delete"] },
-        "resources": { "actions": ["create", "read", "update", "delete"] }
-      }
-    },
-    "assets": {
-      "actions": ["read"],
-      "submodules": {
-        "devices":   { "actions": ["create", "read", "update", "delete"] },
-        "location":  { "actions": ["create", "read", "update", "delete"] },
-        "personnel": { "actions": ["create", "read", "update", "delete"] }
       }
     },
     "cipher": {
@@ -33,31 +51,10 @@
         "unlock": { "actions": ["create", "read", "update", "delete"] }
       }
     },
-    "credentials": {
-      "actions": ["read"],
-      "submodules": {
-        "categories": { "actions": ["create", "read", "update", "delete"] },
-        "list":       { "actions": ["create", "read", "update", "delete"] }
-      }
-    },
     "inventory": {
       "actions": ["read"],
       "submodules": {
         "coremarkInitialOrder": { "actions": ["create", "read", "update", "delete"] }
-      }
-    },
-    "subscriptions": {
-      "actions": ["read"],
-      "submodules": {
-        "categories": { "actions": ["create", "read", "update", "delete"] },
-        "list":       { "actions": ["create", "read", "update", "delete"] }
-      }
-    },
-    "settings": {
-      "actions": ["read"],
-      "submodules": {
-        "users": { "actions": ["create", "read", "update", "delete"] },
-        "roles": { "actions": ["create", "read", "update", "delete"] }
       }
     },
     "hub": {
@@ -66,6 +63,13 @@
         "cdn":         { "actions": ["create", "read", "update", "delete"] },
         "payables":    { "actions": ["create", "read", "update", "delete"] },
         "receivables": { "actions": ["create", "read", "update", "delete"] }
+      }
+    },
+    "settings": {
+      "actions": ["read"],
+      "submodules": {
+        "users": { "actions": ["create", "read", "update", "delete"] },
+        "roles": { "actions": ["create", "read", "update", "delete"] }
       }
     }
   }
