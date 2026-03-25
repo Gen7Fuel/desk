@@ -41,7 +41,7 @@
       "submodules": {
         "fuelInvoicing": { "actions": ["create", "read", "update", "delete"] },
         "kardpoll":      { "actions": ["read"] },
-        "fuelRec":       { "actions": ["read", "delete", "requestAgain"] }
+        "fuelRec":       { "actions": ["read", "postBol", "requestAgain", "delete"] }
       }
     },
     "cipher": {
