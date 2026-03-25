@@ -99,6 +99,8 @@ function RouteComponent() {
     setError('')
     setData(null)
     setFile(f)
+    setSubmitSuccess(false)
+    setSubmitError('')
     try {
       const buf = await f.arrayBuffer()
       const { default: ExcelJSLib } = await import('exceljs')
