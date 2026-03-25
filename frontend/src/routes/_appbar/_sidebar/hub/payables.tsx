@@ -550,15 +550,17 @@ function RouteComponent() {
                         >
                           <FileDown className="h-4 w-4" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-destructive hover:bg-destructive/10"
-                          onClick={() => void deletePayable(payable)}
-                          title="Delete Entry"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {can('hub.payables', 'delete') && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-destructive hover:bg-destructive/10"
+                            onClick={() => void deletePayable(payable)}
+                            title="Delete Entry"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>

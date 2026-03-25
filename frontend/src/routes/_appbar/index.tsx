@@ -277,7 +277,6 @@ function ModuleCard({
   to: string
 }) {
   return (
-     
     <Link
       to={to as any}
       className="group flex flex-col gap-3 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50"
@@ -390,7 +389,7 @@ function CdnRecentWidget({
     <div className="rounded-lg border bg-card p-4">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold">Recent CDN Uploads</h3>
-        { }
+        {}
         <Link
           to={'/hub/cdn' as any}
           className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"

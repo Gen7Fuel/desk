@@ -106,6 +106,7 @@ const TABLE_COLS: Array<{ key: keyof TableEntry; label: string }> = [
 
 function RouteComponent() {
   const { access_token: sageToken } = Route.useLoaderData()
+  const canCreate = can('fuel.fuelInvoicing', 'create')
   const inputRef = useRef<HTMLInputElement>(null)
   const {
     fields,
@@ -141,58 +142,60 @@ function RouteComponent() {
       </div>
 
       {/* Drop zone */}
-      <div
-        className={cn(
-          'flex cursor-pointer flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed p-12 transition-colors',
-          dragActive
-            ? 'border-primary bg-primary/5'
-            : 'border-border bg-muted/30 hover:border-primary/50 hover:bg-muted/50',
-          file && 'border-solid border-primary/40 bg-primary/5',
-        )}
-        onClick={() => inputRef.current?.click()}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          accept="application/pdf"
-          className="hidden"
-          onChange={handleInputChange}
-        />
-        {file ? (
-          <>
-            <FileText className="h-12 w-12 text-primary" />
-            <div className="text-center">
-              <p className="font-medium">{file.name}</p>
-              <p className="text-sm text-muted-foreground">
-                {formatBytes(file.size)}
-              </p>
-            </div>
-          </>
-        ) : (
-          <>
-            <UploadCloud
-              className={cn(
-                'h-12 w-12 transition-colors',
-                dragActive ? 'text-primary' : 'text-muted-foreground',
-              )}
-            />
-            <div className="text-center">
-              <p className="font-medium">Drop your PDF here</p>
-              <p className="text-sm text-muted-foreground">
-                or click to browse — PDF files accepted
-              </p>
-            </div>
-          </>
-        )}
-      </div>
+      {canCreate ? (
+        <div
+          className={cn(
+            'flex cursor-pointer flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed p-12 transition-colors',
+            dragActive
+              ? 'border-primary bg-primary/5'
+              : 'border-border bg-muted/30 hover:border-primary/50 hover:bg-muted/50',
+            file && 'border-solid border-primary/40 bg-primary/5',
+          )}
+          onClick={() => inputRef.current?.click()}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+        >
+          <input
+            ref={inputRef}
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            onChange={handleInputChange}
+          />
+          {file ? (
+            <>
+              <FileText className="h-12 w-12 text-primary" />
+              <div className="text-center">
+                <p className="font-medium">{file.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {formatBytes(file.size)}
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <UploadCloud
+                className={cn(
+                  'h-12 w-12 transition-colors',
+                  dragActive ? 'text-primary' : 'text-muted-foreground',
+                )}
+              />
+              <div className="text-center">
+                <p className="font-medium">Drop your PDF here</p>
+                <p className="text-sm text-muted-foreground">
+                  or click to browse — PDF files accepted
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+      ) : null}
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {/* Actions */}
-      {file && (
+      {canCreate && file && (
         <div className="flex items-center gap-3">
           <Button
             onClick={handleSubmitToAzure}
