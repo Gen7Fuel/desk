@@ -129,7 +129,12 @@ function RouteComponent() {
       const instance = pdf(<></>)
       instance.updateContainer(doc)
       const blob = await instance.toBlob()
-      window.open(URL.createObjectURL(blob))
+      const filename = `${e.date} - ${e.site} - ${e.bolNumber ?? 'no-bol'}.pdf`
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(a.href)
     } catch (err) {
       alert(
         `PDF generation failed: ${err instanceof Error ? err.message : String(err)}`,
