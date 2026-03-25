@@ -4,7 +4,7 @@ const Category = require('./credentialCategory.model')
 const { authenticate, requirePermission } = require('../../middleware/auth')
 
 // Get all categories
-router.get('/credentials/categories', authenticate, requirePermission('credentials.categories', 'read'), async (req, res) => {
+router.get('/credentials/categories', authenticate, requirePermission('admin.credentials.categories', 'read'), async (req, res) => {
   try {
     const categories = await Category.find().sort({ name: 1 })
     res.json(categories)
@@ -14,7 +14,7 @@ router.get('/credentials/categories', authenticate, requirePermission('credentia
 })
 
 // Get single category
-router.get('/credentials/categories/:id', authenticate, requirePermission('credentials.categories', 'read'), async (req, res) => {
+router.get('/credentials/categories/:id', authenticate, requirePermission('admin.credentials.categories', 'read'), async (req, res) => {
   try {
     const category = await Category.findById(req.params.id)
     if (!category) return res.status(404).json({ error: 'Not found' })
@@ -25,7 +25,7 @@ router.get('/credentials/categories/:id', authenticate, requirePermission('crede
 })
 
 // Create a category
-router.post('/credentials/categories', authenticate, requirePermission('credentials.categories', 'create'), async (req, res) => {
+router.post('/credentials/categories', authenticate, requirePermission('admin.credentials.categories', 'create'), async (req, res) => {
   try {
     const { name } = req.body
     if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' })
@@ -38,7 +38,7 @@ router.post('/credentials/categories', authenticate, requirePermission('credenti
 })
 
 // Update a category
-router.put('/credentials/categories/:id', authenticate, requirePermission('credentials.categories', 'update'), async (req, res) => {
+router.put('/credentials/categories/:id', authenticate, requirePermission('admin.credentials.categories', 'update'), async (req, res) => {
   try {
     const { name } = req.body
     if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' })
@@ -56,7 +56,7 @@ router.put('/credentials/categories/:id', authenticate, requirePermission('crede
 })
 
 // Delete a category
-router.delete('/credentials/categories/:id', authenticate, requirePermission('credentials.categories', 'delete'), async (req, res) => {
+router.delete('/credentials/categories/:id', authenticate, requirePermission('admin.credentials.categories', 'delete'), async (req, res) => {
   try {
     const category = await Category.findByIdAndDelete(req.params.id)
     if (!category) return res.status(404).json({ error: 'Not found' })
