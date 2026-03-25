@@ -143,7 +143,7 @@ function RouteComponent() {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
-          'X-Required-Permission': 'po.delete',
+          'X-Required-Permission': 'po',
         },
       })
       if (res.ok) {

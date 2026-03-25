@@ -143,20 +143,22 @@ function RouteComponent() {
             <TooltipContent side="right">Home</TooltipContent>
           </Tooltip>
           <hr className="w-8 border-border" />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                to={adminTo}
-                className={cn(
-                  'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
-                  isAdminActive && 'bg-accent/80 text-accent-foreground',
-                )}
-              >
-                <BriefcaseBusiness className="h-5 w-5" />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Admin</TooltipContent>
-          </Tooltip>
+          {can('admin', 'read') && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to={adminTo}
+                  className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                    isAdminActive && 'bg-accent/80 text-accent-foreground',
+                  )}
+                >
+                  <BriefcaseBusiness className="h-5 w-5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Admin</TooltipContent>
+            </Tooltip>
+          )}
           {can('fuel', 'read') && (
             <Tooltip>
               <TooltipTrigger asChild>
