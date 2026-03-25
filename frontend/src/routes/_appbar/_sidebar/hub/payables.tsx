@@ -74,6 +74,102 @@ function getExternalToken(): string {
   return payload?.externalToken ?? ''
 }
 
+function toLocalDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-CA', { timeZone: 'UTC' })
+}
+
+type SafesheetEntry = { _id: string; date: string; description: string }
+
+async function findSafesheetEntry(
+  site: string,
+  dateStr: string,
+  vendorName: string,
+): Promise<SafesheetEntry | null> {
+  try {
+    const res = await fetch(
+      `${HUB}/api/safesheets/site/${encodeURIComponent(site)}?from=${dateStr}&to=${dateStr}`,
+      { headers: { Authorization: `Bearer ${getExternalToken()}` } },
+    )
+    if (!res.ok) return null
+    const data: { entries?: Array<SafesheetEntry> } = await res.json()
+    return (
+      (data.entries ?? []).find(
+        (e) =>
+          e.description === `Payout - ${vendorName}` &&
+          toLocalDate(e.date) === dateStr,
+      ) ?? null
+    )
+  } catch {
+    return null
+  }
+}
+
+async function createSafesheetEntry(
+  site: string,
+  isoDate: string,
+  vendorName: string,
+  amount: number,
+): Promise<void> {
+  try {
+    await fetch(
+      `${HUB}/api/safesheets/site/${encodeURIComponent(site)}/entries`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getExternalToken()}`,
+        },
+        body: JSON.stringify({
+          date: isoDate,
+          description: `Payout - ${vendorName}`,
+          cashExpenseOut: amount,
+        }),
+      },
+    )
+  } catch (err) {
+    console.error('Safesheet create failed:', err)
+  }
+}
+
+async function updateSafesheetEntry(
+  site: string,
+  entryId: string,
+  changes: Record<string, unknown>,
+): Promise<void> {
+  try {
+    await fetch(
+      `${HUB}/api/safesheets/site/${encodeURIComponent(site)}/entries/${entryId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getExternalToken()}`,
+        },
+        body: JSON.stringify(changes),
+      },
+    )
+  } catch (err) {
+    console.error('Safesheet update failed:', err)
+  }
+}
+
+async function deleteSafesheetEntry(
+  site: string,
+  entryId: string,
+): Promise<void> {
+  try {
+    await fetch(
+      `${HUB}/api/safesheets/site/${encodeURIComponent(site)}/entries/${entryId}`,
+      {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${getExternalToken()}` },
+      },
+    )
+  } catch (err) {
+    console.error('Safesheet delete failed:', err)
+  }
+}
+
 function RouteComponent() {
   const [from, setFrom] = useState(todayIso())
   const [to, setTo] = useState(todayIso())
@@ -82,7 +178,7 @@ function RouteComponent() {
   const [loading, setLoading] = useState(false)
   const [editingCell, setEditingCell] = useState<{
     id: string
-    field: 'createdAt' | 'vendorName' | 'amount'
+    field: 'createdAt' | 'vendorName' | 'amount' | 'paymentMethod'
   } | null>(null)
   const [editValue, setEditValue] = useState<string>('')
   const [imageModal, setImageModal] = useState<{
@@ -222,6 +318,76 @@ function RouteComponent() {
               : p,
           ),
         )
+
+        // Sync safesheet
+        const site = currentPayable.location.stationName
+        const dateStr = toLocalDate(currentPayable.createdAt)
+
+        if (field === 'paymentMethod') {
+          const oldMethod = currentPayable.paymentMethod
+          if (oldMethod !== 'safe' && value === 'safe') {
+            void createSafesheetEntry(
+              site,
+              currentPayable.createdAt,
+              currentPayable.vendorName,
+              currentPayable.amount,
+            )
+          } else if (oldMethod === 'safe' && value !== 'safe') {
+            void (async () => {
+              const entry = await findSafesheetEntry(
+                site,
+                dateStr,
+                currentPayable.vendorName,
+              )
+              if (entry) await deleteSafesheetEntry(site, entry._id)
+            })()
+          }
+        } else if (
+          field === 'amount' &&
+          currentPayable.paymentMethod === 'safe'
+        ) {
+          void (async () => {
+            const entry = await findSafesheetEntry(
+              site,
+              dateStr,
+              currentPayable.vendorName,
+            )
+            if (entry)
+              await updateSafesheetEntry(site, entry._id, {
+                cashExpenseOut: parseFloat(value),
+              })
+          })()
+        } else if (
+          field === 'vendorName' &&
+          currentPayable.paymentMethod === 'safe'
+        ) {
+          void (async () => {
+            const entry = await findSafesheetEntry(
+              site,
+              dateStr,
+              currentPayable.vendorName,
+            )
+            if (entry)
+              await updateSafesheetEntry(site, entry._id, {
+                description: `Payout - ${value}`,
+              })
+          })()
+        } else if (
+          field === 'createdAt' &&
+          currentPayable.paymentMethod === 'safe'
+        ) {
+          void (async () => {
+            const entry = await findSafesheetEntry(
+              site,
+              dateStr,
+              currentPayable.vendorName,
+            )
+            if (entry)
+              await updateSafesheetEntry(site, entry._id, {
+                date: new Date(value).toISOString(),
+              })
+          })()
+        }
       }
     } catch (err) {
       console.error('Update failed:', err)
@@ -445,6 +611,31 @@ function RouteComponent() {
                                             : p,
                                         ),
                                       )
+                                      if (payable.paymentMethod === 'safe') {
+                                        const site =
+                                          payable.location.stationName
+                                        const oldDateStr = toLocalDate(
+                                          payable.createdAt,
+                                        )
+                                        void (async () => {
+                                          const entry =
+                                            await findSafesheetEntry(
+                                              site,
+                                              oldDateStr,
+                                              payable.vendorName,
+                                            )
+                                          if (entry)
+                                            await updateSafesheetEntry(
+                                              site,
+                                              entry._id,
+                                              {
+                                                date: new Date(
+                                                  newVal,
+                                                ).toISOString(),
+                                              },
+                                            )
+                                        })()
+                                      }
                                     }
                                   } catch (err) {
                                     console.error('Update failed:', err)
@@ -489,9 +680,41 @@ function RouteComponent() {
                         payable.vendorName
                       )}
                     </td>
-                    <td className="px-4 py-2">
-                      {PAYMENT_METHOD_LABELS[payable.paymentMethod] ??
-                        payable.paymentMethod}
+                    <td
+                      className="cursor-pointer px-4 py-2"
+                      onDoubleClick={() => {
+                        setEditingCell({
+                          id: payable._id,
+                          field: 'paymentMethod',
+                        })
+                        setEditValue(payable.paymentMethod)
+                      }}
+                    >
+                      {editingCell?.id === payable._id &&
+                      editingCell.field === 'paymentMethod' ? (
+                        <select
+                          autoFocus
+                          value={editValue}
+                          onChange={(e) =>
+                            void updatePayable(
+                              payable._id,
+                              'paymentMethod',
+                              e.target.value,
+                            )
+                          }
+                          onBlur={() => setEditingCell(null)}
+                          className="rounded border bg-background px-1 text-sm"
+                        >
+                          <option value="safe">Safe</option>
+                          <option value="till">Till</option>
+                          <option value="cheque">Cheque</option>
+                          <option value="on_account">On Account</option>
+                          <option value="other">Other</option>
+                        </select>
+                      ) : (
+                        (PAYMENT_METHOD_LABELS[payable.paymentMethod] ??
+                        payable.paymentMethod)
+                      )}
                     </td>
                     <td
                       className="cursor-pointer px-4 py-2 text-right"
