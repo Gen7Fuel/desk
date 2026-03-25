@@ -42,26 +42,26 @@ describe('resolvePermissions', () => {
   it('applies top-level override', () => {
     const rolePerms = buildDefaultPermissions(false)
     const resolved = resolvePermissions(rolePerms, {
-      personnel: { create: true, read: true, update: false, delete: false },
+      admin: { personnel: { create: true, read: true, update: false, delete: false } },
     })
-    expect(resolved.personnel.create).toBe(true)
-    expect(resolved.personnel.read).toBe(true)
-    expect(resolved.personnel.update).toBe(false)
+    expect(resolved.admin.personnel.create).toBe(true)
+    expect(resolved.admin.personnel.read).toBe(true)
+    expect(resolved.admin.personnel.update).toBe(false)
   })
 
   it('applies nested override', () => {
     const rolePerms = buildDefaultPermissions(false)
     const resolved = resolvePermissions(rolePerms, {
-      assets: { devices: { read: true } },
+      admin: { assets: { devices: { read: true } } },
     })
-    expect(resolved.assets.devices.read).toBe(true)
-    expect(resolved.assets.devices.create).toBe(false)
+    expect(resolved.admin.assets.devices.read).toBe(true)
+    expect(resolved.admin.assets.devices.create).toBe(false)
   })
 
   it('does not mutate the original rolePerms', () => {
     const rolePerms = buildDefaultPermissions(false)
-    resolvePermissions(rolePerms, { personnel: { read: true } })
-    expect(rolePerms.personnel.read).toBe(false)
+    resolvePermissions(rolePerms, { admin: { personnel: { read: true } } })
+    expect(rolePerms.admin.personnel.read).toBe(false)
   })
 })
 
@@ -70,19 +70,19 @@ describe('resolvePermissions', () => {
 describe('checkPermission', () => {
   it('returns true for an allowed action', () => {
     const perms = buildDefaultPermissions(true)
-    expect(checkPermission(perms, 'personnel', 'read')).toBe(true)
+    expect(checkPermission(perms, 'admin.personnel', 'read')).toBe(true)
   })
 
   it('returns false for a denied action', () => {
     const perms = buildDefaultPermissions(false)
-    expect(checkPermission(perms, 'personnel', 'read')).toBe(false)
+    expect(checkPermission(perms, 'admin.personnel', 'read')).toBe(false)
   })
 
   it('resolves nested paths', () => {
     const perms = buildDefaultPermissions(false)
-    perms.assets.devices.read = true
-    expect(checkPermission(perms, 'assets.devices', 'read')).toBe(true)
-    expect(checkPermission(perms, 'assets.devices', 'create')).toBe(false)
+    perms.admin.assets.devices.read = true
+    expect(checkPermission(perms, 'admin.assets.devices', 'read')).toBe(true)
+    expect(checkPermission(perms, 'admin.assets.devices', 'create')).toBe(false)
   })
 
   it('returns false for unknown module', () => {
@@ -110,9 +110,9 @@ describe('validateAgainstManifest', () => {
 
   it('returns invalid action for a submodule', () => {
     const errors = validateAgainstManifest({
-      assets: { devices: { fly: true } },
+      admin: { assets: { devices: { fly: true } } },
     })
-    expect(errors.some((e) => e.includes('assets.devices.fly'))).toBe(true)
+    expect(errors.some((e) => e.includes('admin.assets.devices.fly'))).toBe(true)
   })
 
   it('returns empty array for empty object', () => {
