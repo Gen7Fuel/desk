@@ -427,7 +427,7 @@ function RouteComponent() {
                             </Button>
                           )}
 
-                          {can('fuel.fuelRec', 'read') &&
+                          {can('fuel.fuelRec', 'postBol') &&
                             !e.comments?.some((c) =>
                               c.text.toLowerCase().includes('bol posted'),
                             ) && (
