@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { format, parseISO, subDays } from 'date-fns'
 import {
   CalendarIcon,
+  ClipboardCheck,
   ExternalLink,
   FileDown,
   MessageSquareText,
@@ -16,6 +17,7 @@ import {
   StyleSheet,
   pdf,
 } from '@react-pdf/renderer'
+import { toast } from 'sonner'
 import { can, getTokenPayload } from '@/lib/permissions'
 import { SitePicker } from '@/components/custom/SitePicker'
 import { Button } from '@/components/ui/button'
@@ -198,6 +200,39 @@ function RouteComponent() {
       alert(
         `Retake request failed: ${err instanceof Error ? err.message : String(err)}`,
       )
+    } finally {
+      setPending((prev) => {
+        const next = new Set(prev)
+        next.delete(e._id)
+        return next
+      })
+    }
+  }
+
+  const postBolComment = async (e: BOLPhoto) => {
+    try {
+      setPending((prev) => new Set(prev).add(e._id))
+      const res = await fetch(
+        `${HUB}/api/fuel-rec/${encodeURIComponent(e._id)}/comment`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${getExternalToken()}`,
+          },
+          body: JSON.stringify({ text: 'BOL Posted' }),
+        },
+      )
+      if (!res.ok) throw new Error('Failed to post comment')
+      const result = await res.json()
+      const updated = { ...e, comments: result.comments }
+      setEntries((prev) => prev.map((x) => (x._id === e._id ? updated : x)))
+      if (rightPane?.entry._id === e._id) {
+        setRightPane((prev) => (prev ? { ...prev, entry: updated } : prev))
+      }
+      toast.success('BOL Posted')
+    } catch (err) {
+      toast.error(`Failed: ${err instanceof Error ? err.message : String(err)}`)
     } finally {
       setPending((prev) => {
         const next = new Set(prev)
@@ -391,6 +426,21 @@ function RouteComponent() {
                               )}
                             </Button>
                           )}
+
+                          {can('fuel.fuelRec', 'read') &&
+                            !e.comments?.some((c) =>
+                              c.text.toLowerCase().includes('bol posted'),
+                            ) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => void postBolComment(e)}
+                                disabled={pending.has(e._id)}
+                                title="BOL Posted"
+                              >
+                                <ClipboardCheck className="h-4 w-4" />
+                              </Button>
+                            )}
 
                           {can('fuel.fuelRec', 'requestAgain') && (
                             <Button
