@@ -43,7 +43,8 @@
       "Bash(find /c/Users/MohammadHasan/workspace/desk -name *.env* -o -name docker-compose* -o -name compose*)",
       "Bash(find /c/Users/MohammadHasan/workspace/desk/backend -name *manifest* -o -name *permission*)",
       "Bash(find C:UsersMohammadHasanworkspacedeskfrontend -name tailwind.config.* -o -name *.config.ts)",
-      "Bash(find C:UsersMohammadHasanworkspacedeskfrontendsrc -type f \\\\\\(-name *.css -o -name app.tsx \\\\\\))"
+      "Bash(find C:UsersMohammadHasanworkspacedeskfrontendsrc -type f \\\\\\(-name *.css -o -name app.tsx \\\\\\))",
+      "Bash(grep -E \"\\\\.\\(js|json\\)$\")"
     ]
   }
 }
