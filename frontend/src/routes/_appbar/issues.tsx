@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
-import type {Issue, IssueForm} from '@/lib/issues-api';
+import type { Issue, IssueForm } from '@/lib/issues-api'
 import { can } from '@/lib/permissions'
 import {
   createIssue,
@@ -18,7 +18,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
-
 
 export const Route = createFileRoute('/_appbar/issues')({
   component: RouteComponent,
@@ -207,8 +206,10 @@ function RouteComponent() {
     }
   }
 
-  const setField = <K extends keyof IssueForm>(key: K, value: IssueForm[K]) =>
-    setForm((prev) => ({ ...prev, [key]: value }))
+  const setField = <TKey extends keyof IssueForm>(
+    key: TKey,
+    value: IssueForm[TKey],
+  ) => setForm((prev) => ({ ...prev, [key]: value }))
 
   return (
     <div className="flex h-full flex-col gap-6 overflow-auto p-6">
