@@ -2,15 +2,14 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import type {Issue, IssueForm} from '@/lib/issues-api';
-import { can, getTokenPayload } from '@/lib/permissions'
+import { can } from '@/lib/permissions'
 import {
-  
-  
   createIssue,
   deleteIssue,
   fetchIssues,
-  updateIssue
+  updateIssue,
 } from '@/lib/issues-api'
+import { apiFetch } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -20,14 +19,6 @@ import {
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 
-const HUB = 'https://app.gen7fuel.com'
-
-function getExternalToken(): string {
-  const payload = getTokenPayload() as
-    | (ReturnType<typeof getTokenPayload> & { externalToken?: string })
-    | null
-  return payload?.externalToken ?? ''
-}
 
 export const Route = createFileRoute('/_appbar/issues')({
   component: RouteComponent,
@@ -92,6 +83,7 @@ const DEFAULT_FORM: IssueForm = {
 }
 
 function RouteComponent() {
+  const [locations, setLocations] = useState<Array<string>>([])
   const [issues, setIssues] = useState<Array<Issue>>([])
   const [loading, setLoading] = useState(false)
   const [filterStation, setFilterStation] = useState('')
@@ -117,14 +109,19 @@ function RouteComponent() {
 
   useEffect(() => {
     void load()
+    apiFetch('https://app.gen7fuel.com/api/locations')
+      .then((res) => res.json())
+      .then((data: Array<{ stationName: string }>) =>
+        setLocations(data.map((d) => d.stationName)),
+      )
+      .catch(() => setLocations([]))
   }, [])
 
   const filtered = useMemo(
     () =>
       issues.filter(
         (i) =>
-          (!filterStation ||
-            i.station.toLowerCase().includes(filterStation.toLowerCase())) &&
+          (!filterStation || i.station === filterStation) &&
           (!filterDept || i.department === filterDept) &&
           (!filterStatus || i.status === filterStatus),
       ),
@@ -269,13 +266,18 @@ function RouteComponent() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <input
-          type="text"
-          placeholder="Filter by station…"
+        <select
           value={filterStation}
           onChange={(e) => setFilterStation(e.target.value)}
-          className="w-48 rounded border bg-background px-3 py-1.5 text-sm"
-        />
+          className="rounded border bg-background px-3 py-1.5 text-sm"
+        >
+          <option value="">All Stations</option>
+          {locations.map((loc) => (
+            <option key={loc} value={loc}>
+              {loc}
+            </option>
+          ))}
+        </select>
         <select
           value={filterDept}
           onChange={(e) => setFilterDept(e.target.value)}
@@ -423,12 +425,18 @@ function RouteComponent() {
               <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Station *
               </label>
-              <input
+              <select
                 className="rounded border bg-background px-2 py-1.5 text-sm"
                 value={form.station}
                 onChange={(e) => setField('station', e.target.value)}
-                placeholder="e.g. COUCHICHING"
-              />
+              >
+                <option value="">Select station…</option>
+                {locations.map((loc) => (
+                  <option key={loc} value={loc}>
+                    {loc}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="flex flex-col gap-1">
