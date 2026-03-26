@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Copy, RefreshCcw } from 'lucide-react'
+import { Copy, RefreshCcw, Share2 } from 'lucide-react'
 import { lockText } from '@/lib/cipher-api'
 import { Button } from '@/components/ui/button'
 import { can } from '@/lib/permissions'
@@ -45,6 +45,20 @@ function RouteComponent() {
     setTimeout(() => setCopied(null), 1200)
   }
 
+  function handleShareToTeams() {
+    const message = `Cipher ID: ${result!.id}\nKey: ${result!.key}`
+    const encoded = encodeURIComponent(message)
+    const appUrl = `msteams://teams.microsoft.com/l/chat/0/0?users=&message=${encoded}`
+    const webUrl = `https://teams.microsoft.com/l/chat/0/0?users=&message=${encoded}`
+
+    window.location.href = appUrl
+    setTimeout(() => {
+      if (!document.hidden) {
+        window.open(webUrl, '_blank')
+      }
+    }, 1000)
+  }
+
   function handleRefresh() {
     setResult(null)
     setText('')
@@ -75,27 +89,6 @@ function RouteComponent() {
           <div className="flex flex-col items-center gap-6">
             <div className="w-full p-4 border rounded bg-muted flex flex-col gap-4">
               <div className="flex items-center gap-2">
-                <b>Key:</b>
-                <span className="break-all font-mono flex-1">{result.key}</span>
-                <Button
-                  type="button"
-                  size="icon-sm"
-                  variant="ghost"
-                  onClick={() => handleCopy(result.key, 'key')}
-                  title="Copy key"
-                  aria-label="Copy key"
-                >
-                  <Copy
-                    className={
-                      copied === 'key' ? 'size-4 text-green-600' : 'size-4'
-                    }
-                  />
-                </Button>
-                {copied === 'key' && (
-                  <span className="text-green-600 text-xs ml-1">Copied!</span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
                 <b>ID:</b>
                 <span className="break-all font-mono flex-1">{result.id}</span>
                 <Button
@@ -116,16 +109,48 @@ function RouteComponent() {
                   <span className="text-green-600 text-xs ml-1">Copied!</span>
                 )}
               </div>
+              <div className="flex items-center gap-2">
+                <b>Key:</b>
+                <span className="break-all font-mono flex-1">{result.key}</span>
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  onClick={() => handleCopy(result.key, 'key')}
+                  title="Copy key"
+                  aria-label="Copy key"
+                >
+                  <Copy
+                    className={
+                      copied === 'key' ? 'size-4 text-green-600' : 'size-4'
+                    }
+                  />
+                </Button>
+                {copied === 'key' && (
+                  <span className="text-green-600 text-xs ml-1">Copied!</span>
+                )}
+              </div>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleRefresh}
-              title="Back to form"
-              size="icon"
-            >
-              <RefreshCcw className="size-5" />
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                onClick={handleShareToTeams}
+                title="Share to Teams"
+                className="bg-[#6264A7] hover:bg-[#4F5196] text-white border-0"
+              >
+                <Share2 className="size-4" />
+                Share to Teams
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleRefresh}
+                title="Back to form"
+                size="icon"
+              >
+                <RefreshCcw className="size-5" />
+              </Button>
+            </div>
           </div>
         )}
       </div>

@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import { unlockText } from '@/lib/cipher-api'
+import { Button } from '@/components/ui/button'
 import { can } from '@/lib/permissions'
 
 export const Route = createFileRoute('/_appbar/_sidebar/cipher/unlock')({
@@ -52,13 +53,9 @@ function RouteComponent() {
           onChange={(e) => setKey(e.target.value)}
           required
         />
-        <button
-          type="submit"
-          className="bg-blue-600 text-white rounded px-4 py-2"
-          disabled={loading}
-        >
+        <Button type="submit" disabled={loading}>
           {loading ? 'Decrypting...' : 'Unlock'}
-        </button>
+        </Button>
       </form>
       {result && (
         <div className="mt-6 p-4 border rounded bg-muted">

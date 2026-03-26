@@ -11,6 +11,7 @@ import { useEffect } from 'react'
 import {
   Binary,
   BriefcaseBusiness,
+  ClipboardList,
   Fuel,
   LayoutGrid,
   LogOut,
@@ -82,6 +83,7 @@ function RouteComponent() {
   const isInventoryActive = !!matchRoute({ to: '/inventory', fuzzy: true })
   const isSettingsActive = !!matchRoute({ to: '/settings', fuzzy: true })
   const isHubActive = location.pathname.startsWith('/hub')
+  const isIssuesActive = location.pathname.startsWith('/issues')
 
   const adminTo =
     [
@@ -208,6 +210,22 @@ function RouteComponent() {
                 </Link>
               </TooltipTrigger>
               <TooltipContent side="right">Inventory</TooltipContent>
+            </Tooltip>
+          )}
+          {can('issues', 'read') && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/issues"
+                  className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                    isIssuesActive && 'bg-accent/80 text-accent-foreground',
+                  )}
+                >
+                  <ClipboardList className="h-5 w-5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Issues</TooltipContent>
             </Tooltip>
           )}
           {can('hub', 'read') && (

@@ -20,6 +20,11 @@ const sidebarLinks: Record<
   settings: [
     { label: 'Users', path: '/settings/users', permission: 'settings.users' },
     { label: 'Roles', path: '/settings/roles', permission: 'settings.roles' },
+    {
+      label: 'Activity Log',
+      path: '/settings/logs',
+      permission: 'settings.logs',
+    },
   ],
   hub: [
     { label: 'CDN Panel', path: '/hub/cdn', permission: 'hub.cdn' },

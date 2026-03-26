@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createLog } from '../log-api'
 import { extractFieldsFromRects } from './pdf-extractor'
 import { buildFilename } from './filename'
 import { createAttachment, createBill, createInvoice } from './sage-api'
@@ -64,6 +65,17 @@ export function useFuelInvoicing(sageToken: string) {
       const invoiceKey = await createInvoice(fields, attachmentKey, sageToken)
       void invoiceKey
 
+      void createLog({
+        app: 'fuel.fuelInvoicing',
+        action: 'create',
+        entityId: fields.invoiceNumber ?? file.name,
+        entitySnapshot: {
+          invoiceNumber: fields.invoiceNumber,
+          billDate: fields.billDate,
+          customer: fields.customer,
+          totalInvoiceToRemit: fields.totalInvoiceToRemit,
+        },
+      })
       setSubmitMsg('Submitted successfully.')
       setFile(null)
       setBase64(null)

@@ -5,6 +5,7 @@ import { format, parseISO } from 'date-fns'
 import { pdf } from '@react-pdf/renderer'
 import PurchaseOrderPDF from '@/components/custom/PurchaseOrderPDF'
 import { can, getTokenPayload } from '@/lib/permissions'
+import { createLog } from '@/lib/log-api'
 import { SitePicker } from '@/components/custom/SitePicker'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
@@ -104,6 +105,7 @@ function RouteComponent() {
     field: keyof PurchaseOrder,
     value: string | number,
   ) => {
+    const currentOrder = purchaseOrders.find((o) => o._id === id)
     try {
       const token = getExternalToken()
       const body: Record<string, unknown> = { [field]: value }
@@ -119,6 +121,16 @@ function RouteComponent() {
       })
 
       if (res.ok) {
+        void createLog({
+          app: 'hub.receivables',
+          action: 'edit',
+          entityId: id,
+          field: String(field),
+          oldValue: currentOrder
+            ? (currentOrder as Record<string, unknown>)[field as string]
+            : undefined,
+          newValue: value,
+        })
         setPurchaseOrders((prev) =>
           prev.map((o) => (o._id === id ? { ...o, [field]: value } : o)),
         )
@@ -147,6 +159,13 @@ function RouteComponent() {
         },
       })
       if (res.ok) {
+        void createLog({
+          app: 'hub.receivables',
+          action: 'delete',
+          entityId: order._id,
+          entitySnapshot: order,
+          severity: 'warning',
+        })
         setPurchaseOrders((prev) => prev.filter((o) => o._id !== order._id))
       }
     } catch (err) {
@@ -292,6 +311,18 @@ function RouteComponent() {
                             selected={new Date(order.date)}
                             onSelect={(date) => {
                               if (date) {
+                                void createLog({
+                                  app: 'hub.receivables',
+                                  action: 'edit',
+                                  entityId: order._id,
+                                  field: 'date',
+                                  oldValue: new Date(
+                                    order.date,
+                                  ).toLocaleDateString('en-CA', {
+                                    timeZone: 'UTC',
+                                  }),
+                                  newValue: date.toISOString(),
+                                })
                                 void updatePurchaseOrder(
                                   order._id,
                                   'date',
