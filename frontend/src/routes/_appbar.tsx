@@ -83,7 +83,7 @@ function RouteComponent() {
   const isInventoryActive = !!matchRoute({ to: '/inventory', fuzzy: true })
   const isSettingsActive = !!matchRoute({ to: '/settings', fuzzy: true })
   const isHubActive = location.pathname.startsWith('/hub')
-  const isIssuesActive = !!matchRoute({ to: '/issues', fuzzy: true })
+  const isIssuesActive = location.pathname.startsWith('/issues')
 
   const adminTo =
     [

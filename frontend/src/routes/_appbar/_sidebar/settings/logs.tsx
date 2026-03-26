@@ -2,9 +2,9 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { CalendarIcon, Eye } from 'lucide-react'
-import type {LogRecord} from '@/lib/log-api';
+import type { LogRecord } from '@/lib/log-api'
 import { can } from '@/lib/permissions'
-import {  fetchLogs } from '@/lib/log-api'
+import { fetchLogs } from '@/lib/log-api'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import {
@@ -253,7 +253,7 @@ function RouteComponent() {
                       <span className="font-mono text-xs">{log.entityId}</span>
                     </td>
                     <td className="px-4 py-2 text-xs">
-                      {log.user?.email ?? '—'}
+                      {log.user.email ?? '—'}
                     </td>
                     <td className="px-4 py-2 font-mono text-xs">
                       {log.ip ?? '—'}

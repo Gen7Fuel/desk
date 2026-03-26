@@ -378,14 +378,14 @@ function RouteComponent() {
         )
 
         // Sync safesheet
-        const site = currentPayable.location.stationName
+        const stationName = currentPayable.location.stationName
         const dateStr = toLocalDate(currentPayable.createdAt)
 
         if (field === 'paymentMethod') {
           const oldMethod = currentPayable.paymentMethod
           if (oldMethod !== 'safe' && value === 'safe') {
             void createSafesheetEntry(
-              site,
+              stationName,
               currentPayable.createdAt,
               currentPayable.vendorName,
               currentPayable.amount,
@@ -393,11 +393,11 @@ function RouteComponent() {
           } else if (oldMethod === 'safe' && value !== 'safe') {
             void (async () => {
               const entry = await findSafesheetEntry(
-                site,
+                stationName,
                 dateStr,
                 currentPayable.vendorName,
               )
-              if (entry) await deleteSafesheetEntry(site, entry._id)
+              if (entry) await deleteSafesheetEntry(stationName, entry._id)
             })()
           }
         } else if (
@@ -406,12 +406,12 @@ function RouteComponent() {
         ) {
           void (async () => {
             const entry = await findSafesheetEntry(
-              site,
+              stationName,
               dateStr,
               currentPayable.vendorName,
             )
             if (entry)
-              await updateSafesheetEntry(site, entry._id, {
+              await updateSafesheetEntry(stationName, entry._id, {
                 cashExpenseOut: parseFloat(value),
               })
           })()
@@ -421,12 +421,12 @@ function RouteComponent() {
         ) {
           void (async () => {
             const entry = await findSafesheetEntry(
-              site,
+              stationName,
               dateStr,
               currentPayable.vendorName,
             )
             if (entry)
-              await updateSafesheetEntry(site, entry._id, {
+              await updateSafesheetEntry(stationName, entry._id, {
                 description: `Payout - ${value}`,
               })
           })()
@@ -436,12 +436,12 @@ function RouteComponent() {
         ) {
           void (async () => {
             const entry = await findSafesheetEntry(
-              site,
+              stationName,
               dateStr,
               currentPayable.vendorName,
             )
             if (entry)
-              await updateSafesheetEntry(site, entry._id, {
+              await updateSafesheetEntry(stationName, entry._id, {
                 date: new Date(value).toISOString(),
               })
           })()
@@ -659,21 +659,24 @@ function RouteComponent() {
                                   ),
                                 )
                                 if (payable.paymentMethod === 'safe') {
-                                  const site = payable.location.stationName
+                                  const stationName =
+                                    payable.location.stationName
                                   const oldDateStr = toLocalDate(
                                     payable.createdAt,
                                   )
                                   void (async () => {
                                     const entry = await findSafesheetEntry(
-                                      site,
+                                      stationName,
                                       oldDateStr,
                                       payable.vendorName,
                                     )
                                     if (entry)
                                       await updateSafesheetEntry(
-                                        site,
+                                        stationName,
                                         entry._id,
-                                        { date: new Date(newVal).toISOString() },
+                                        {
+                                          date: new Date(newVal).toISOString(),
+                                        },
                                       )
                                   })()
                                 }
