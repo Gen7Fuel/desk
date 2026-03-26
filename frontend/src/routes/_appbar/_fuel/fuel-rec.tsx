@@ -19,6 +19,7 @@ import {
 } from '@react-pdf/renderer'
 import { toast } from 'sonner'
 import { can, getTokenPayload } from '@/lib/permissions'
+import { createLog } from '@/lib/log-api'
 import { SitePicker } from '@/components/custom/SitePicker'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
@@ -165,6 +166,13 @@ function RouteComponent() {
         throw new Error(
           (await res.text().catch(() => '')) || `HTTP ${res.status}`,
         )
+      void createLog({
+        app: 'fuel.fuelRec',
+        action: 'delete',
+        entityId: e._id,
+        entitySnapshot: e,
+        severity: 'warning',
+      })
       setEntries((prev) => prev.filter((x) => x._id !== e._id))
       if (rightPane?.entry._id === e._id) setRightPane(null)
     } catch (err) {
@@ -195,6 +203,17 @@ function RouteComponent() {
         throw new Error(
           (await res.text().catch(() => '')) || `HTTP ${res.status}`,
         )
+      void createLog({
+        app: 'fuel.fuelRec',
+        action: 'create',
+        entityId: e._id,
+        entitySnapshot: {
+          type: 'retake-request',
+          site: e.site,
+          date: e.date,
+          bolNumber: e.bolNumber,
+        },
+      })
       alert(`Retake request sent for ${e.site} on ${e.date}.`)
     } catch (err) {
       alert(
@@ -225,6 +244,17 @@ function RouteComponent() {
       )
       if (!res.ok) throw new Error('Failed to post comment')
       const result = await res.json()
+      void createLog({
+        app: 'fuel.fuelRec',
+        action: 'create',
+        entityId: e._id,
+        entitySnapshot: {
+          type: 'bol-posted',
+          site: e.site,
+          date: e.date,
+          bolNumber: e.bolNumber,
+        },
+      })
       const updated = { ...e, comments: result.comments }
       setEntries((prev) => prev.map((x) => (x._id === e._id ? updated : x)))
       if (rightPane?.entry._id === e._id) {
@@ -260,6 +290,18 @@ function RouteComponent() {
       )
       if (!res.ok) throw new Error('Failed to save')
       const result = await res.json()
+      void createLog({
+        app: 'fuel.fuelRec',
+        action: 'create',
+        entityId: entry._id,
+        entitySnapshot: {
+          type: 'comment',
+          site: entry.site,
+          date: entry.date,
+          bolNumber: entry.bolNumber,
+          comment: commentText,
+        },
+      })
       const updated = { ...entry, comments: result.comments }
       setEntries((prev) => prev.map((x) => (x._id === entry._id ? updated : x)))
       setRightPane({ type: 'comments', entry: updated })

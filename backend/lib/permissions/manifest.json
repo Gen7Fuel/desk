@@ -39,9 +39,9 @@
     "fuel": {
       "actions": ["read"],
       "submodules": {
-        "fuelInvoicing": { "actions": ["create", "read", "update", "delete"] },
-        "kardpoll":      { "actions": ["read"] },
-        "fuelRec":       { "actions": ["read", "postBol", "requestAgain", "delete"] }
+        "fuelInvoicing": { "actions": ["create", "read"] },
+        "kardpoll":      { "actions": ["create", "read"] },
+        "fuelRec":       { "actions": ["read", "comments", "postComment", "postBol", "requestAgain", "delete"] }
       }
     },
     "cipher": {
@@ -60,16 +60,23 @@
     "hub": {
       "actions": ["read"],
       "submodules": {
-        "cdn":         { "actions": ["create", "read", "update", "delete"] },
-        "payables":    { "actions": ["create", "read", "update", "delete"] },
-        "receivables": { "actions": ["create", "read", "update", "delete"] }
+        "cdn":         { "actions": ["read", "delete"] },
+        "payables":    { "actions": ["read", "update", "delete"] },
+        "receivables": { "actions": ["read", "update", "delete"] }
+      }
+    },
+    "issues": {
+      "actions": ["read"],
+      "submodules": {
+        "tracker": { "actions": ["create", "read", "update", "delete"] }
       }
     },
     "settings": {
       "actions": ["read"],
       "submodules": {
         "users": { "actions": ["create", "read", "update", "delete"] },
-        "roles": { "actions": ["create", "read", "update", "delete"] }
+        "roles": { "actions": ["create", "read", "update", "delete"] },
+        "logs":  { "actions": ["read"] }
       }
     }
   }

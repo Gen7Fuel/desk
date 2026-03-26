@@ -13,6 +13,7 @@ import { format, parseISO } from 'date-fns'
 import { pdf } from '@react-pdf/renderer'
 import PayablePDF from '@/components/custom/PayablePDF'
 import { can, getTokenPayload } from '@/lib/permissions'
+import { createLog } from '@/lib/log-api'
 import { SitePicker } from '@/components/custom/SitePicker'
 import { Button } from '@/components/ui/button'
 import {
@@ -242,6 +243,13 @@ function RouteComponent() {
         },
       })
       if (res.ok) {
+        void createLog({
+          app: 'hub.payables',
+          action: 'delete',
+          entityId: payable._id,
+          entitySnapshot: payable,
+          severity: 'warning',
+        })
         setPayables((prev) => prev.filter((p) => p._id !== payable._id))
       }
     } catch (err) {
@@ -304,6 +312,21 @@ function RouteComponent() {
       })
 
       if (res.ok) {
+        void createLog({
+          app: 'hub.payables',
+          action: 'edit',
+          entityId: id,
+          field,
+          oldValue:
+            field === 'createdAt'
+              ? new Date(currentPayable.createdAt).toLocaleDateString('en-CA', {
+                  timeZone: 'UTC',
+                })
+              : field === 'amount'
+                ? currentPayable.amount
+                : (currentPayable as Record<string, unknown>)[field as string],
+          newValue: field === 'amount' ? parseFloat(value) : value,
+        })
         setPayables((prev) =>
           prev.map((p) =>
             p._id === id
@@ -601,6 +624,16 @@ function RouteComponent() {
                                     )
 
                                     if (res.ok) {
+                                      void createLog({
+                                        app: 'hub.payables',
+                                        action: 'edit',
+                                        entityId: payable._id,
+                                        field: 'createdAt',
+                                        oldValue: toLocalDate(
+                                          payable.createdAt,
+                                        ),
+                                        newValue: newVal,
+                                      })
                                       setPayables((prev) =>
                                         prev.map((p) =>
                                           p._id === payable._id

@@ -3,6 +3,7 @@ import { useRef, useState } from 'react'
 import { FileSpreadsheet, UploadCloud } from 'lucide-react'
 import type ExcelJS from 'exceljs'
 import { can, getTokenPayload } from '@/lib/permissions'
+import { createLog } from '@/lib/log-api'
 import { cn } from '@/lib/utils'
 import { SitePicker } from '@/components/custom/SitePicker'
 import { Button } from '@/components/ui/button'
@@ -184,6 +185,17 @@ function RouteComponent() {
         const body = await res.json().catch(() => ({}))
         throw new Error(body.error || body.message || 'Submission failed.')
       }
+      void createLog({
+        app: 'fuel.kardpoll',
+        action: 'create',
+        entityId: `${site}:${data.isoDate}`,
+        entitySnapshot: {
+          site,
+          date: data.isoDate,
+          totalSales: data.totalSales,
+          totalLitres: data.totalLitres,
+        },
+      })
       setSubmitSuccess(true)
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Submission failed.')
