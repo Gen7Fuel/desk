@@ -76,7 +76,7 @@ function getExternalToken(): string {
 }
 
 function toLocalDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-CA', { timeZone: 'UTC' })
+  return new Date(iso).toLocaleDateString('en-CA')
 }
 
 type SafesheetEntry = { _id: string; date: string; description: string }
@@ -184,9 +184,7 @@ function PayableDateCell({
     <Popover>
       <PopoverTrigger asChild>
         <button className="w-full cursor-pointer rounded px-1 text-left hover:bg-muted/50">
-          {new Date(payable.createdAt).toLocaleDateString('en-CA', {
-            timeZone: 'UTC',
-          })}
+          {new Date(payable.createdAt).toLocaleDateString('en-CA')}
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -309,7 +307,6 @@ function RouteComponent() {
     if (field === 'createdAt') {
       const currentVal = new Date(currentPayable.createdAt).toLocaleDateString(
         'en-CA',
-        { timeZone: 'UTC' },
       )
       isChanged = currentVal !== value
     } else if (field === 'amount') {
@@ -329,7 +326,7 @@ function RouteComponent() {
       const body: Record<string, unknown> = {}
 
       if (field === 'createdAt') {
-        body.createdAt = new Date(value).toISOString()
+        body.createdAt = `${value}T12:00:00.000Z`
       } else if (field === 'amount') {
         body.amount = parseFloat(value)
       } else {
@@ -354,9 +351,7 @@ function RouteComponent() {
           field,
           oldValue:
             field === 'createdAt'
-              ? new Date(currentPayable.createdAt).toLocaleDateString('en-CA', {
-                  timeZone: 'UTC',
-                })
+              ? new Date(currentPayable.createdAt).toLocaleDateString('en-CA')
               : field === 'amount'
                 ? currentPayable.amount
                 : (currentPayable as Record<string, unknown>)[field as string],
@@ -370,7 +365,7 @@ function RouteComponent() {
                   [field]: field === 'amount' ? parseFloat(value) : value,
                   createdAt:
                     field === 'createdAt'
-                      ? new Date(value).toISOString()
+                      ? `${value}T12:00:00.000Z`
                       : p.createdAt,
                 }
               : p,
@@ -442,7 +437,7 @@ function RouteComponent() {
             )
             if (entry)
               await updateSafesheetEntry(stationName, entry._id, {
-                date: new Date(value).toISOString(),
+                date: `${value}T12:00:00.000Z`,
               })
           })()
         }
@@ -628,7 +623,7 @@ function RouteComponent() {
                             try {
                               const token = getExternalToken()
                               const body = {
-                                createdAt: new Date(newVal).toISOString(),
+                                createdAt: `${newVal}T12:00:00.000Z`,
                               }
                               const res = await fetch(
                                 `${HUB}/api/payables/${payable._id}`,
@@ -675,7 +670,7 @@ function RouteComponent() {
                                         stationName,
                                         entry._id,
                                         {
-                                          date: new Date(newVal).toISOString(),
+                                          date: `${newVal}T12:00:00.000Z`,
                                         },
                                       )
                                   })()
