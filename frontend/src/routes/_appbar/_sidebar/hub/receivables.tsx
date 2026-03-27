@@ -300,9 +300,7 @@ function RouteComponent() {
                       <Popover>
                         <PopoverTrigger asChild>
                           <button className="w-full cursor-pointer rounded px-1 text-left hover:bg-muted/50">
-                            {new Date(order.date).toLocaleDateString('en-CA', {
-                              timeZone: 'UTC',
-                            })}
+                            {new Date(order.date).toLocaleDateString('en-CA')}
                           </button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
@@ -318,15 +316,13 @@ function RouteComponent() {
                                   field: 'date',
                                   oldValue: new Date(
                                     order.date,
-                                  ).toLocaleDateString('en-CA', {
-                                    timeZone: 'UTC',
-                                  }),
-                                  newValue: date.toISOString(),
+                                  ).toLocaleDateString('en-CA'),
+                                  newValue: `${format(date, 'yyyy-MM-dd')}T12:00:00.000Z`,
                                 })
                                 void updatePurchaseOrder(
                                   order._id,
                                   'date',
-                                  date.toISOString(),
+                                  `${format(date, 'yyyy-MM-dd')}T12:00:00.000Z`,
                                 )
                               }
                             }}
