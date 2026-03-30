@@ -11,6 +11,7 @@ const SiteAssetSchema = new mongoose.Schema({
   label: { type: String, required: true },
   serialNumber: { type: String, default: '' },
   photo: { type: String, default: '' },
+  notes: { type: String, default: '' },
 }, { timestamps: true })
 
 module.exports = mongoose.model('SiteAsset', SiteAssetSchema)
