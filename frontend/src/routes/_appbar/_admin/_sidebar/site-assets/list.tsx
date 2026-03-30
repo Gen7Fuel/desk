@@ -119,11 +119,6 @@ function RouteComponent() {
     }
   }, [editingAsset])
 
-  // Auto-set deviceType for Tablet
-  useEffect(() => {
-    if (editCategory === 'Tablet') setEditDeviceType('Tablet')
-    else if (editCategory) setEditDeviceType('')
-  }, [editCategory])
 
   function openEdit(asset: SiteAsset) {
     setEditingAsset(asset)
@@ -350,7 +345,11 @@ function RouteComponent() {
                 <label className="text-xs font-medium">Category</label>
                 <Select
                   value={editCategory}
-                  onValueChange={(v) => setEditCategory(v as Category)}
+                  onValueChange={(v) => {
+                    const cat = v as Category
+                    setEditCategory(cat)
+                    setEditDeviceType(cat === 'Tablet' ? 'Tablet' : '')
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select category..." />
