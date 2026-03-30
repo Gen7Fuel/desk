@@ -210,7 +210,7 @@ function RouteComponent() {
           <label className="text-sm font-medium">Device</label>
           <Input
             ref={labelRef}
-            placeholder="e.g. Paypoint 1, Tablet 2, Counter 3"
+            placeholder="e.g. Monitor, Scanner, etc."
             value={label}
             onChange={(e) => setLabel(e.target.value)}
           />
