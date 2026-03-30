@@ -17,6 +17,11 @@ const adminModules: Array<SidebarLink & { permission: string }> = [
     path: '/subscriptions/categories',
     permission: 'admin.subscriptions',
   },
+  {
+    label: 'Site Assets',
+    path: '/site-assets/list',
+    permission: 'admin.site-assets',
+  },
 ]
 
 export const Route = createFileRoute('/_appbar/_admin')({

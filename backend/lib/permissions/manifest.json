@@ -33,7 +33,8 @@
             "categories": { "actions": ["create", "read", "update", "delete"] },
             "list":       { "actions": ["create", "read", "update", "delete"] }
           }
-        }
+        },
+        "site-assets": { "actions": ["create", "read", "update", "delete"] }
       }
     },
     "fuel": {

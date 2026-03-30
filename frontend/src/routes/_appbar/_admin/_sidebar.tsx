@@ -62,6 +62,18 @@ const sidebarLinks: Record<
       permission: 'admin.subscriptions.list',
     },
   ],
+  'site-assets': [
+    {
+      label: 'Add Asset',
+      path: '/site-assets/add',
+      permission: 'admin.site-assets',
+    },
+    {
+      label: 'List Assets',
+      path: '/site-assets/list',
+      permission: 'admin.site-assets',
+    },
+  ],
 }
 
 export const Route = createFileRoute('/_appbar/_admin/_sidebar')({
