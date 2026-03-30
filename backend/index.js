@@ -19,6 +19,7 @@ const sageRoutes = require('./apps/sage/sage.routes')
 const cdnRoutes = require('./apps/cdn/cdn.routes')
 const logRoutes = require('./apps/logs/log.routes')
 const issueRoutes = require('./apps/issues/issue.routes')
+const siteAssetsRoutes = require('./apps/site-assets/site-assets.routes')
 
 const app = express()
 const port = 5000
@@ -52,6 +53,7 @@ apiRouter.use('/sage', sageRoutes)
 apiRouter.use(cdnRoutes)
 apiRouter.use(logRoutes)
 apiRouter.use(issueRoutes)
+apiRouter.use(siteAssetsRoutes)
 
 app.use('/api', apiRouter)
 
