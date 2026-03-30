@@ -72,6 +72,7 @@ function RouteComponent() {
     'assets',
     'credentials',
     'subscriptions',
+    'site-assets'
   ]
   const section = location.pathname.split('/')[1] ?? ''
   const isAdminActive = adminSections.includes(section)
