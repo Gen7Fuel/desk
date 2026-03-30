@@ -85,6 +85,7 @@ function RouteComponent() {
   const [editDeviceType, setEditDeviceType] = useState('')
   const [editLabel, setEditLabel] = useState('')
   const [editSerial, setEditSerial] = useState('')
+  const [editNotes, setEditNotes] = useState('')
   const [editPhoto, setEditPhoto] = useState('')
 
   const editLabelRef = useRef<HTMLInputElement>(null)
@@ -131,6 +132,7 @@ function RouteComponent() {
     setEditDeviceType(asset.deviceType)
     setEditLabel(asset.label)
     setEditSerial(asset.serialNumber)
+    setEditNotes(asset.notes)
     setEditPhoto(asset.photo)
     updateMutation.reset()
   }
@@ -149,6 +151,7 @@ function RouteComponent() {
         deviceType: editDeviceType,
         label: editLabel.trim(),
         serialNumber: editSerial.trim(),
+        notes: editNotes.trim(),
         photo: editPhoto,
       }
       return updateSiteAsset(editingAsset._id, payload)
@@ -410,6 +413,18 @@ function RouteComponent() {
                   placeholder="e.g. SN-12345 (optional)"
                   value={editSerial}
                   onChange={(e) => setEditSerial(e.target.value)}
+                />
+              </div>
+
+              {/* Notes */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium">Notes</label>
+                <textarea
+                  placeholder="Any additional notes... (optional)"
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  rows={3}
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
                 />
               </div>
 

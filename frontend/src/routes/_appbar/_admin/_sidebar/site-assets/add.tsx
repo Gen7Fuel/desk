@@ -61,6 +61,7 @@ function RouteComponent() {
   const [deviceType, setDeviceType] = useState('')
   const [label, setLabel] = useState('')
   const [serialNumber, setSerialNumber] = useState('')
+  const [notes, setNotes] = useState('')
   const [photo, setPhoto] = useState('')
   const [success, setSuccess] = useState(false)
 
@@ -91,6 +92,7 @@ function RouteComponent() {
     setDeviceType('')
     setLabel('')
     setSerialNumber('')
+    setNotes('')
     setPhoto('')
     mutation.reset()
     setTimeout(() => labelRef.current?.focus(), 50)
@@ -104,6 +106,7 @@ function RouteComponent() {
         deviceType,
         label: label.trim(),
         serialNumber: serialNumber.trim(),
+        notes: notes.trim(),
         photo,
       }),
     onSuccess: () => {
@@ -220,9 +223,7 @@ function RouteComponent() {
         <div className="space-y-1">
           <label className="text-sm font-medium">
             Serial Number{' '}
-            <span className="font-normal text-muted-foreground">
-              (optional)
-            </span>
+            <span className="font-normal text-muted-foreground">(optional)</span>
           </label>
           <Input
             placeholder="e.g. SN-12345"
@@ -231,13 +232,26 @@ function RouteComponent() {
           />
         </div>
 
+        {/* Notes */}
+        <div className="space-y-1">
+          <label className="text-sm font-medium">
+            Notes{' '}
+            <span className="font-normal text-muted-foreground">(optional)</span>
+          </label>
+          <textarea
+            placeholder="Any additional notes..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={3}
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+          />
+        </div>
+
         {/* Photo */}
         <div className="space-y-1">
           <label className="text-sm font-medium">
             Photo{' '}
-            <span className="font-normal text-muted-foreground">
-              (optional)
-            </span>
+            <span className="font-normal text-muted-foreground">(optional)</span>
           </label>
           {photo ? (
             <div className="relative">

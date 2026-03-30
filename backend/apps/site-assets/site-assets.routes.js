@@ -19,7 +19,7 @@ router.get('/site-assets', authenticate, requirePermission(PERM, 'read'), async 
 // Create asset
 router.post('/site-assets', authenticate, requirePermission(PERM, 'create'), async (req, res) => {
   try {
-    const { site, category, deviceType, label, serialNumber, photo } = req.body
+    const { site, category, deviceType, label, serialNumber, photo, notes } = req.body
     if (!site?.trim() || !category?.trim() || !deviceType?.trim() || !label?.trim()) {
       return res.status(400).json({ error: 'Site, category, device type, and label are required' })
     }
@@ -30,6 +30,7 @@ router.post('/site-assets', authenticate, requirePermission(PERM, 'create'), asy
       label: label.trim(),
       serialNumber: serialNumber?.trim() ?? '',
       photo: photo ?? '',
+      notes: notes?.trim() ?? '',
     })
     res.status(201).json(asset)
   } catch (err) {
@@ -40,7 +41,7 @@ router.post('/site-assets', authenticate, requirePermission(PERM, 'create'), asy
 // Update asset
 router.put('/site-assets/:id', authenticate, requirePermission(PERM, 'update'), async (req, res) => {
   try {
-    const { site, category, deviceType, label, serialNumber, photo } = req.body
+    const { site, category, deviceType, label, serialNumber, photo, notes } = req.body
     if (!site?.trim() || !category?.trim() || !deviceType?.trim() || !label?.trim()) {
       return res.status(400).json({ error: 'Site, category, device type, and label are required' })
     }
@@ -53,6 +54,7 @@ router.put('/site-assets/:id', authenticate, requirePermission(PERM, 'update'), 
         label: label.trim(),
         serialNumber: serialNumber?.trim() ?? '',
         photo: photo ?? '',
+        notes: notes?.trim() ?? '',
       },
       { returnDocument: 'after' }
     )
