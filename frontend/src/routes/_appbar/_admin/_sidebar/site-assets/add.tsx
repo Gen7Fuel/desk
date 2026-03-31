@@ -223,7 +223,9 @@ function RouteComponent() {
         <div className="space-y-1">
           <label className="text-sm font-medium">
             Serial Number{' '}
-            <span className="font-normal text-muted-foreground">(optional)</span>
+            <span className="font-normal text-muted-foreground">
+              (optional)
+            </span>
           </label>
           <Input
             placeholder="e.g. SN-12345"
@@ -236,7 +238,9 @@ function RouteComponent() {
         <div className="space-y-1">
           <label className="text-sm font-medium">
             Notes{' '}
-            <span className="font-normal text-muted-foreground">(optional)</span>
+            <span className="font-normal text-muted-foreground">
+              (optional)
+            </span>
           </label>
           <textarea
             placeholder="Any additional notes..."
@@ -251,7 +255,9 @@ function RouteComponent() {
         <div className="space-y-1">
           <label className="text-sm font-medium">
             Photo{' '}
-            <span className="font-normal text-muted-foreground">(optional)</span>
+            <span className="font-normal text-muted-foreground">
+              (optional)
+            </span>
           </label>
           {photo ? (
             <div className="relative">

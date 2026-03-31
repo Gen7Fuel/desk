@@ -75,6 +75,8 @@ function compressImage(file: File): Promise<string> {
 function RouteComponent() {
   const queryClient = useQueryClient()
   const [selectedSite, setSelectedSite] = useState<string>('all')
+  const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [selectedDeviceType, setSelectedDeviceType] = useState<string>('all')
   const [editingAsset, setEditingAsset] = useState<SiteAsset | null>(null)
   const [deletingAsset, setDeletingAsset] = useState<SiteAsset | null>(null)
   const [photoAsset, setPhotoAsset] = useState<SiteAsset | null>(null)
@@ -100,11 +102,6 @@ function RouteComponent() {
     queryFn: () => getSiteAssets(),
   })
 
-  const displayedAssets =
-    selectedSite === 'all'
-      ? (assets ?? [])
-      : (assets ?? []).filter((a) => a.site === selectedSite)
-
   // Collect unique site names from loaded assets + locations for the filter bar
   const siteNames = Array.from(
     new Set([
@@ -113,12 +110,32 @@ function RouteComponent() {
     ]),
   ).sort()
 
+  const siteCategoryFiltered = (assets ?? []).filter(
+    (a) =>
+      (selectedSite === 'all' || a.site === selectedSite) &&
+      (selectedCategory === 'all' || a.category === selectedCategory),
+  )
+
+  const displayedAssets = siteCategoryFiltered.filter(
+    (a) => selectedDeviceType === 'all' || a.deviceType === selectedDeviceType,
+  )
+
+  const deviceTypeOptions: Array<string> =
+    selectedCategory === 'all'
+      ? ['Tablet', ...Object.values(DEVICE_TYPES).flat()]
+      : selectedCategory === 'Tablet'
+        ? ['Tablet']
+        : selectedCategory !== 'Other'
+          ? DEVICE_TYPES[
+              selectedCategory as Exclude<Category, 'Other' | 'Tablet'>
+            ]
+          : []
+
   useEffect(() => {
     if (editingAsset) {
       setTimeout(() => editLabelRef.current?.focus(), 150)
     }
   }, [editingAsset])
-
 
   function openEdit(asset: SiteAsset) {
     setEditingAsset(asset)
@@ -185,33 +202,80 @@ function RouteComponent() {
     <div className="flex h-full">
       {/* Main content */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        {/* Site filter bar */}
-        <div className="flex items-center gap-1.5 overflow-x-auto border-b px-4 py-2">
-          <button
-            onClick={() => setSelectedSite('all')}
-            className={cn(
-              'shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors',
-              selectedSite === 'all'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground',
-            )}
+        {/* Filters */}
+        <div className="flex items-center gap-2 border-b px-4 py-2">
+          <Select
+            value={selectedSite}
+            onValueChange={(v) => {
+              setSelectedSite(v)
+              setSelectedDeviceType('all')
+            }}
           >
-            All
-          </button>
-          {siteNames.map((name) => (
+            <SelectTrigger className="h-8 w-44 text-xs">
+              <SelectValue placeholder="All sites" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All sites</SelectItem>
+              {siteNames.map((name) => (
+                <SelectItem key={name} value={name}>
+                  {name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={selectedCategory}
+            onValueChange={(v) => {
+              setSelectedCategory(v)
+              setSelectedDeviceType('all')
+            }}
+          >
+            <SelectTrigger className="h-8 w-40 text-xs">
+              <SelectValue placeholder="All categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All categories</SelectItem>
+              {CATEGORIES.map((cat) => (
+                <SelectItem key={cat} value={cat}>
+                  {cat}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={selectedDeviceType}
+            onValueChange={setSelectedDeviceType}
+            disabled={deviceTypeOptions.length === 0}
+          >
+            <SelectTrigger className="h-8 w-44 text-xs">
+              <SelectValue placeholder="All device types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All device types</SelectItem>
+              {deviceTypeOptions.map((dt) => (
+                <SelectItem key={dt} value={dt}>
+                  {dt}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {(selectedSite !== 'all' ||
+            selectedCategory !== 'all' ||
+            selectedDeviceType !== 'all') && (
             <button
-              key={name}
-              onClick={() => setSelectedSite(name)}
-              className={cn(
-                'shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors',
-                selectedSite === name
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground',
-              )}
+              onClick={() => {
+                setSelectedSite('all')
+                setSelectedCategory('all')
+                setSelectedDeviceType('all')
+              }}
+              className="text-xs text-muted-foreground hover:text-foreground"
             >
-              {name}
+              Clear
             </button>
-          ))}
+          )}
         </div>
 
         {/* Table */}
@@ -222,9 +286,11 @@ function RouteComponent() {
             </p>
           ) : displayedAssets.length === 0 ? (
             <p className="px-6 py-4 text-sm text-muted-foreground">
-              {selectedSite === 'all'
+              {selectedSite === 'all' &&
+              selectedCategory === 'all' &&
+              selectedDeviceType === 'all'
                 ? 'No assets added yet.'
-                : `No assets for ${selectedSite}.`}
+                : 'No assets match the selected filters.'}
             </p>
           ) : (
             <Table>
