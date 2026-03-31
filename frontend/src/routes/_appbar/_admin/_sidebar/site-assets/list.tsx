@@ -126,9 +126,9 @@ function RouteComponent() {
       : selectedCategory === 'Tablet'
         ? ['Tablet']
         : selectedCategory !== 'Other'
-          ? (DEVICE_TYPES[
+          ? DEVICE_TYPES[
               selectedCategory as Exclude<Category, 'Other' | 'Tablet'>
-            ] ?? [])
+            ]
           : []
 
   useEffect(() => {
