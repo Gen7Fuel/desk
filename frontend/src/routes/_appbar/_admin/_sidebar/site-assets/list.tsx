@@ -120,13 +120,15 @@ function RouteComponent() {
     (a) => selectedDeviceType === 'all' || a.deviceType === selectedDeviceType,
   )
 
-  const deviceTypeOptions: string[] =
+  const deviceTypeOptions: Array<string> =
     selectedCategory === 'all'
       ? ['Tablet', ...Object.values(DEVICE_TYPES).flat()]
       : selectedCategory === 'Tablet'
         ? ['Tablet']
         : selectedCategory !== 'Other'
-          ? DEVICE_TYPES[selectedCategory as Exclude<Category, 'Other' | 'Tablet'>] ?? []
+          ? (DEVICE_TYPES[
+              selectedCategory as Exclude<Category, 'Other' | 'Tablet'>
+            ] ?? [])
           : []
 
   useEffect(() => {
@@ -134,7 +136,6 @@ function RouteComponent() {
       setTimeout(() => editLabelRef.current?.focus(), 150)
     }
   }, [editingAsset])
-
 
   function openEdit(asset: SiteAsset) {
     setEditingAsset(asset)
@@ -261,7 +262,9 @@ function RouteComponent() {
             </SelectContent>
           </Select>
 
-          {(selectedSite !== 'all' || selectedCategory !== 'all' || selectedDeviceType !== 'all') && (
+          {(selectedSite !== 'all' ||
+            selectedCategory !== 'all' ||
+            selectedDeviceType !== 'all') && (
             <button
               onClick={() => {
                 setSelectedSite('all')
@@ -283,7 +286,9 @@ function RouteComponent() {
             </p>
           ) : displayedAssets.length === 0 ? (
             <p className="px-6 py-4 text-sm text-muted-foreground">
-              {selectedSite === 'all' && selectedCategory === 'all' && selectedDeviceType === 'all'
+              {selectedSite === 'all' &&
+              selectedCategory === 'all' &&
+              selectedDeviceType === 'all'
                 ? 'No assets added yet.'
                 : 'No assets match the selected filters.'}
             </p>
