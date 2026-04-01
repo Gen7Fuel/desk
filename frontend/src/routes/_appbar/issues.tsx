@@ -161,10 +161,10 @@ function toTitleCase(s: string): string {
 function mapAuditItem(a: AuditItem): DisplayIssue {
   return {
     _id: a._id,
-    station: a.site ?? '',
+    station: a.site,
     issue: a.item,
     comments: a.comment,
-    department: (a.assignedTo ?? '').toUpperCase(),
+    department: a.assignedTo.toUpperCase(),
     assignee: a.assignee ?? '',
     startDate: a.lastUpdated,
     notes: a.status ? `Asset status: ${a.status}` : '',
@@ -203,8 +203,8 @@ function RouteComponent() {
     () =>
       issues.filter(
         (i) =>
-          (!dept || i.department === dept) &&
-          (!statusFilter || i.status === statusFilter),
+          (dept === '' || i.department === dept) &&
+          (statusFilter === '' || i.status === statusFilter),
       ),
     [issues, dept, statusFilter],
   )
@@ -295,10 +295,10 @@ function RouteComponent() {
                 : {
                     ...i,
                     status: mapAuditStatus(putBody.status),
-                    department: (putBody.assignedTo ?? '').toUpperCase(),
-                    assignee: putBody.assignee ?? '',
-                    comments: putBody.comment ?? '',
-                    notes: putBody.notes ?? '',
+                    department: putBody.assignedTo.toUpperCase(),
+                    assignee: putBody.assignee,
+                    comments: putBody.comment,
+                    notes: putBody.notes,
                   },
             ),
           )
@@ -374,7 +374,7 @@ function RouteComponent() {
           }
           className={cn(
             'rounded-lg border p-3 text-left transition-colors hover:bg-muted/50',
-            !statusFilter && 'border-primary bg-primary/5',
+            statusFilter === '' && 'border-primary bg-primary/5',
           )}
         >
           <div className="text-2xl font-bold">{counts.total}</div>
