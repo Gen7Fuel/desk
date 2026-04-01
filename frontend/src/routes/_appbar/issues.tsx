@@ -58,7 +58,7 @@ export const Route = createFileRoute('/_appbar/issues')({
         headers: { Authorization: `Bearer ${extToken}` },
       })
         .then((r) => (r.ok ? r.json() : { items: [] }))
-        .then((d: { items: AuditItem[] }) => d.items.map(mapAuditItem)),
+        .then((d: { items: Array<AuditItem> }) => d.items.map(mapAuditItem)),
       fetch('https://app.gen7fuel.com/api/locations', {
         headers: { Authorization: `Bearer ${extToken}` },
       })
@@ -72,7 +72,7 @@ export const Route = createFileRoute('/_appbar/issues')({
     const locations =
       locationsRes.status === 'fulfilled' ? locationsRes.value : []
     return {
-      issues: [...manualIssues, ...auditIssues] as DisplayIssue[],
+      issues: [...manualIssues, ...auditIssues] as Array<DisplayIssue>,
       locations,
     }
   },
@@ -176,7 +176,11 @@ function mapAuditItem(a: AuditItem): DisplayIssue {
 }
 
 function RouteComponent() {
-  const { site, dept, status: statusFilter } = useSearch({
+  const {
+    site,
+    dept,
+    status: statusFilter,
+  } = useSearch({
     from: '/_appbar/issues',
   })
   const loaderData = Route.useLoaderData()
@@ -446,120 +450,120 @@ function RouteComponent() {
 
       {/* Table */}
       <div className="overflow-auto rounded-md border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="px-4 py-2 text-left font-medium">Status</th>
-                <th className="px-4 py-2 text-left font-medium">Station</th>
-                <th className="px-4 py-2 text-left font-medium">Issue</th>
-                <th className="px-4 py-2 text-left font-medium">Comments</th>
-                <th className="px-4 py-2 text-left font-medium">Department</th>
-                <th className="px-4 py-2 text-left font-medium">Assignee</th>
-                <th className="px-4 py-2 text-left font-medium">Start Date</th>
-                <th className="px-4 py-2 text-left font-medium">Notes</th>
-                <th className="px-4 py-2 text-center font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length > 0 ? (
-                filtered.map((issue) => {
-                  const sc = STATUS_CONFIG[issue.status] ?? STATUS_CONFIG.open
-                  return (
-                    <tr key={issue._id} className="border-t hover:bg-muted/30">
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col gap-1">
-                          <span
-                            className={cn(
-                              'rounded px-2 py-0.5 text-xs font-medium',
-                              sc.badge,
-                            )}
-                          >
-                            {sc.label}
-                          </span>
-                          {issue.isAudit && (
-                            <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
-                              Audit
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 font-semibold">
-                        {issue.station || '—'}
-                      </td>
-                      <td className="px-4 py-3">{issue.issue}</td>
-                      <td className="max-w-[180px] px-4 py-3">
-                        <span
-                          className="line-clamp-2 text-muted-foreground"
-                          title={issue.comments}
-                        >
-                          {issue.comments || '—'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/50">
+            <tr>
+              <th className="px-4 py-2 text-left font-medium">Status</th>
+              <th className="px-4 py-2 text-left font-medium">Station</th>
+              <th className="px-4 py-2 text-left font-medium">Issue</th>
+              <th className="px-4 py-2 text-left font-medium">Comments</th>
+              <th className="px-4 py-2 text-left font-medium">Department</th>
+              <th className="px-4 py-2 text-left font-medium">Assignee</th>
+              <th className="px-4 py-2 text-left font-medium">Start Date</th>
+              <th className="px-4 py-2 text-left font-medium">Notes</th>
+              <th className="px-4 py-2 text-center font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length > 0 ? (
+              filtered.map((issue) => {
+                const sc = STATUS_CONFIG[issue.status] ?? STATUS_CONFIG.open
+                return (
+                  <tr key={issue._id} className="border-t hover:bg-muted/30">
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col gap-1">
                         <span
                           className={cn(
                             'rounded px-2 py-0.5 text-xs font-medium',
-                            DEPT_COLORS[issue.department] ?? '',
+                            sc.badge,
                           )}
                         >
-                          {toTitleCase(issue.department)}
+                          {sc.label}
                         </span>
-                      </td>
-                      <td className="px-4 py-3">{issue.assignee || '—'}</td>
-                      <td className="whitespace-nowrap px-4 py-3">
-                        {new Date(issue.startDate).toLocaleDateString('en-CA', {
-                          timeZone: 'UTC',
-                        })}
-                      </td>
-                      <td className="max-w-[200px] px-4 py-3">
-                        <span
-                          className="line-clamp-2 text-muted-foreground"
-                          title={issue.notes}
-                        >
-                          {issue.notes || '—'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          {can('issues.tracker', 'update') && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openEdit(issue)}
-                              title="Edit"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {!issue.isAudit && can('issues.tracker', 'delete') && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-destructive hover:bg-destructive/10"
-                              onClick={() => void handleDelete(issue)}
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })
-              ) : (
-                <tr>
-                  <td
-                    colSpan={9}
-                    className="px-4 py-10 text-center text-muted-foreground"
-                  >
-                    No issues found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                        {issue.isAudit && (
+                          <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                            Audit
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-semibold">
+                      {issue.station || '—'}
+                    </td>
+                    <td className="px-4 py-3">{issue.issue}</td>
+                    <td className="max-w-[180px] px-4 py-3">
+                      <span
+                        className="line-clamp-2 text-muted-foreground"
+                        title={issue.comments}
+                      >
+                        {issue.comments || '—'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={cn(
+                          'rounded px-2 py-0.5 text-xs font-medium',
+                          DEPT_COLORS[issue.department] ?? '',
+                        )}
+                      >
+                        {toTitleCase(issue.department)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">{issue.assignee || '—'}</td>
+                    <td className="whitespace-nowrap px-4 py-3">
+                      {new Date(issue.startDate).toLocaleDateString('en-CA', {
+                        timeZone: 'UTC',
+                      })}
+                    </td>
+                    <td className="max-w-[200px] px-4 py-3">
+                      <span
+                        className="line-clamp-2 text-muted-foreground"
+                        title={issue.notes}
+                      >
+                        {issue.notes || '—'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        {can('issues.tracker', 'update') && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openEdit(issue)}
+                            title="Edit"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {!issue.isAudit && can('issues.tracker', 'delete') && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-destructive hover:bg-destructive/10"
+                            onClick={() => void handleDelete(issue)}
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })
+            ) : (
+              <tr>
+                <td
+                  colSpan={9}
+                  className="px-4 py-10 text-center text-muted-foreground"
+                >
+                  No issues found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* Create / Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
