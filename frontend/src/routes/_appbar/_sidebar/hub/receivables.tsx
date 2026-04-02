@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { CalendarIcon, FileDown, Trash2 } from 'lucide-react'
+import { CalendarIcon, FileDown, RefreshCw, Trash2 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { pdf } from '@react-pdf/renderer'
 import PurchaseOrderPDF from '@/components/custom/PurchaseOrderPDF'
@@ -38,6 +38,7 @@ interface PurchaseOrder {
   signature: string
   receipt: string
   poNumber: string
+  requestInvoice?: boolean
 }
 
 const HUB = 'https://app.gen7fuel.com'
@@ -183,6 +184,30 @@ function RouteComponent() {
       window.open(url)
     } catch (e) {
       console.error('PO PDF generation error', e)
+    }
+  }
+
+  const requestInvoice = async (orderId: string) => {
+    try {
+      const token = getExternalToken()
+      const res = await fetch(`${HUB}/api/purchase-orders/${orderId}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'X-Required-Permission': 'po',
+        },
+        body: JSON.stringify({ requestInvoice: true }),
+      })
+      if (res.ok) {
+        setPurchaseOrders((prev) =>
+          prev.map((o) =>
+            o._id === orderId ? { ...o, requestInvoice: true } : o,
+          ),
+        )
+      }
+    } catch (err) {
+      console.error('Request invoice failed:', err)
     }
   }
 
@@ -531,6 +556,22 @@ function RouteComponent() {
                           title="Download PDF"
                         >
                           <FileDown className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={order.requestInvoice === true}
+                          onClick={() => void requestInvoice(order._id)}
+                          title={
+                            order.requestInvoice
+                              ? 'Invoice already requested'
+                              : 'Request Invoice'
+                          }
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                          {order.requestInvoice
+                            ? 'Requested'
+                            : 'Request Invoice'}
                         </Button>
                         <Button
                           size="sm"
