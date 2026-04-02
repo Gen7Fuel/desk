@@ -7,6 +7,7 @@ import {
   ExternalLink,
   Eye,
   FileDown,
+  RefreshCw,
   Trash2,
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
@@ -52,6 +53,7 @@ interface Payable {
   amount: number
   images: Array<string>
   createdAt: string
+  requestInvoice?: boolean
 }
 
 const HUB = 'https://app.gen7fuel.com'
@@ -219,7 +221,8 @@ function RouteComponent() {
     isOpen: boolean
     images: Array<string>
     currentIndex: number
-  }>({ isOpen: false, images: [], currentIndex: 0 })
+    payableId: string
+  }>({ isOpen: false, images: [], currentIndex: 0, payableId: '' })
 
   const fetchPayables = async () => {
     if (!from || !to || !site) return
@@ -453,13 +456,42 @@ function RouteComponent() {
     void fetchPayables()
   }, [from, to, site])
 
-  const viewImages = (images: Array<string>) => {
-    if (images.length === 0) return
-    setImageModal({ isOpen: true, images, currentIndex: 0 })
+  const viewImages = (payable: Payable) => {
+    if (payable.images.length === 0) return
+    setImageModal({
+      isOpen: true,
+      images: payable.images,
+      currentIndex: 0,
+      payableId: payable._id,
+    })
   }
 
   const closeModal = () =>
-    setImageModal({ isOpen: false, images: [], currentIndex: 0 })
+    setImageModal({ isOpen: false, images: [], currentIndex: 0, payableId: '' })
+
+  const requestInvoice = async (payableId: string) => {
+    try {
+      const token = getExternalToken()
+      const res = await fetch(`${HUB}/api/payables/${payableId}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'X-Required-Permission': 'payables',
+        },
+        body: JSON.stringify({ requestInvoice: true }),
+      })
+      if (res.ok) {
+        setPayables((prev) =>
+          prev.map((p) =>
+            p._id === payableId ? { ...p, requestInvoice: true } : p,
+          ),
+        )
+      }
+    } catch (err) {
+      console.error('Request invoice failed:', err)
+    }
+  }
 
   const nextImage = () =>
     setImageModal((prev) => ({
@@ -794,12 +826,18 @@ function RouteComponent() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => viewImages(payable.images)}
+                          onClick={() => viewImages(payable)}
                           disabled={payable.images.length === 0}
                           title="View Images"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
+                        {payable.requestInvoice && (
+                          <RefreshCw
+                            className="h-4 w-4 text-muted-foreground"
+                            title="Invoice requested"
+                          />
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
@@ -881,6 +919,21 @@ function RouteComponent() {
               >
                 <ExternalLink className="mr-1 h-4 w-4" />
                 Open in New Tab
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={
+                  payables.find((p) => p._id === imageModal.payableId)
+                    ?.requestInvoice === true
+                }
+                onClick={() => void requestInvoice(imageModal.payableId)}
+              >
+                <RefreshCw className="mr-1 h-4 w-4" />
+                {payables.find((p) => p._id === imageModal.payableId)
+                  ?.requestInvoice
+                  ? 'Invoice Requested'
+                  : 'Request Invoice'}
               </Button>
               <Button onClick={closeModal} variant="secondary" size="sm">
                 Close

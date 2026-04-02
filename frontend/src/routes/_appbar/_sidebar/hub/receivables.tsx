@@ -1,6 +1,15 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { CalendarIcon, FileDown, Trash2 } from 'lucide-react'
+import {
+  CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Eye,
+  FileDown,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { pdf } from '@react-pdf/renderer'
 import PurchaseOrderPDF from '@/components/custom/PurchaseOrderPDF'
@@ -9,6 +18,12 @@ import { createLog } from '@/lib/log-api'
 import { SitePicker } from '@/components/custom/SitePicker'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Popover,
   PopoverContent,
@@ -38,6 +53,7 @@ interface PurchaseOrder {
   signature: string
   receipt: string
   poNumber: string
+  requestReceipt?: boolean
 }
 
 const HUB = 'https://app.gen7fuel.com'
@@ -69,6 +85,12 @@ function RouteComponent() {
     field: keyof PurchaseOrder
   } | null>(null)
   const [editValue, setEditValue] = useState<string>('')
+  const [imageModal, setImageModal] = useState<{
+    isOpen: boolean
+    images: Array<string>
+    currentIndex: number
+    orderId: string
+  }>({ isOpen: false, images: [], currentIndex: 0, orderId: '' })
 
   const fetchPurchaseOrders = async () => {
     if (!from || !to || !site) return
@@ -183,6 +205,54 @@ function RouteComponent() {
       window.open(url)
     } catch (e) {
       console.error('PO PDF generation error', e)
+    }
+  }
+
+  const viewImages = (order: PurchaseOrder) => {
+    const images = [order.receipt, order.signature].filter(Boolean)
+    if (images.length === 0) return
+    setImageModal({ isOpen: true, images, currentIndex: 0, orderId: order._id })
+  }
+
+  const closeModal = () =>
+    setImageModal({ isOpen: false, images: [], currentIndex: 0, orderId: '' })
+
+  const nextImage = () =>
+    setImageModal((prev) => ({
+      ...prev,
+      currentIndex: (prev.currentIndex + 1) % prev.images.length,
+    }))
+
+  const prevImage = () =>
+    setImageModal((prev) => ({
+      ...prev,
+      currentIndex:
+        prev.currentIndex === 0
+          ? prev.images.length - 1
+          : prev.currentIndex - 1,
+    }))
+
+  const requestReceipt = async (orderId: string) => {
+    try {
+      const token = getExternalToken()
+      const res = await fetch(`${HUB}/api/purchase-orders/${orderId}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'X-Required-Permission': 'po',
+        },
+        body: JSON.stringify({ requestReceipt: true }),
+      })
+      if (res.ok) {
+        setPurchaseOrders((prev) =>
+          prev.map((o) =>
+            o._id === orderId ? { ...o, requestReceipt: true } : o,
+          ),
+        )
+      }
+    } catch (err) {
+      console.error('Request invoice failed:', err)
     }
   }
 
@@ -527,6 +597,23 @@ function RouteComponent() {
                         <Button
                           size="sm"
                           variant="outline"
+                          onClick={() => viewImages(order)}
+                          disabled={
+                            ![order.receipt, order.signature].some(Boolean)
+                          }
+                          title="View Images"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {order.requestReceipt && (
+                          <RefreshCw
+                            className="h-4 w-4 text-muted-foreground"
+                            title="Invoice requested"
+                          />
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
                           onClick={() => void generatePDF(order)}
                           title="Download PDF"
                         >
@@ -559,6 +646,73 @@ function RouteComponent() {
           </table>
         </div>
       )}
+
+      <Dialog open={imageModal.isOpen} onOpenChange={closeModal}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>
+              Image {imageModal.currentIndex + 1} of {imageModal.images.length}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex h-[60vh] w-full items-center justify-center overflow-hidden rounded-md bg-muted">
+              <img
+                src={`${HUB}/cdn/download/${imageModal.images[imageModal.currentIndex]}`}
+                alt={`Document ${imageModal.currentIndex + 1}`}
+                className="max-h-full max-w-full object-contain"
+              />
+            </div>
+            {imageModal.images.length > 1 && (
+              <div className="flex items-center gap-4">
+                <Button onClick={prevImage} variant="outline" size="sm">
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  {imageModal.currentIndex + 1} / {imageModal.images.length}
+                </span>
+                <Button onClick={nextImage} variant="outline" size="sm">
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  window.open(
+                    `${HUB}/cdn/download/${imageModal.images[imageModal.currentIndex]}`,
+                    '_blank',
+                  )
+                }
+              >
+                <ExternalLink className="mr-1 h-4 w-4" />
+                Open in New Tab
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={
+                  purchaseOrders.find((o) => o._id === imageModal.orderId)
+                    ?.requestReceipt === true
+                }
+                onClick={() => void requestReceipt(imageModal.orderId)}
+              >
+                <RefreshCw className="mr-1 h-4 w-4" />
+                {purchaseOrders.find((o) => o._id === imageModal.orderId)
+                  ?.requestReceipt
+                  ? 'Receipt Requested'
+                  : 'Request Receipt'}
+              </Button>
+              <Button onClick={closeModal} variant="secondary" size="sm">
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
