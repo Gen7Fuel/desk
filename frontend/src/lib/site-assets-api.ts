@@ -41,7 +41,12 @@ export const DEVICE_TYPES: Record<
     'Pinpad',
     'Printer',
   ],
-  'Infonet Paypoint': ['Infonet Scanner', 'Signing Pad'],
+  'Infonet Paypoint': [
+    'Infonet Scanner',
+    'Main Unit',
+    'Printer',
+    'Signing Pad',
+  ],
   PetroSoft: ['Cipherlabs Scanner', 'DC Box'],
 }
 
