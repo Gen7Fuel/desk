@@ -51,7 +51,12 @@
       "Bash(grep -r \"FormData\\\\|upload\\\\|image\" C:UsersMohammadHasanworkspacedeskfrontendsrcroutes_appbar_admin --include=*.tsx -l)",
       "Bash(grep -r \"image\\\\|photo\\\\|avatar\" C:UsersMohammadHasanworkspacedeskfrontendsrcroutes_appbar_admin --include=*.tsx -i)",
       "WebFetch(domain:app.gen7fuel.com)",
-      "Bash(ls *.json)"
+      "Bash(ls *.json)",
+      "Bash(git diff:*)",
+      "Bash(git stash:*)",
+      "Bash(npm:*)",
+      "Bash(nvm list:*)",
+      "Bash(nvs list:*)"
     ]
   }
 }
