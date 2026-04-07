@@ -222,6 +222,7 @@ const CUSTOMER_ID_MAP: Record<string, string> = {
   'FT Frances Gen7 LP': 'C00137',
   'Oliver Gen7 LP': 'C00312',
   'Osoyoos Gen7 LP': 'C00308',
+  'Charlies Gen7 LP': 'C00320',
 }
 
 function resolveCustomerId(shipToLP: string): string {
