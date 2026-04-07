@@ -127,7 +127,7 @@ export async function extractFieldsFromRects(
   file: File,
 ): Promise<ExtractedFields> {
   const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf')
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
 
   const buffer = await file.arrayBuffer()
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise
