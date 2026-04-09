@@ -36,6 +36,26 @@ export function getTokenPayload(): PermissionPayload | null {
 }
 
 /**
+ * Extract the Hub JWT (externalToken) embedded in the Desk JWT.
+ * Used to authenticate directly with The Hub's Socket.IO and REST API.
+ */
+export function getExternalToken(): string | null {
+  if (typeof window === 'undefined') return null
+  const token = localStorage.getItem('token')
+  if (!token) return null
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const json = atob(payload)
+    const decoded = JSON.parse(json)
+    return decoded.externalToken || null
+  } catch {
+    return null
+  }
+}
+
+/**
  * Check whether the current user has a specific permission.
  * @param modulePath – dot-separated path, e.g. "assets.devices"
  * @param action – "create" | "read" | "update" | "delete"
