@@ -7,12 +7,13 @@ import {
   useMatchRoute,
   useNavigate,
 } from '@tanstack/react-router'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Binary,
   BriefcaseBusiness,
   ClipboardList,
   Fuel,
+  Headset,
   LayoutGrid,
   LogOut,
   Package,
@@ -28,6 +29,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { SupportPanel, useSupportChats } from '@/components/support-panel'
 
 export const Route = createFileRoute('/_appbar')({
   beforeLoad: () => {
@@ -49,6 +51,8 @@ function RouteComponent() {
   const navigate = useNavigate()
   const matchRoute = useMatchRoute()
   const { can } = usePermissions()
+  const { chatList, pendingCount } = useSupportChats()
+  const [supportOpen, setSupportOpen] = useState(false)
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -246,6 +250,22 @@ function RouteComponent() {
             </Tooltip>
           )}
           <div className="mt-auto flex flex-col items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setSupportOpen(true)}
+                  className="relative flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <Headset className="h-5 w-5" />
+                  {pendingCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
+                      {pendingCount > 9 ? '9+' : pendingCount}
+                    </span>
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Support</TooltipContent>
+            </Tooltip>
             {can('settings', 'read') && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -307,6 +327,11 @@ function RouteComponent() {
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
+      <SupportPanel
+        open={supportOpen}
+        onClose={() => setSupportOpen(false)}
+        chatList={chatList}
+      />
     </div>
   )
 }
