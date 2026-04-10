@@ -12,7 +12,8 @@ let supportSocket: Socket | null = null
  * namespace. Authenticates with the Hub JWT embedded in the Desk token.
  */
 export function getHubSupportSocket(): Socket {
-  if (supportSocket?.connected) return supportSocket
+  // Return existing socket if it's connected or still connecting
+  if (supportSocket && (supportSocket.connected || supportSocket.active)) return supportSocket
 
   if (supportSocket) {
     supportSocket.disconnect()
