@@ -51,7 +51,7 @@ function RouteComponent() {
   const navigate = useNavigate()
   const matchRoute = useMatchRoute()
   const { can } = usePermissions()
-  const { chatList, pendingCount } = useSupportChats()
+  const { chatList, pendingCount, updateChatStatus } = useSupportChats()
   const [supportOpen, setSupportOpen] = useState(false)
 
   const handleLogout = () => {
@@ -331,6 +331,7 @@ function RouteComponent() {
         open={supportOpen}
         onClose={() => setSupportOpen(false)}
         chatList={chatList}
+        updateChatStatus={updateChatStatus}
       />
     </div>
   )
