@@ -173,7 +173,21 @@ export function useSupportChats() {
 
   const pendingCount = chatList.filter((c) => c.status === 'pending').length
 
-  return { chats, chatList, pendingCount, connected }
+  const updateChatStatus = (
+    chatId: string,
+    updates: Partial<ChatSession>,
+  ) => {
+    setChats((prev) => {
+      const next = new Map(prev)
+      const existing = next.get(chatId)
+      if (existing) {
+        next.set(chatId, { ...existing, ...updates })
+      }
+      return next
+    })
+  }
+
+  return { chats, chatList, pendingCount, connected, updateChatStatus }
 }
 
 // ── Panel Component ────────────────────────────────────────────────────────────
@@ -182,9 +196,10 @@ interface SupportPanelProps {
   open: boolean
   onClose: () => void
   chatList: Array<ChatSession>
+  updateChatStatus: (chatId: string, updates: Partial<ChatSession>) => void
 }
 
-export function SupportPanel({ open, onClose, chatList }: SupportPanelProps) {
+export function SupportPanel({ open, onClose, chatList, updateChatStatus }: SupportPanelProps) {
   const [activeChat, setActiveChat] = useState<string | null>(null)
   const [messageText, setMessageText] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -203,12 +218,43 @@ export function SupportPanel({ open, onClose, chatList }: SupportPanelProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [active?.messages.length])
 
-  const acceptChat = (chatId: string) => {
-    const socket = getHubSupportSocket()
-    socket.emit('support-chat:accept', { chatId })
-    // Join the chat room
-    socket.emit('support-chat:join', { chatId })
-    setActiveChat(chatId)
+  const [accepting, setAccepting] = useState(false)
+
+  const acceptChat = async (chatId: string) => {
+    setAccepting(true)
+    try {
+      const token = getExternalToken()
+      const res = await fetch(
+        `https://app.gen7fuel.com/api/support/chat/${chatId}/accept`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        console.error('[SupportPanel] Accept failed:', body.message)
+        setAccepting(false)
+        return
+      }
+      const body = await res.json()
+      // Update local state immediately so UI reflects the accepted status
+      updateChatStatus(chatId, {
+        status: 'accepted',
+        acceptedBy: body.data?.acceptedBy,
+      })
+      // Join the chat room via socket for real-time messaging
+      const socket = getHubSupportSocket()
+      socket.emit('support-chat:join', { chatId })
+      setActiveChat(chatId)
+    } catch (err) {
+      console.error('[SupportPanel] Accept error:', err)
+    } finally {
+      setAccepting(false)
+    }
   }
 
   const sendMessage = () => {
@@ -484,12 +530,13 @@ export function SupportPanel({ open, onClose, chatList }: SupportPanelProps) {
                         <Button
                           size="sm"
                           className="w-full h-7 text-xs"
+                          disabled={accepting}
                           onClick={(e) => {
                             e.stopPropagation()
                             acceptChat(chat.chatId)
                           }}
                         >
-                          Accept
+                          {accepting ? 'Accepting…' : 'Accept'}
                         </Button>
                       )}
                       {chat.status === 'accepted' && (
