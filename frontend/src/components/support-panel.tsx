@@ -46,6 +46,34 @@ export function useSupportChats() {
     const token = getExternalToken()
     if (!token) return
 
+    // Fetch existing pending/active chats via REST
+    fetch('https://app.gen7fuel.com/api/support/chat', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject(r)))
+      .then((body: { data: Array<any> }) => {
+        setChats((prev) => {
+          const next = new Map(prev)
+          for (const c of body.data) {
+            const chatId = String(c._id)
+            if (!next.has(chatId)) {
+              next.set(chatId, {
+                chatId,
+                customer: c.customer || { name: '', email: '' },
+                site: c.site || '',
+                initialMessage: c.initialMessage || '',
+                createdAt: c.createdAt,
+                status: c.status,
+                acceptedBy: c.acceptedBy,
+                messages: c.messages || [],
+              })
+            }
+          }
+          return next
+        })
+      })
+      .catch((err) => console.error('[SupportChats] Failed to fetch chats:', err))
+
     const socket = getHubSupportSocket()
 
     socket.on('connect', () => setConnected(true))
