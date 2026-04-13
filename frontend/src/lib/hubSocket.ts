@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client'
 import { getExternalToken } from './permissions'
-import type { Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client'
 
 const HUB_ORIGIN = 'https://app.gen7fuel.com'
 const SUPPORT_NAMESPACE = '/support'
@@ -13,7 +13,8 @@ let supportSocket: Socket | null = null
  */
 export function getHubSupportSocket(): Socket {
   // Return existing socket if it's connected or still connecting
-  if (supportSocket && (supportSocket.connected || supportSocket.active)) return supportSocket
+  if (supportSocket && (supportSocket.connected || supportSocket.active))
+    return supportSocket
 
   if (supportSocket) {
     supportSocket.disconnect()
