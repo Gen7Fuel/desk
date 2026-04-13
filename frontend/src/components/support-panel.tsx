@@ -200,6 +200,12 @@ export function useSupportChats() {
 
 // ── Panel Component ────────────────────────────────────────────────────────────
 
+interface TicketDraft {
+  chatId: string
+  text: string
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+}
+
 interface SupportPanelProps {
   open: boolean
   onClose: () => void
@@ -216,6 +222,9 @@ export function SupportPanel({
   const [activeChat, setActiveChat] = useState<string | null>(null)
   const [messageText, setMessageText] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [accepting, setAccepting] = useState(false)
+  const [ticketDraft, setTicketDraft] = useState<TicketDraft | null>(null)
+  const [submittingTicket, setSubmittingTicket] = useState(false)
 
   const active = activeChat
     ? chatList.find((c) => c.chatId === activeChat)
@@ -223,7 +232,10 @@ export function SupportPanel({
 
   // Reset active chat when panel closes
   useEffect(() => {
-    if (!open) setActiveChat(null)
+    if (!open) {
+      setActiveChat(null)
+      setTicketDraft(null)
+    }
   }, [open])
 
   // Auto-scroll messages
@@ -231,7 +243,47 @@ export function SupportPanel({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [active?.messages.length])
 
-  const [accepting, setAccepting] = useState(false)
+  const openTicketForm = (chatId: string, initialMessage: string) => {
+    setTicketDraft({ chatId, text: initialMessage, priority: 'medium' })
+  }
+
+  const submitTicket = async () => {
+    if (!ticketDraft || !ticketDraft.text.trim()) return
+    setSubmittingTicket(true)
+    try {
+      const token = getExternalToken()
+      const res = await fetch(
+        `https://app.gen7fuel.com/api/support/chat/${ticketDraft.chatId}/convert-to-ticket`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            text: ticketDraft.text.trim(),
+            priority: ticketDraft.priority,
+          }),
+        },
+      )
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        console.error('[SupportPanel] Create ticket failed:', body.message)
+        return
+      }
+      const body = await res.json()
+      updateChatStatus(ticketDraft.chatId, {
+        status: 'expired',
+        ticketId: String(body.data?.ticket?._id || ''),
+      })
+      setTicketDraft(null)
+      setActiveChat(null)
+    } catch (err) {
+      console.error('[SupportPanel] Create ticket error:', err)
+    } finally {
+      setSubmittingTicket(false)
+    }
+  }
 
   const acceptChat = async (chatId: string) => {
     setAccepting(true)
@@ -254,12 +306,10 @@ export function SupportPanel({
         return
       }
       const body = await res.json()
-      // Update local state immediately so UI reflects the accepted status
       updateChatStatus(chatId, {
         status: 'accepted',
         acceptedBy: body.data?.acceptedBy,
       })
-      // Join the chat room via socket for real-time messaging
       const socket = getHubSupportSocket()
       socket.emit('support-chat:join', { chatId })
       setActiveChat(chatId)
@@ -340,8 +390,82 @@ export function SupportPanel({
           open ? 'translate-x-0' : 'translate-x-full',
         )}
       >
-        {/* ── Active chat view ── */}
-        {active && active.status === 'accepted' ? (
+        {/* ── Ticket creation form ── */}
+        {ticketDraft !== null ? (
+          <div className="flex flex-col h-full">
+            <div className="flex items-center gap-2 border-b px-4 py-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={() => setTicketDraft(null)}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div className="flex items-center gap-2">
+                <Ticket className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-semibold">Create Ticket</h2>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                  Ticket Description
+                </label>
+                <textarea
+                  value={ticketDraft.text}
+                  onChange={(e) =>
+                    setTicketDraft((d) => d && { ...d, text: e.target.value })
+                  }
+                  rows={6}
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                  Priority
+                </label>
+                <select
+                  value={ticketDraft.priority}
+                  onChange={(e) =>
+                    setTicketDraft(
+                      (d) =>
+                        d && {
+                          ...d,
+                          priority: e.target.value as TicketDraft['priority'],
+                        },
+                    )
+                  }
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+            </div>
+            <div className="border-t px-4 py-3 flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setTicketDraft(null)}
+                disabled={submittingTicket}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={submitTicket}
+                disabled={submittingTicket || !ticketDraft.text.trim()}
+              >
+                {submittingTicket ? 'Creating…' : 'Create Ticket'}
+              </Button>
+            </div>
+          </div>
+
+        ) : active && active.status === 'accepted' ? (
+          /* ── Active chat view ── */
           <div className="flex flex-col h-full">
             <div className="flex items-center gap-2 border-b px-4 py-3">
               <Button
@@ -363,7 +487,16 @@ export function SupportPanel({
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-destructive hover:text-destructive text-xs"
+                className="text-xs shrink-0"
+                onClick={() => openTicketForm(active.chatId, active.initialMessage)}
+              >
+                <Ticket className="h-3.5 w-3.5 mr-1" />
+                Ticket
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive text-xs shrink-0"
                 onClick={() => closeChat(active.chatId)}
               >
                 End
@@ -433,6 +566,7 @@ export function SupportPanel({
               </Button>
             </form>
           </div>
+
         ) : active && active.status === 'expired' ? (
           /* ── Expired / ticket view ── */
           <div className="flex flex-col h-full">
@@ -459,8 +593,7 @@ export function SupportPanel({
               <Ticket className="h-10 w-10 text-muted-foreground" />
               <h3 className="text-sm font-semibold">Ticket Created</h3>
               <p className="text-xs text-muted-foreground">
-                No agent accepted in time. A support ticket was automatically
-                created and the customer has been notified.
+                A support ticket was created and the customer has been notified.
               </p>
               <div className="rounded-md bg-muted/40 border p-4 w-full text-left">
                 <p className="text-xs text-muted-foreground mb-1 font-medium">
@@ -480,6 +613,7 @@ export function SupportPanel({
               )}
             </div>
           </div>
+
         ) : (
           /* ── Chat list view ── */
           <div className="flex flex-col h-full">
@@ -537,17 +671,31 @@ export function SupportPanel({
                         {chat.site} — {chat.initialMessage}
                       </p>
                       {chat.status === 'pending' && (
-                        <Button
-                          size="sm"
-                          className="w-full h-7 text-xs"
-                          disabled={accepting}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            acceptChat(chat.chatId)
-                          }}
-                        >
-                          {accepting ? 'Accepting…' : 'Accept'}
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            className="flex-1 h-7 text-xs"
+                            disabled={accepting}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              acceptChat(chat.chatId)
+                            }}
+                          >
+                            {accepting ? 'Accepting…' : 'Accept'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 h-7 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              openTicketForm(chat.chatId, chat.initialMessage)
+                            }}
+                          >
+                            <Ticket className="h-3 w-3 mr-1" />
+                            Create Ticket
+                          </Button>
+                        </div>
                       )}
                       {chat.status === 'accepted' && (
                         <div className="text-[10px] text-green-700">
