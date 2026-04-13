@@ -13,6 +13,7 @@ import { getExternalToken } from '@/lib/permissions'
 interface ChatMessage {
   sender: string
   senderName: string
+  senderType?: 'agent' | 'customer'
   text: string
   createdAt: string
 }
@@ -57,6 +58,7 @@ export function useSupportChats() {
           for (const c of body.data) {
             const chatId = String(c._id)
             if (!next.has(chatId)) {
+              const acceptedById = String(c.acceptedBy?.id || '')
               next.set(chatId, {
                 chatId,
                 customer: c.customer || { name: '', email: '' },
@@ -65,7 +67,13 @@ export function useSupportChats() {
                 createdAt: c.createdAt,
                 status: c.status,
                 acceptedBy: c.acceptedBy,
-                messages: c.messages || [],
+                messages: (c.messages || []).map((m: any) => ({
+                  ...m,
+                  sender: String(m.sender || ''),
+                  senderType: (acceptedById && String(m.sender) === acceptedById)
+                    ? 'agent'
+                    : 'customer',
+                })),
               })
             }
           }
@@ -365,10 +373,7 @@ export function SupportPanel({ open, onClose, chatList, updateChatStatus }: Supp
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
               {active.messages.map((msg, idx) => {
-                const isAgent =
-                  msg.senderName &&
-                  String(active.acceptedBy?.id) !== '' &&
-                  String(msg.sender) === String(active.acceptedBy?.id)
+                const isAgent = msg.senderType === 'agent'
                 return (
                   <div
                     key={idx}
