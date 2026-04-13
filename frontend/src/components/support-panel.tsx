@@ -70,9 +70,10 @@ export function useSupportChats() {
                 messages: (c.messages || []).map((m: any) => ({
                   ...m,
                   sender: String(m.sender || ''),
-                  senderType: (acceptedById && String(m.sender) === acceptedById)
-                    ? 'agent'
-                    : 'customer',
+                  senderType:
+                    acceptedById && String(m.sender) === acceptedById
+                      ? 'agent'
+                      : 'customer',
                 })),
               })
             }
@@ -80,7 +81,9 @@ export function useSupportChats() {
           return next
         })
       })
-      .catch((err) => console.error('[SupportChats] Failed to fetch chats:', err))
+      .catch((err) =>
+        console.error('[SupportChats] Failed to fetch chats:', err),
+      )
 
     const socket = getHubSupportSocket()
 
@@ -181,10 +184,7 @@ export function useSupportChats() {
 
   const pendingCount = chatList.filter((c) => c.status === 'pending').length
 
-  const updateChatStatus = (
-    chatId: string,
-    updates: Partial<ChatSession>,
-  ) => {
+  const updateChatStatus = (chatId: string, updates: Partial<ChatSession>) => {
     setChats((prev) => {
       const next = new Map(prev)
       const existing = next.get(chatId)
@@ -207,7 +207,12 @@ interface SupportPanelProps {
   updateChatStatus: (chatId: string, updates: Partial<ChatSession>) => void
 }
 
-export function SupportPanel({ open, onClose, chatList, updateChatStatus }: SupportPanelProps) {
+export function SupportPanel({
+  open,
+  onClose,
+  chatList,
+  updateChatStatus,
+}: SupportPanelProps) {
   const [activeChat, setActiveChat] = useState<string | null>(null)
   const [messageText, setMessageText] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
