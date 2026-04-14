@@ -143,7 +143,7 @@ export async function extractFieldsFromRects(
   const extract = (rect: (typeof RECTS)[keyof typeof RECTS]) =>
     extractFromRect(items, rect)
 
-  const totalTaxRaw = filterRegion(items, 550, 590, 127, 496)
+  const totalTaxRaw = filterRegion(items, 545, 660, 127, 496)
   const rateTaxRaw = filterRegion(items, 360, 430, 127, 496)
   const productColumnValues = filterRegion(items, 22, 52, 127, 496)
   const qtyNetValues = filterRegion(items, 230, 270, 127, 496)
@@ -180,7 +180,7 @@ export async function extractFieldsFromRects(
     ? findValueAtY(surchargesLabelItem.y)
     : null
 
-  const qtyGrossValues = qtyGrossRaw.filter((_, i) => i % 2 === 0)
+  const qtyGrossValues = qtyGrossRaw
 
   const freightCellValues: Array<string> = []
   for (let i = 0; i < freightValues.length; i += 2) {
