@@ -85,6 +85,11 @@ export function useSupportChats() {
         console.error('[SupportChats] Failed to fetch chats:', err),
       )
 
+    // Request notification permission once
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
+
     const socket = getHubSupportSocket()
 
     socket.on('connect', () => setConnected(true))
@@ -101,6 +106,19 @@ export function useSupportChats() {
         })
         return next
       })
+
+      // Desktop notification
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const n = new Notification('New support chat', {
+          body: `${data.customer.name || data.customer.email} (${data.site}): ${data.initialMessage}`,
+          icon: '/favicon.ico',
+          tag: `support-chat-${data.chatId}`,
+        })
+        n.onclick = () => {
+          window.focus()
+          n.close()
+        }
+      }
     })
 
     // Chat was accepted (by this agent or another)
