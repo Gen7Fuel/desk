@@ -263,11 +263,11 @@ export async function createInvoice(
     },
   ]
 
-  const taxFeeTotal = parseCurrency(fields.taxFeeTotal)
-
-  const productLines = fields.tableEntries.map((entry, i) => {
+  const productLines = fields.tableEntries.map((entry) => {
     const amount =
-      parseCurrency(entry.productTotal) + (i === 0 ? taxFeeTotal : 0)
+      parseCurrency(entry.productTotal) +
+      parseCurrency(entry.federalTaxTotal) +
+      parseCurrency(entry.provincialTaxTotal)
     return {
       txnAmount: amount.toFixed(2),
       glAccount: { id: '40010' },
