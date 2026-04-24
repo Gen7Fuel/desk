@@ -98,6 +98,10 @@ jobs:
             echo "SAGE_CLIENT_ID=${{ secrets.SAGE_CLIENT_ID }}" >> backend/.env
             echo "SAGE_CLIENT_SECRET=${{ secrets.SAGE_CLIENT_SECRET }}" >> backend/.env
             echo "SAGE_CALLBACK_URL=${{ secrets.SAGE_CALLBACK_URL }}" >> backend/.env
+            echo "AZURE_STORAGE_CONNECTION_STRING=${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" >> backend/.env
+            echo "AZURE_CONTAINER=${{ secrets.AZURE_CONTAINER }}" >> backend/.env
+            echo "CDN_BASE=${{ secrets.CDN_BASE }}" >> backend/.env
+            echo "CDN_ADMIN_TOKEN=${{ secrets.CDN_ADMIN_TOKEN }}" >> backend/.env
 
             # Rebuild and restart, wait for healthy
             export VITE_CDN_BASE="${{ secrets.VITE_CDN_BASE }}"
