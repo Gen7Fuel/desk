@@ -125,11 +125,15 @@ export async function createEmployee(name: string): Promise<AcademyEmployee> {
 }
 
 export async function deleteEmployee(id: string): Promise<void> {
-  const res = await apiFetch(`/api/academy/employees/${id}`, { method: 'DELETE' })
+  const res = await apiFetch(`/api/academy/employees/${id}`, {
+    method: 'DELETE',
+  })
   if (!res.ok) throw new Error('Failed to delete employee')
 }
 
-export async function getCompletions(courseId?: string): Promise<Array<AcademyCompletion>> {
+export async function getCompletions(
+  courseId?: string,
+): Promise<Array<AcademyCompletion>> {
   const qs = courseId ? `?courseId=${courseId}` : ''
   const res = await apiFetch(`/api/academy/completions${qs}`)
   if (!res.ok) throw new Error('Failed to fetch completions')

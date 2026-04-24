@@ -2,15 +2,30 @@ const request = require('supertest')
 const express = require('express')
 const { authHeader } = require('../../tests/helpers/auth')
 const { buildDefaultPermissions } = require('../../lib/permissions')
-const Course = require('./course.model')
 
 const AUTH = authHeader({ permissions: buildDefaultPermissions(true) })
+
+beforeEach(() => {
+  process.env.ACADEMY_BASE = 'https://hub.test'
+  process.env.ACADEMY_ADMIN_TOKEN = 'test-token'
+})
 
 function makeApp() {
   const app = express()
   app.use(express.json())
   app.use('/api/academy', require('./course.routes'))
   return app
+}
+
+function mockFetch(status, body) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({
+      ok: status >= 200 && status < 300,
+      status,
+      json: async () => body,
+    }),
+  )
 }
 
 afterEach(() => vi.restoreAllMocks())
@@ -23,6 +38,7 @@ const VALID_COURSE = {
 
 describe('POST /api/academy/courses', () => {
   it('returns 400 when title is missing', async () => {
+    mockFetch(400, { message: 'title is required' })
     const res = await request(makeApp())
       .post('/api/academy/courses')
       .set('Authorization', AUTH)
@@ -32,7 +48,7 @@ describe('POST /api/academy/courses', () => {
 
   it('creates and returns the course', async () => {
     const doc = { _id: 'c1', ...VALID_COURSE, status: 'draft' }
-    vi.spyOn(Course, 'create').mockResolvedValue(doc)
+    mockFetch(201, doc)
     const res = await request(makeApp())
       .post('/api/academy/courses')
       .set('Authorization', AUTH)
@@ -44,11 +60,8 @@ describe('POST /api/academy/courses', () => {
 
 describe('GET /api/academy/courses', () => {
   it('returns list of courses', async () => {
-    vi.spyOn(Course, 'find').mockReturnValue({
-      sort: vi.fn().mockResolvedValue([
-        { _id: 'c1', title: 'Course', sections: [], status: 'draft', createdAt: new Date() },
-      ]),
-    })
+    const courses = [{ _id: 'c1', title: 'Course', sectionCount: 0, status: 'draft', createdAt: new Date().toISOString() }]
+    mockFetch(200, { courses })
     const res = await request(makeApp())
       .get('/api/academy/courses')
       .set('Authorization', AUTH)
@@ -59,7 +72,7 @@ describe('GET /api/academy/courses', () => {
 
 describe('GET /api/academy/courses/:id', () => {
   it('returns 404 when not found', async () => {
-    vi.spyOn(Course, 'findById').mockResolvedValue(null)
+    mockFetch(404, { message: 'Course not found' })
     const res = await request(makeApp())
       .get('/api/academy/courses/507f1f77bcf86cd799439011')
       .set('Authorization', AUTH)
@@ -67,7 +80,7 @@ describe('GET /api/academy/courses/:id', () => {
   })
 
   it('returns the course', async () => {
-    vi.spyOn(Course, 'findById').mockResolvedValue({ _id: 'c1', ...VALID_COURSE })
+    mockFetch(200, { _id: 'c1', ...VALID_COURSE })
     const res = await request(makeApp())
       .get('/api/academy/courses/c1')
       .set('Authorization', AUTH)
@@ -78,7 +91,7 @@ describe('GET /api/academy/courses/:id', () => {
 
 describe('PUT /api/academy/courses/:id', () => {
   it('returns 404 when not found', async () => {
-    vi.spyOn(Course, 'findByIdAndUpdate').mockResolvedValue(null)
+    mockFetch(404, { message: 'Course not found' })
     const res = await request(makeApp())
       .put('/api/academy/courses/507f1f77bcf86cd799439011')
       .set('Authorization', AUTH)
@@ -88,7 +101,7 @@ describe('PUT /api/academy/courses/:id', () => {
 
   it('returns updated course', async () => {
     const updated = { _id: 'c1', ...VALID_COURSE, title: 'Updated' }
-    vi.spyOn(Course, 'findByIdAndUpdate').mockResolvedValue(updated)
+    mockFetch(200, updated)
     const res = await request(makeApp())
       .put('/api/academy/courses/c1')
       .set('Authorization', AUTH)
@@ -100,7 +113,7 @@ describe('PUT /api/academy/courses/:id', () => {
 
 describe('DELETE /api/academy/courses/:id', () => {
   it('returns 404 when not found', async () => {
-    vi.spyOn(Course, 'findByIdAndDelete').mockResolvedValue(null)
+    mockFetch(404, { message: 'Course not found' })
     const res = await request(makeApp())
       .delete('/api/academy/courses/507f1f77bcf86cd799439011')
       .set('Authorization', AUTH)
@@ -108,11 +121,10 @@ describe('DELETE /api/academy/courses/:id', () => {
   })
 
   it('returns success', async () => {
-    vi.spyOn(Course, 'findByIdAndDelete').mockResolvedValue({ _id: 'c1' })
+    mockFetch(200, { message: 'Course deleted' })
     const res = await request(makeApp())
       .delete('/api/academy/courses/c1')
       .set('Authorization', AUTH)
     expect(res.status).toBe(200)
-    expect(res.body.success).toBe(true)
   })
 })

@@ -36,9 +36,21 @@ const sidebarLinks: Record<
     },
   ],
   academy: [
-    { label: 'Courses', path: '/academy/courses/', permission: 'academy.courses' },
-    { label: 'Employees', path: '/academy/employees', permission: 'academy.employees' },
-    { label: 'Completions', path: '/academy/completions', permission: 'academy.completions' },
+    {
+      label: 'Courses',
+      path: '/academy/courses/',
+      permission: 'academy.courses',
+    },
+    {
+      label: 'Employees',
+      path: '/academy/employees',
+      permission: 'academy.employees',
+    },
+    {
+      label: 'Completions',
+      path: '/academy/completions',
+      permission: 'academy.completions',
+    },
   ],
 }
 

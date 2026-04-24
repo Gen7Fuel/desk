@@ -3,12 +3,9 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, Copy, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { format } from 'date-fns'
 import { can } from '@/lib/permissions'
-import {
-  createEmployee,
-  deleteEmployee,
-  getEmployees,
-} from '@/lib/academy-api'
+import { createEmployee, deleteEmployee, getEmployees } from '@/lib/academy-api'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -28,7 +25,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { format } from 'date-fns'
 
 export const Route = createFileRoute('/_appbar/_sidebar/academy/employees')({
   component: RouteComponent,
@@ -144,23 +140,39 @@ function RouteComponent() {
         </Table>
       )}
 
-      <Dialog open={addOpen} onOpenChange={(o) => { if (!o) { setAddOpen(false); setNameInput('') } }}>
+      <Dialog
+        open={addOpen}
+        onOpenChange={(o) => {
+          if (!o) {
+            setAddOpen(false)
+            setNameInput('')
+          }
+        }}
+      >
         <DialogPortal>
           <DialogOverlay className="fixed inset-0 z-50 bg-black/50" />
           <DialogContent className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 max-w-sm w-full space-y-4 rounded-lg border bg-background p-6 shadow-lg">
-            <DialogTitle className="text-base font-semibold">New Employee</DialogTitle>
+            <DialogTitle className="text-base font-semibold">
+              New Employee
+            </DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
-              Enter the employee's name. A unique code will be generated automatically.
+              Enter the employee's name. A unique code will be generated
+              automatically.
             </DialogDescription>
             <Input
               placeholder="Employee name"
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && nameInput.trim()) createMutation.mutate() }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && nameInput.trim())
+                  createMutation.mutate()
+              }}
             />
             <div className="flex justify-end gap-2">
               <DialogClose asChild>
-                <Button variant="ghost" size="sm">Cancel</Button>
+                <Button variant="ghost" size="sm">
+                  Cancel
+                </Button>
               </DialogClose>
               <Button
                 size="sm"
@@ -174,23 +186,35 @@ function RouteComponent() {
         </DialogPortal>
       </Dialog>
 
-      <Dialog open={!!pendingDelete} onOpenChange={(o) => { if (!o) setPendingDelete(null) }}>
+      <Dialog
+        open={!!pendingDelete}
+        onOpenChange={(o) => {
+          if (!o) setPendingDelete(null)
+        }}
+      >
         <DialogPortal>
           <DialogOverlay className="fixed inset-0 z-50 bg-black/50" />
           <DialogContent className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 max-w-sm w-full space-y-4 rounded-lg border bg-background p-6 shadow-lg">
-            <DialogTitle className="text-base font-semibold">Delete employee?</DialogTitle>
+            <DialogTitle className="text-base font-semibold">
+              Delete employee?
+            </DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
-              This will remove the employee record. Existing completion records will still reference their code.
+              This will remove the employee record. Existing completion records
+              will still reference their code.
             </DialogDescription>
             <div className="flex justify-end gap-2">
               <DialogClose asChild>
-                <Button variant="ghost" size="sm">Cancel</Button>
+                <Button variant="ghost" size="sm">
+                  Cancel
+                </Button>
               </DialogClose>
               <Button
                 variant="destructive"
                 size="sm"
                 disabled={deleteMutation.isPending}
-                onClick={() => { if (pendingDelete) deleteMutation.mutate(pendingDelete) }}
+                onClick={() => {
+                  if (pendingDelete) deleteMutation.mutate(pendingDelete)
+                }}
               >
                 {deleteMutation.isPending ? 'Deleting…' : 'Delete'}
               </Button>

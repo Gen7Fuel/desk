@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { can } from '@/lib/permissions'
-import { getCourses, getCompletions } from '@/lib/academy-api'
+import { getCompletions, getCourses } from '@/lib/academy-api'
 import {
   Table,
   TableBody,
@@ -78,7 +78,9 @@ function RouteComponent() {
           <TableBody>
             {completions.map((c) => (
               <TableRow key={c._id}>
-                <TableCell className="font-mono text-sm">{c.employeeCode}</TableCell>
+                <TableCell className="font-mono text-sm">
+                  {c.employeeCode}
+                </TableCell>
                 <TableCell>{c.employeeName}</TableCell>
                 <TableCell>{c.courseTitle}</TableCell>
                 <TableCell className="text-sm">
