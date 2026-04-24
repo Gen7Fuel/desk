@@ -35,6 +35,9 @@ const sidebarLinks: Record<
       permission: 'hub.receivables',
     },
   ],
+  academy: [
+    { label: 'Courses', path: '/academy/courses/', permission: 'academy.courses' },
+  ],
 }
 
 export const Route = createFileRoute('/_appbar/_sidebar')({

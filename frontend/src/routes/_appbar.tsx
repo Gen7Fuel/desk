@@ -13,6 +13,7 @@ import {
   BriefcaseBusiness,
   ClipboardList,
   Fuel,
+  GraduationCap,
   Headset,
   LayoutGrid,
   LogOut,
@@ -89,6 +90,7 @@ function RouteComponent() {
   const isSettingsActive = !!matchRoute({ to: '/settings', fuzzy: true })
   const isHubActive = location.pathname.startsWith('/hub')
   const isIssuesActive = location.pathname.startsWith('/issues')
+  const isAcademyActive = location.pathname.startsWith('/academy')
 
   const adminTo =
     [
@@ -127,6 +129,8 @@ function RouteComponent() {
       { path: '/hub/payables', perm: 'hub.payables' },
       { path: '/hub/receivables', perm: 'hub.receivables' },
     ].find((r) => can(r.perm, 'read'))?.path ?? '/hub/cdn'
+
+  const academyTo = '/academy/courses/'
 
   const settingsTo =
     [
@@ -247,6 +251,22 @@ function RouteComponent() {
                 </Link>
               </TooltipTrigger>
               <TooltipContent side="right">The Hub</TooltipContent>
+            </Tooltip>
+          )}
+          {can('academy', 'read') && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to={academyTo}
+                  className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                    isAcademyActive && 'bg-accent/80 text-accent-foreground',
+                  )}
+                >
+                  <GraduationCap className="h-5 w-5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Academy</TooltipContent>
             </Tooltip>
           )}
           <div className="mt-auto flex flex-col items-center gap-2">
