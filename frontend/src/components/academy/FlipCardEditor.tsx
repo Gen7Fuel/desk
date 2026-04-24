@@ -1,11 +1,10 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
+import { ImagePlus, Loader2, X } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { uploadAcademyAsset } from '@/lib/academy-api'
-import { ImagePlus, Loader2, X } from 'lucide-react'
-import { useState } from 'react'
-import { toast } from 'sonner'
 
 export interface FlipCardSide {
   text: string

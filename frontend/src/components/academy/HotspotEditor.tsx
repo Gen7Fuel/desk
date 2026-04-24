@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react'
+import { ImagePlus, Loader2, MapPin, Trash2, X } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { uploadAcademyAsset } from '@/lib/academy-api'
-import { ImagePlus, Loader2, MapPin, Trash2, X } from 'lucide-react'
-import { toast } from 'sonner'
 
 export interface Hotspot {
   id: string
@@ -17,7 +17,7 @@ export interface Hotspot {
 
 export interface HotspotContent {
   imageUrl: string
-  hotspots: Hotspot[]
+  hotspots: Array<Hotspot>
 }
 
 interface Props {

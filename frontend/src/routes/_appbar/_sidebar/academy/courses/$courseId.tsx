@@ -8,7 +8,6 @@ import {
   closestCenter,
   useSensor,
   useSensors,
-  type DragEndEvent,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -18,6 +17,25 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import {
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  EyeOff,
+  Globe,
+  GripVertical,
+  Pencil,
+  Plus,
+  Save,
+  Trash2,
+} from 'lucide-react'
+import { toast } from 'sonner'
+import type { DragEndEvent } from '@dnd-kit/core'
+import type {
+  AcademyCourse,
+  AcademyItem,
+  AcademySection,
+} from '@/lib/academy-api'
 import { can } from '@/lib/permissions'
 import {
   createCourse,
@@ -26,7 +44,6 @@ import {
   unpublishCourse,
   updateCourse,
 } from '@/lib/academy-api'
-import type { AcademyCourse, AcademyItem, AcademySection } from '@/lib/academy-api'
 import { ItemEditorSheet } from '@/components/academy/ItemEditorSheet'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -40,19 +57,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  ChevronDown,
-  ChevronRight,
-  Globe,
-  GripVertical,
-  Pencil,
-  Plus,
-  Save,
-  Trash2,
-  EyeOff,
-  ArrowLeft,
-} from 'lucide-react'
-import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute(
@@ -70,7 +74,7 @@ export const Route = createFileRoute(
 type DraftItem = AcademyItem & { localId: string }
 type DraftSection = Omit<AcademySection, 'items'> & {
   localId: string
-  items: DraftItem[]
+  items: Array<DraftItem>
   expanded: boolean
 }
 
@@ -88,7 +92,7 @@ function toLocalSection(s: AcademySection, index: number): DraftSection {
 
 function fromDraftToPayload(
   draft: Omit<AcademyCourse, '_id' | 'createdAt' | 'updatedAt'> & {
-    sections: DraftSection[]
+    sections: Array<DraftSection>
   },
 ) {
   return {
@@ -169,7 +173,7 @@ function SortableItemRow({ item, onEdit, onDelete }: SortableItemRowProps) {
 }
 
 function getItemSummary(item: DraftItem): string {
-  const c = item.content as Record<string, unknown>
+  const c = item.content
   switch (item.type) {
     case 'video':
       return (c.title as string) || (c.url as string) || 'Untitled video'
@@ -177,7 +181,7 @@ function getItemSummary(item: DraftItem): string {
       return (c.question as string) || 'Untitled question'
     case 'flip-card':
       return (
-        ((c.front as Record<string, unknown>)?.text as string) ||
+        ((c.front as Record<string, unknown>).text as string) ||
         'Untitled flip card'
       )
     case 'hotspot':
@@ -222,11 +226,7 @@ function SortableSectionCard({
   )
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="rounded-lg border bg-card"
-    >
+    <div ref={setNodeRef} style={style} className="rounded-lg border bg-card">
       {/* Section header */}
       <div className="flex items-center gap-2 px-4 py-3">
         <button
@@ -331,7 +331,7 @@ function RouteComponent() {
   const [description, setDescription] = useState('')
   const [thumbnail, setThumbnail] = useState('')
   const [status, setStatus] = useState<'draft' | 'published'>('draft')
-  const [sections, setSections] = useState<DraftSection[]>([])
+  const [sections, setSections] = useState<Array<DraftSection>>([])
   const [loaded, setLoaded] = useState(isNew)
 
   // Item editor sheet state
@@ -389,7 +389,9 @@ function RouteComponent() {
 
   const publishMutation = useMutation({
     mutationFn: () =>
-      status === 'published' ? unpublishCourse(courseId) : publishCourse(courseId),
+      status === 'published'
+        ? unpublishCourse(courseId)
+        : publishCourse(courseId),
     onSuccess: (saved) => {
       setStatus(saved.status)
       queryClient.invalidateQueries({ queryKey: ['academy', 'courses'] })
@@ -635,9 +637,7 @@ function RouteComponent() {
                       }
                       onDelete={() => deleteSection(section.localId)}
                       onAddItem={() => openAddItem(section.localId)}
-                      onEditItem={(item) =>
-                        openEditItem(section.localId, item)
-                      }
+                      onEditItem={(item) => openEditItem(section.localId, item)}
                       onDeleteItem={(itemLocalId) =>
                         deleteItem(section.localId, itemLocalId)
                       }

@@ -36,7 +36,11 @@ const sidebarLinks: Record<
     },
   ],
   academy: [
-    { label: 'Courses', path: '/academy/courses/', permission: 'academy.courses' },
+    {
+      label: 'Courses',
+      path: '/academy/courses/',
+      permission: 'academy.courses',
+    },
   ],
 }
 

@@ -1,7 +1,7 @@
 import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { Globe, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react'
+import { EyeOff, Globe, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { can } from '@/lib/permissions'
 import {
@@ -63,10 +63,7 @@ function RouteComponent() {
         <h1 className="text-2xl font-semibold">Courses</h1>
         {can('academy.courses', 'create') && (
           <Button asChild>
-            <Link
-              to="/academy/courses/$courseId"
-              params={{ courseId: 'new' }}
-            >
+            <Link to="/academy/courses/$courseId" params={{ courseId: 'new' }}>
               <Plus className="mr-2 h-4 w-4" />
               New Course
             </Link>

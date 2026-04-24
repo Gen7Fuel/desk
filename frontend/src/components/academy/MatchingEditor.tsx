@@ -1,8 +1,8 @@
+import { Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Plus, Trash2 } from 'lucide-react'
 
 export interface MatchingPair {
   id: string
@@ -12,7 +12,7 @@ export interface MatchingPair {
 
 export interface MatchingContent {
   prompt: string
-  pairs: MatchingPair[]
+  pairs: Array<MatchingPair>
 }
 
 interface Props {
@@ -33,9 +33,7 @@ export function MatchingEditor({ content, onChange }: Props) {
   const updatePair = (id: string, patch: Partial<MatchingPair>) =>
     onChange({
       ...content,
-      pairs: content.pairs.map((p) =>
-        p.id === id ? { ...p, ...patch } : p,
-      ),
+      pairs: content.pairs.map((p) => (p.id === id ? { ...p, ...patch } : p)),
     })
 
   const deletePair = (id: string) =>
@@ -71,7 +69,11 @@ export function MatchingEditor({ content, onChange }: Props) {
               value={pair.right}
               onChange={(e) => updatePair(pair.id, { right: e.target.value })}
             />
-            <Button variant="ghost" size="icon" onClick={() => deletePair(pair.id)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => deletePair(pair.id)}
+            >
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>

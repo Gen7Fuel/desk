@@ -1,9 +1,9 @@
+import { CheckCircle2, Circle, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
-import { CheckCircle2, Circle, Plus, Trash2 } from 'lucide-react'
 
 export interface MCQOption {
   id: string
@@ -13,7 +13,7 @@ export interface MCQOption {
 
 export interface MCQContent {
   question: string
-  options: MCQOption[]
+  options: Array<MCQOption>
   explanation: string
 }
 
@@ -85,7 +85,9 @@ export function MCQEditor({ content, onChange }: Props) {
               className={cn(option.isCorrect && 'border-primary')}
               placeholder="Option text"
               value={option.text}
-              onChange={(e) => updateOption(option.id, { text: e.target.value })}
+              onChange={(e) =>
+                updateOption(option.id, { text: e.target.value })
+              }
             />
             <Button
               variant="ghost"

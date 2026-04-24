@@ -1,14 +1,17 @@
 import { useState } from 'react'
+import { VideoEditor, defaultVideoContent } from './VideoEditor'
+import { MCQEditor, defaultMCQContent } from './MCQEditor'
+import { FlipCardEditor, defaultFlipCardContent } from './FlipCardEditor'
+import { HotspotEditor, defaultHotspotContent } from './HotspotEditor'
+import { OrderingEditor, defaultOrderingContent } from './OrderingEditor'
+import { MatchingEditor, defaultMatchingContent } from './MatchingEditor'
 import type { AcademyItem } from '@/lib/academy-api'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import type { VideoContent } from './VideoEditor'
+import type { MCQContent } from './MCQEditor'
+import type { FlipCardContent } from './FlipCardEditor'
+import type { HotspotContent } from './HotspotEditor'
+import type { OrderingContent } from './OrderingEditor'
+import type { MatchingContent } from './MatchingEditor'
 import {
   Sheet,
   SheetContent,
@@ -16,18 +19,15 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { VideoEditor, defaultVideoContent } from './VideoEditor'
-import { MCQEditor, defaultMCQContent } from './MCQEditor'
-import { FlipCardEditor, defaultFlipCardContent } from './FlipCardEditor'
-import { HotspotEditor, defaultHotspotContent } from './HotspotEditor'
-import { OrderingEditor, defaultOrderingContent } from './OrderingEditor'
-import { MatchingEditor, defaultMatchingContent } from './MatchingEditor'
-import type { VideoContent } from './VideoEditor'
-import type { MCQContent } from './MCQEditor'
-import type { FlipCardContent } from './FlipCardEditor'
-import type { HotspotContent } from './HotspotEditor'
-import type { OrderingContent } from './OrderingEditor'
-import type { MatchingContent } from './MatchingEditor'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
 
 const ITEM_TYPES: Array<{ value: AcademyItem['type']; label: string }> = [
   { value: 'video', label: 'Video' },
@@ -89,42 +89,54 @@ export function ItemEditorSheet({ open, item, onSave, onClose }: Props) {
         return (
           <VideoEditor
             content={content as unknown as VideoContent}
-            onChange={(c) => setContent(c as unknown as Record<string, unknown>)}
+            onChange={(c) =>
+              setContent(c as unknown as Record<string, unknown>)
+            }
           />
         )
       case 'mcq':
         return (
           <MCQEditor
             content={content as unknown as MCQContent}
-            onChange={(c) => setContent(c as unknown as Record<string, unknown>)}
+            onChange={(c) =>
+              setContent(c as unknown as Record<string, unknown>)
+            }
           />
         )
       case 'flip-card':
         return (
           <FlipCardEditor
             content={content as unknown as FlipCardContent}
-            onChange={(c) => setContent(c as unknown as Record<string, unknown>)}
+            onChange={(c) =>
+              setContent(c as unknown as Record<string, unknown>)
+            }
           />
         )
       case 'hotspot':
         return (
           <HotspotEditor
             content={content as unknown as HotspotContent}
-            onChange={(c) => setContent(c as unknown as Record<string, unknown>)}
+            onChange={(c) =>
+              setContent(c as unknown as Record<string, unknown>)
+            }
           />
         )
       case 'ordering':
         return (
           <OrderingEditor
             content={content as unknown as OrderingContent}
-            onChange={(c) => setContent(c as unknown as Record<string, unknown>)}
+            onChange={(c) =>
+              setContent(c as unknown as Record<string, unknown>)
+            }
           />
         )
       case 'matching':
         return (
           <MatchingEditor
             content={content as unknown as MatchingContent}
-            onChange={(c) => setContent(c as unknown as Record<string, unknown>)}
+            onChange={(c) =>
+              setContent(c as unknown as Record<string, unknown>)
+            }
           />
         )
     }

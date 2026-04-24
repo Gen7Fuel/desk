@@ -5,7 +5,6 @@ import {
   closestCenter,
   useSensor,
   useSensors,
-  type DragEndEvent,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -15,11 +14,12 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { GripVertical, Plus, Trash2 } from 'lucide-react'
+import type { DragEndEvent } from '@dnd-kit/core'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { GripVertical, Plus, Trash2 } from 'lucide-react'
 
 export interface OrderingItem {
   id: string
@@ -28,7 +28,7 @@ export interface OrderingItem {
 
 export interface OrderingContent {
   prompt: string
-  items: OrderingItem[]
+  items: Array<OrderingItem>
 }
 
 interface SortableRowProps {
@@ -48,11 +48,7 @@ function SortableRow({ item, index, onChange, onDelete }: SortableRowProps) {
   }
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="flex items-center gap-2"
-    >
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2">
       <button
         type="button"
         className="cursor-grab text-muted-foreground"
@@ -94,7 +90,10 @@ export function OrderingEditor({ content, onChange }: Props) {
     if (!over || active.id === over.id) return
     const oldIndex = content.items.findIndex((i) => i.id === active.id)
     const newIndex = content.items.findIndex((i) => i.id === over.id)
-    onChange({ ...content, items: arrayMove(content.items, oldIndex, newIndex) })
+    onChange({
+      ...content,
+      items: arrayMove(content.items, oldIndex, newIndex),
+    })
   }
 
   const addItem = () =>

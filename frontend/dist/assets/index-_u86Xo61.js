@@ -1,1 +1,266 @@
-import{a as y}from"./leaflet-src-DLg5qeSB.js";import{r as o,b as T,R as m}from"./index-DBxPExF6.js";function R(u,n){const e=o.useRef(n);o.useEffect(function(){n!==e.current&&u.attributionControl!=null&&(e.current!=null&&u.attributionControl.removeAttribution(e.current),n!=null&&u.attributionControl.addAttribution(n)),e.current=n},[u,n])}const h=1;function N(u){return Object.freeze({__version:h,map:u})}function S(u,n){return Object.freeze({...u,...n})}const p=o.createContext(null);function b(){const u=o.use(p);if(u==null)throw new Error("No context provided: useLeafletContext() can only be used in a descendant of <MapContainer>");return u}function j(u){function n(e,t){const{instance:r,context:a}=u(e).current;o.useImperativeHandle(t,()=>r);const{children:c}=e;return c==null?null:m.createElement(p,{value:a},c)}return o.forwardRef(n)}function A(u){function n(e,t){const[r,a]=o.useState(!1),{instance:c}=u(e,a).current;o.useImperativeHandle(t,()=>c),o.useEffect(function(){r&&c.update()},[c,r,e.children]);const i=c._contentNode;return i?T.createPortal(e.children,i):null}return o.forwardRef(n)}function D(u){function n(e,t){const{instance:r}=u(e).current;return o.useImperativeHandle(t,()=>r),null}return o.forwardRef(n)}function g(u,n){const e=o.useRef(void 0);o.useEffect(function(){return n!=null&&u.instance.on(n),e.current=n,function(){e.current!=null&&u.instance.off(e.current),e.current=null}},[u,n])}function C(u,n){const e=u.pane??n.pane;return e?{...u,pane:e}:u}function _(u,n){return function(t,r){const a=b(),c=u(C(t,a),a);return R(a.map,t.attribution),g(c.current,t.eventHandlers),n(c.current,a,t,r),c}}function L(u,n,e){return Object.freeze({instance:u,context:n,container:e})}function v(u,n){return n==null?function(t,r){const a=o.useRef(void 0);return a.current||(a.current=u(t,r)),a}:function(t,r){const a=o.useRef(void 0);a.current||(a.current=u(t,r));const c=o.useRef(t),{instance:i}=a.current;return o.useEffect(function(){c.current!==t&&(n(i,t,c.current),c.current=t)},[i,t,n]),a}}function k(u,n){o.useEffect(function(){return(n.layerContainer??n.map).addLayer(u.instance),function(){n.layerContainer?.removeLayer(u.instance),n.map.removeLayer(u.instance)}},[n,u])}function I(u){return function(e){const t=b(),r=u(C(e,t),t);return R(t.map,e.attribution),g(r.current,e.eventHandlers),k(r.current,t),r}}function V(u,n){const e=v(u,n),t=I(e);return j(t)}function Z(u,n){const e=v(u),t=_(e,n);return A(t)}function B(u,n){const e=v(u,n),t=I(e);return D(t)}function G(u,n,e){const{opacity:t,zIndex:r}=n;t!=null&&t!==e.opacity&&u.setOpacity(t),r!=null&&r!==e.zIndex&&u.setZIndex(r)}function U({bounds:u,boundsOptions:n,center:e,children:t,className:r,id:a,placeholder:c,style:i,whenReady:f,zoom:l,...x},w){const[H]=o.useState({className:r,id:a,style:i}),[s,M]=o.useState(null),E=o.useRef(void 0);o.useImperativeHandle(w,()=>s?.map??null,[s]);const z=o.useCallback(O=>{if(O!==null&&!E.current){const d=new y.Map(O,x);E.current=d,e!=null&&l!=null?d.setView(e,l):u!=null&&d.fitBounds(u,n),f!=null&&d.whenReady(f),M(N(d))}},[]);o.useEffect(()=>()=>{s?.map.remove()},[s]);const P=s?m.createElement(p,{value:s},t):c??null;return m.createElement("div",{...H,ref:z},P)}const F=o.forwardRef(U),J=V(function({position:n,...e},t){const r=new y.Marker(n,e);return L(r,S(t,{overlayContainer:r}))},function(n,e,t){e.position!==t.position&&n.setLatLng(e.position),e.icon!=null&&e.icon!==t.icon&&n.setIcon(e.icon),e.zIndexOffset!=null&&e.zIndexOffset!==t.zIndexOffset&&n.setZIndexOffset(e.zIndexOffset),e.opacity!=null&&e.opacity!==t.opacity&&n.setOpacity(e.opacity),n.dragging!=null&&e.draggable!==t.draggable&&(e.draggable===!0?n.dragging.enable():n.dragging.disable())}),K=Z(function(n,e){const t=new y.Popup(n,e.overlayContainer);return L(t,e)},function(n,e,{position:t},r){o.useEffect(function(){const{instance:c}=n;function i(l){l.popup===c&&(c.update(),r(!0))}function f(l){l.popup===c&&r(!1)}return e.map.on({popupopen:i,popupclose:f}),e.overlayContainer==null?(t!=null&&c.setLatLng(t),c.openOn(e.map)):e.overlayContainer.bindPopup(c),function(){e.map.off({popupopen:i,popupclose:f}),e.overlayContainer?.unbindPopup(),e.map.removeLayer(c)}},[n,e,r,t])}),Q=B(function({url:n,...e},t){const r=new y.TileLayer(n,C(e,t));return L(r,t)},function(n,e,t){G(n,e,t);const{url:r}=e;r!=null&&r!==t.url&&n.setUrl(r)});export{F as MapContainer,J as Marker,K as Popup,Q as TileLayer};
+import { a as y } from './leaflet-src-DLg5qeSB.js'
+import { r as o, b as T, R as m } from './index-DBxPExF6.js'
+function R(u, n) {
+  const e = o.useRef(n)
+  o.useEffect(
+    function () {
+      ;(n !== e.current &&
+        u.attributionControl != null &&
+        (e.current != null && u.attributionControl.removeAttribution(e.current),
+        n != null && u.attributionControl.addAttribution(n)),
+        (e.current = n))
+    },
+    [u, n],
+  )
+}
+const h = 1
+function N(u) {
+  return Object.freeze({ __version: h, map: u })
+}
+function S(u, n) {
+  return Object.freeze({ ...u, ...n })
+}
+const p = o.createContext(null)
+function b() {
+  const u = o.use(p)
+  if (u == null)
+    throw new Error(
+      'No context provided: useLeafletContext() can only be used in a descendant of <MapContainer>',
+    )
+  return u
+}
+function j(u) {
+  function n(e, t) {
+    const { instance: r, context: a } = u(e).current
+    o.useImperativeHandle(t, () => r)
+    const { children: c } = e
+    return c == null ? null : m.createElement(p, { value: a }, c)
+  }
+  return o.forwardRef(n)
+}
+function A(u) {
+  function n(e, t) {
+    const [r, a] = o.useState(!1),
+      { instance: c } = u(e, a).current
+    ;(o.useImperativeHandle(t, () => c),
+      o.useEffect(
+        function () {
+          r && c.update()
+        },
+        [c, r, e.children],
+      ))
+    const i = c._contentNode
+    return i ? T.createPortal(e.children, i) : null
+  }
+  return o.forwardRef(n)
+}
+function D(u) {
+  function n(e, t) {
+    const { instance: r } = u(e).current
+    return (o.useImperativeHandle(t, () => r), null)
+  }
+  return o.forwardRef(n)
+}
+function g(u, n) {
+  const e = o.useRef(void 0)
+  o.useEffect(
+    function () {
+      return (
+        n != null && u.instance.on(n),
+        (e.current = n),
+        function () {
+          ;(e.current != null && u.instance.off(e.current), (e.current = null))
+        }
+      )
+    },
+    [u, n],
+  )
+}
+function C(u, n) {
+  const e = u.pane ?? n.pane
+  return e ? { ...u, pane: e } : u
+}
+function _(u, n) {
+  return function (t, r) {
+    const a = b(),
+      c = u(C(t, a), a)
+    return (
+      R(a.map, t.attribution),
+      g(c.current, t.eventHandlers),
+      n(c.current, a, t, r),
+      c
+    )
+  }
+}
+function L(u, n, e) {
+  return Object.freeze({ instance: u, context: n, container: e })
+}
+function v(u, n) {
+  return n == null
+    ? function (t, r) {
+        const a = o.useRef(void 0)
+        return (a.current || (a.current = u(t, r)), a)
+      }
+    : function (t, r) {
+        const a = o.useRef(void 0)
+        a.current || (a.current = u(t, r))
+        const c = o.useRef(t),
+          { instance: i } = a.current
+        return (
+          o.useEffect(
+            function () {
+              c.current !== t && (n(i, t, c.current), (c.current = t))
+            },
+            [i, t, n],
+          ),
+          a
+        )
+      }
+}
+function k(u, n) {
+  o.useEffect(
+    function () {
+      return (
+        (n.layerContainer ?? n.map).addLayer(u.instance),
+        function () {
+          ;(n.layerContainer?.removeLayer(u.instance),
+            n.map.removeLayer(u.instance))
+        }
+      )
+    },
+    [n, u],
+  )
+}
+function I(u) {
+  return function (e) {
+    const t = b(),
+      r = u(C(e, t), t)
+    return (
+      R(t.map, e.attribution),
+      g(r.current, e.eventHandlers),
+      k(r.current, t),
+      r
+    )
+  }
+}
+function V(u, n) {
+  const e = v(u, n),
+    t = I(e)
+  return j(t)
+}
+function Z(u, n) {
+  const e = v(u),
+    t = _(e, n)
+  return A(t)
+}
+function B(u, n) {
+  const e = v(u, n),
+    t = I(e)
+  return D(t)
+}
+function G(u, n, e) {
+  const { opacity: t, zIndex: r } = n
+  ;(t != null && t !== e.opacity && u.setOpacity(t),
+    r != null && r !== e.zIndex && u.setZIndex(r))
+}
+function U(
+  {
+    bounds: u,
+    boundsOptions: n,
+    center: e,
+    children: t,
+    className: r,
+    id: a,
+    placeholder: c,
+    style: i,
+    whenReady: f,
+    zoom: l,
+    ...x
+  },
+  w,
+) {
+  const [H] = o.useState({ className: r, id: a, style: i }),
+    [s, M] = o.useState(null),
+    E = o.useRef(void 0)
+  o.useImperativeHandle(w, () => s?.map ?? null, [s])
+  const z = o.useCallback((O) => {
+    if (O !== null && !E.current) {
+      const d = new y.Map(O, x)
+      ;((E.current = d),
+        e != null && l != null
+          ? d.setView(e, l)
+          : u != null && d.fitBounds(u, n),
+        f != null && d.whenReady(f),
+        M(N(d)))
+    }
+  }, [])
+  o.useEffect(
+    () => () => {
+      s?.map.remove()
+    },
+    [s],
+  )
+  const P = s ? m.createElement(p, { value: s }, t) : (c ?? null)
+  return m.createElement('div', { ...H, ref: z }, P)
+}
+const F = o.forwardRef(U),
+  J = V(
+    function ({ position: n, ...e }, t) {
+      const r = new y.Marker(n, e)
+      return L(r, S(t, { overlayContainer: r }))
+    },
+    function (n, e, t) {
+      ;(e.position !== t.position && n.setLatLng(e.position),
+        e.icon != null && e.icon !== t.icon && n.setIcon(e.icon),
+        e.zIndexOffset != null &&
+          e.zIndexOffset !== t.zIndexOffset &&
+          n.setZIndexOffset(e.zIndexOffset),
+        e.opacity != null && e.opacity !== t.opacity && n.setOpacity(e.opacity),
+        n.dragging != null &&
+          e.draggable !== t.draggable &&
+          (e.draggable === !0 ? n.dragging.enable() : n.dragging.disable()))
+    },
+  ),
+  K = Z(
+    function (n, e) {
+      const t = new y.Popup(n, e.overlayContainer)
+      return L(t, e)
+    },
+    function (n, e, { position: t }, r) {
+      o.useEffect(
+        function () {
+          const { instance: c } = n
+          function i(l) {
+            l.popup === c && (c.update(), r(!0))
+          }
+          function f(l) {
+            l.popup === c && r(!1)
+          }
+          return (
+            e.map.on({ popupopen: i, popupclose: f }),
+            e.overlayContainer == null
+              ? (t != null && c.setLatLng(t), c.openOn(e.map))
+              : e.overlayContainer.bindPopup(c),
+            function () {
+              ;(e.map.off({ popupopen: i, popupclose: f }),
+                e.overlayContainer?.unbindPopup(),
+                e.map.removeLayer(c))
+            }
+          )
+        },
+        [n, e, r, t],
+      )
+    },
+  ),
+  Q = B(
+    function ({ url: n, ...e }, t) {
+      const r = new y.TileLayer(n, C(e, t))
+      return L(r, t)
+    },
+    function (n, e, t) {
+      G(n, e, t)
+      const { url: r } = e
+      r != null && r !== t.url && n.setUrl(r)
+    },
+  )
+export { F as MapContainer, J as Marker, K as Popup, Q as TileLayer }
