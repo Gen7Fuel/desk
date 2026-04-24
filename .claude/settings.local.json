@@ -57,7 +57,10 @@
       "Bash(npm:*)",
       "Bash(nvm list:*)",
       "Bash(nvs list:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(cp '/c/Users/MohammadHasan/workspace/desk/frontend/src/routes/_appbar/_sidebar/academy/courses.$courseId.tsx' '/c/Users/MohammadHasan/workspace/desk/frontend/src/routes/_appbar/_sidebar/academy/courses/$courseId.tsx')",
+      "Bash(rm '/c/Users/MohammadHasan/workspace/desk/frontend/src/routes/_appbar/_sidebar/academy/courses.$courseId.tsx')"
     ]
   }
 }

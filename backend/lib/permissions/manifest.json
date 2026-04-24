@@ -79,6 +79,12 @@
         "roles": { "actions": ["create", "read", "update", "delete"] },
         "logs":  { "actions": ["read"] }
       }
+    },
+    "academy": {
+      "actions": ["read"],
+      "submodules": {
+        "courses": { "actions": ["create", "read", "update", "delete"] }
+      }
     }
   }
 }

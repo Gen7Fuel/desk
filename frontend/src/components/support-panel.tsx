@@ -481,7 +481,6 @@ export function SupportPanel({
               </Button>
             </div>
           </div>
-
         ) : active && active.status === 'accepted' ? (
           /* ── Active chat view ── */
           <div className="flex flex-col h-full">
@@ -506,7 +505,9 @@ export function SupportPanel({
                 variant="ghost"
                 size="sm"
                 className="text-xs shrink-0"
-                onClick={() => openTicketForm(active.chatId, active.initialMessage)}
+                onClick={() =>
+                  openTicketForm(active.chatId, active.initialMessage)
+                }
               >
                 <Ticket className="h-3.5 w-3.5 mr-1" />
                 Ticket
@@ -584,7 +585,6 @@ export function SupportPanel({
               </Button>
             </form>
           </div>
-
         ) : active && active.status === 'expired' ? (
           /* ── Expired / ticket view ── */
           <div className="flex flex-col h-full">
@@ -631,7 +631,6 @@ export function SupportPanel({
               )}
             </div>
           </div>
-
         ) : (
           /* ── Chat list view ── */
           <div className="flex flex-col h-full">

@@ -58,6 +58,11 @@ type BOLPhoto = {
   comments?: Array<{ text: string; createdAt: string; user?: string }>
 }
 
+type HubLocation = {
+  stationName: string
+  legalName?: string
+}
+
 type RightPane =
   | { type: 'image'; entry: BOLPhoto }
   | { type: 'comments'; entry: BOLPhoto }
@@ -80,6 +85,24 @@ function RouteComponent() {
   const [rightPane, setRightPane] = React.useState<RightPane>(null)
   const [commentText, setCommentText] = React.useState('')
   const [commentPending, setCommentPending] = React.useState(false)
+  const [locationNames, setLocationNames] = React.useState<
+    Record<string, string>
+  >({})
+
+  React.useEffect(() => {
+    fetch(`${HUB}/api/locations`, {
+      headers: { Authorization: `Bearer ${getExternalToken()}` },
+    })
+      .then((r) => r.json())
+      .then((data: Array<HubLocation>) => {
+        const map: Record<string, string> = {}
+        for (const loc of data) {
+          if (loc.legalName) map[loc.stationName] = loc.legalName
+        }
+        setLocationNames(map)
+      })
+      .catch(() => {})
+  }, [])
 
   const fetchEntries = async () => {
     if (!from || !to || !site) return
@@ -132,7 +155,9 @@ function RouteComponent() {
       const instance = pdf(<></>)
       instance.updateContainer(doc)
       const blob = await instance.toBlob()
-      const filename = `${e.date} - ${e.site} - ${e.bolNumber ?? 'no-bol'}.pdf`
+      const siteName =
+        e.site === 'Silver Grizzly' ? (locationNames[e.site] ?? e.site) : e.site
+      const filename = `${e.date} - ${siteName} - ${e.bolNumber ?? 'no-bol'}.pdf`
       const a = document.createElement('a')
       a.href = URL.createObjectURL(blob)
       a.download = filename
