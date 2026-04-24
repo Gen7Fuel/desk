@@ -21,6 +21,8 @@ const logRoutes = require('./apps/logs/log.routes')
 const issueRoutes = require('./apps/issues/issue.routes')
 const siteAssetsRoutes = require('./apps/site-assets/site-assets.routes')
 const academyRoutes = require('./apps/academy/course.routes')
+const employeeRoutes = require('./apps/academy/employee.routes')
+const completionRoutes = require('./apps/academy/completion.routes')
 
 const app = express()
 const port = 5000
@@ -56,6 +58,8 @@ apiRouter.use(logRoutes)
 apiRouter.use(issueRoutes)
 apiRouter.use(siteAssetsRoutes)
 apiRouter.use('/academy', academyRoutes)
+apiRouter.use('/academy', employeeRoutes)
+apiRouter.use('/academy', completionRoutes)
 
 app.use('/api', apiRouter)
 

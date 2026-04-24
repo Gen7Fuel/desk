@@ -83,7 +83,9 @@
     "academy": {
       "actions": ["read"],
       "submodules": {
-        "courses": { "actions": ["create", "read", "update", "delete"] }
+        "courses":     { "actions": ["create", "read", "update", "delete"] },
+        "employees":   { "actions": ["create", "read", "delete"] },
+        "completions": { "actions": ["read"] }
       }
     }
   }

@@ -102,6 +102,8 @@ jobs:
             echo "AZURE_CONTAINER=${{ secrets.AZURE_CONTAINER }}" >> backend/.env
             echo "CDN_BASE=${{ secrets.CDN_BASE }}" >> backend/.env
             echo "CDN_ADMIN_TOKEN=${{ secrets.CDN_ADMIN_TOKEN }}" >> backend/.env
+            echo "ACADEMY_BASE=${{ secrets.ACADEMY_BASE }}" >> backend/.env
+            echo "ACADEMY_ADMIN_TOKEN=${{ secrets.ACADEMY_ADMIN_TOKEN }}" >> backend/.env
 
             # Rebuild and restart, wait for healthy
             export VITE_CDN_BASE="${{ secrets.VITE_CDN_BASE }}"

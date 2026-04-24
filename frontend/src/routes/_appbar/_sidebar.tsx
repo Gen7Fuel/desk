@@ -41,6 +41,16 @@ const sidebarLinks: Record<
       path: '/academy/courses/',
       permission: 'academy.courses',
     },
+    {
+      label: 'Employees',
+      path: '/academy/employees',
+      permission: 'academy.employees',
+    },
+    {
+      label: 'Completions',
+      path: '/academy/completions',
+      permission: 'academy.completions',
+    },
   ],
 }
 
