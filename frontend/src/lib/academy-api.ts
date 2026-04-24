@@ -92,6 +92,50 @@ export async function unpublishCourse(id: string): Promise<AcademyCourse> {
   return res.json()
 }
 
+export interface AcademyEmployee {
+  _id: string
+  name: string
+  code: string
+  createdAt: string
+}
+
+export interface AcademyCompletion {
+  _id: string
+  employeeCode: string
+  employeeName: string
+  courseId: string
+  courseTitle: string
+  completedAt: string
+  createdAt: string
+}
+
+export async function getEmployees(): Promise<Array<AcademyEmployee>> {
+  const res = await apiFetch('/api/academy/employees')
+  if (!res.ok) throw new Error('Failed to fetch employees')
+  return res.json()
+}
+
+export async function createEmployee(name: string): Promise<AcademyEmployee> {
+  const res = await apiFetch('/api/academy/employees', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  })
+  if (!res.ok) throw new Error('Failed to create employee')
+  return res.json()
+}
+
+export async function deleteEmployee(id: string): Promise<void> {
+  const res = await apiFetch(`/api/academy/employees/${id}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error('Failed to delete employee')
+}
+
+export async function getCompletions(courseId?: string): Promise<Array<AcademyCompletion>> {
+  const qs = courseId ? `?courseId=${courseId}` : ''
+  const res = await apiFetch(`/api/academy/completions${qs}`)
+  if (!res.ok) throw new Error('Failed to fetch completions')
+  return res.json()
+}
+
 export async function uploadAcademyAsset(file: File): Promise<{ url: string }> {
   const form = new FormData()
   form.append('file', file)

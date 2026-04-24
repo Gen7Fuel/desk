@@ -60,7 +60,9 @@
       "Bash(git checkout:*)",
       "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
       "Bash(cp '/c/Users/MohammadHasan/workspace/desk/frontend/src/routes/_appbar/_sidebar/academy/courses.$courseId.tsx' '/c/Users/MohammadHasan/workspace/desk/frontend/src/routes/_appbar/_sidebar/academy/courses/$courseId.tsx')",
-      "Bash(rm '/c/Users/MohammadHasan/workspace/desk/frontend/src/routes/_appbar/_sidebar/academy/courses.$courseId.tsx')"
+      "Bash(rm '/c/Users/MohammadHasan/workspace/desk/frontend/src/routes/_appbar/_sidebar/academy/courses.$courseId.tsx')",
+      "Bash(mkdir -p \"C:/Users/MohammadHasan/workspace/thehub/backend/models/academy\")",
+      "Bash(mkdir -p \"C:/Users/MohammadHasan/workspace/thehub/backend/routes/academy\")"
     ]
   }
 }

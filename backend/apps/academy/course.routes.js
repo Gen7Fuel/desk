@@ -2,67 +2,98 @@ const express = require('express')
 const multer = require('multer')
 const { BlobServiceClient } = require('@azure/storage-blob')
 const { authenticate, requirePermission } = require('../../middleware/auth')
-const Course = require('./course.model')
 
 const router = express.Router()
 const upload = multer({ storage: multer.memoryStorage() })
 
+function getHubConfig() {
+  const base = process.env.ACADEMY_BASE
+  const token = process.env.ACADEMY_ADMIN_TOKEN
+  if (!base || !token) throw new Error('Academy not configured on server.')
+  return { base, token }
+}
+
+async function hubFetch(path, options = {}) {
+  const { base, token } = getHubConfig()
+  return fetch(`${base}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      ...(options.headers ?? {}),
+    },
+  })
+}
+
 router.get('/courses', authenticate, requirePermission('academy.courses', 'read'), async (req, res) => {
-  const courses = await Course.find({}, 'title description thumbnail status sections createdAt').sort({ createdAt: -1 })
-  res.json(
-    courses.map((c) => ({
-      _id: c._id,
-      title: c.title,
-      description: c.description,
-      thumbnail: c.thumbnail,
-      status: c.status,
-      sectionCount: c.sections.length,
-      createdAt: c.createdAt,
-    })),
-  )
+  try {
+    const r = await hubFetch('/api/academy/admin/courses')
+    const data = await r.json()
+    if (!r.ok) return res.status(r.status).json(data)
+    res.json(data.courses)
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
 })
 
 router.post('/courses', authenticate, requirePermission('academy.courses', 'create'), async (req, res) => {
-  const { title, description, thumbnail, sections } = req.body
-  if (!title) return res.status(400).json({ message: 'title is required' })
-  const course = await Course.create({ title, description, thumbnail, sections: sections ?? [] })
-  res.status(201).json(course)
+  try {
+    const r = await hubFetch('/api/academy/admin/courses', { method: 'POST', body: JSON.stringify(req.body) })
+    const data = await r.json()
+    res.status(r.status).json(data)
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
 })
 
 router.get('/courses/:id', authenticate, requirePermission('academy.courses', 'read'), async (req, res) => {
-  const course = await Course.findById(req.params.id)
-  if (!course) return res.status(404).json({ message: 'Course not found.' })
-  res.json(course)
+  try {
+    const r = await hubFetch(`/api/academy/admin/courses/${req.params.id}`)
+    const data = await r.json()
+    res.status(r.status).json(data)
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
 })
 
 router.put('/courses/:id', authenticate, requirePermission('academy.courses', 'update'), async (req, res) => {
-  const { title, description, thumbnail, sections } = req.body
-  if (!title) return res.status(400).json({ message: 'title is required' })
-  const course = await Course.findByIdAndUpdate(
-    req.params.id,
-    { title, description, thumbnail, sections },
-    { new: true, runValidators: true },
-  )
-  if (!course) return res.status(404).json({ message: 'Course not found.' })
-  res.json(course)
+  try {
+    const r = await hubFetch(`/api/academy/admin/courses/${req.params.id}`, { method: 'PUT', body: JSON.stringify(req.body) })
+    const data = await r.json()
+    res.status(r.status).json(data)
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
 })
 
 router.post('/courses/:id/publish', authenticate, requirePermission('academy.courses', 'update'), async (req, res) => {
-  const course = await Course.findByIdAndUpdate(req.params.id, { status: 'published' }, { new: true })
-  if (!course) return res.status(404).json({ message: 'Course not found.' })
-  res.json(course)
+  try {
+    const r = await hubFetch(`/api/academy/admin/courses/${req.params.id}/publish`, { method: 'POST' })
+    const data = await r.json()
+    res.status(r.status).json(data)
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
 })
 
 router.post('/courses/:id/unpublish', authenticate, requirePermission('academy.courses', 'update'), async (req, res) => {
-  const course = await Course.findByIdAndUpdate(req.params.id, { status: 'draft' }, { new: true })
-  if (!course) return res.status(404).json({ message: 'Course not found.' })
-  res.json(course)
+  try {
+    const r = await hubFetch(`/api/academy/admin/courses/${req.params.id}/unpublish`, { method: 'POST' })
+    const data = await r.json()
+    res.status(r.status).json(data)
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
 })
 
 router.delete('/courses/:id', authenticate, requirePermission('academy.courses', 'delete'), async (req, res) => {
-  const course = await Course.findByIdAndDelete(req.params.id)
-  if (!course) return res.status(404).json({ message: 'Course not found.' })
-  res.json({ success: true })
+  try {
+    const r = await hubFetch(`/api/academy/admin/courses/${req.params.id}`, { method: 'DELETE' })
+    const data = await r.json()
+    res.status(r.status).json(data)
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
 })
 
 router.post('/upload', authenticate, requirePermission('academy.courses', 'update'), upload.single('file'), async (req, res) => {
