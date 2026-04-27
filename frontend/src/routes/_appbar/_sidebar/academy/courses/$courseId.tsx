@@ -623,10 +623,14 @@ function RouteComponent() {
                     onClick={() => thumbnailFileRef.current?.click()}
                     className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed py-8 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
                   >
+                    {thumbnailUploading ? (
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    ) : (
+                      <ImagePlus className="h-6 w-6" />
+                    )}
                     {thumbnailUploading
-                      ? <Loader2 className="h-6 w-6 animate-spin" />
-                      : <ImagePlus className="h-6 w-6" />}
-                    {thumbnailUploading ? 'Uploading…' : 'Upload thumbnail image'}
+                      ? 'Uploading…'
+                      : 'Upload thumbnail image'}
                   </button>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <div className="h-px flex-1 bg-border" />

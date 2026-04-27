@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { can } from '@/lib/permissions'
 import { apiFetch } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -32,8 +32,10 @@ interface HubLocation {
 }
 
 function RouteComponent() {
-  const [locations, setLocations] = useState<HubLocation[]>([])
-  const [selectedLocation, setSelectedLocation] = useState<HubLocation | null>(null)
+  const [locations, setLocations] = useState<Array<HubLocation>>([])
+  const [selectedLocation, setSelectedLocation] = useState<HubLocation | null>(
+    null,
+  )
   const [date, setDate] = useState('')
   const [narrativeText, setNarrativeText] = useState('')
   const [suggestion, setSuggestion] = useState('')
@@ -45,7 +47,7 @@ function RouteComponent() {
   useEffect(() => {
     apiFetch('https://app.gen7fuel.com/api/locations')
       .then((res) => res.json())
-      .then((data: HubLocation[]) => setLocations(data))
+      .then((data: Array<HubLocation>) => setLocations(data))
       .catch(() => setError('Failed to load stations.'))
   }, [])
 
@@ -109,7 +111,8 @@ function RouteComponent() {
     }
   }
 
-  const canSubmit = !!selectedLocation && !!date && narrativeText.trim().length > 0 && !saving
+  const canSubmit =
+    !!selectedLocation && !!date && narrativeText.trim().length > 0 && !saving
 
   return (
     <div className="max-w-2xl p-6 flex flex-col gap-6">
@@ -148,14 +151,19 @@ function RouteComponent() {
               id="date"
               type="date"
               value={date}
-              onChange={(e) => { setDate(e.target.value); setSaved(false) }}
+              onChange={(e) => {
+                setDate(e.target.value)
+                setSaved(false)
+              }}
               className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             />
           </div>
         </div>
 
         {fetching && (
-          <p className="text-sm text-muted-foreground">Loading existing record...</p>
+          <p className="text-sm text-muted-foreground">
+            Loading existing record...
+          </p>
         )}
 
         <div className="flex flex-col gap-1">
@@ -163,7 +171,10 @@ function RouteComponent() {
           <Textarea
             id="narrative"
             value={narrativeText}
-            onChange={(e) => { setNarrativeText(e.target.value); setSaved(false) }}
+            onChange={(e) => {
+              setNarrativeText(e.target.value)
+              setSaved(false)
+            }}
             placeholder="Enter the station narrative summary..."
             rows={8}
             disabled={fetching}
@@ -175,7 +186,10 @@ function RouteComponent() {
           <Textarea
             id="suggestion"
             value={suggestion}
-            onChange={(e) => { setSuggestion(e.target.value); setSaved(false) }}
+            onChange={(e) => {
+              setSuggestion(e.target.value)
+              setSaved(false)
+            }}
             placeholder="Enter any suggestions..."
             rows={4}
             disabled={fetching}
@@ -189,7 +203,9 @@ function RouteComponent() {
             {saving ? 'Saving...' : 'Save'}
           </Button>
           {saved && (
-            <span className="text-sm text-green-600 font-medium">Saved successfully.</span>
+            <span className="text-sm text-green-600 font-medium">
+              Saved successfully.
+            </span>
           )}
         </div>
       </form>
