@@ -59,4 +59,17 @@ async function getStationNarrative(csoCode, reportDate) {
   return result.recordset[0] || null
 }
 
-module.exports = { saveStationNarrative, getStationNarrative }
+async function getStationNarratives(csoCode) {
+  const p = await getPool()
+  const req = p.request()
+  req.input('Station_SK', sql.VarChar, String(csoCode))
+  const result = await req.query(`
+    SELECT Station_SK, Station, ReportDate, NarrativeText, CreatedAt, UpdatedAt
+    FROM [FIN].[StationNarrativeSummary]
+    WHERE Station_SK = @Station_SK
+    ORDER BY ReportDate DESC
+  `)
+  return result.recordset
+}
+
+module.exports = { saveStationNarrative, getStationNarrative, getStationNarratives }

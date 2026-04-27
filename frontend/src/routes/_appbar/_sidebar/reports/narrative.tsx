@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/_appbar/_sidebar/reports/narrative')({
   beforeLoad: () => {
@@ -31,14 +32,27 @@ interface HubLocation {
   legalName: string
 }
 
+interface NarrativeEntry {
+  Station_SK: string
+  Station: string
+  ReportDate: string
+  NarrativeText: string | null
+  CreatedAt: string
+  UpdatedAt: string
+}
+
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('en-CA') // YYYY-MM-DD
+}
+
 function RouteComponent() {
   const [locations, setLocations] = useState<Array<HubLocation>>([])
-  const [selectedLocation, setSelectedLocation] = useState<HubLocation | null>(
-    null,
-  )
-  const [date, setDate] = useState('')
+  const [selectedLocation, setSelectedLocation] = useState<HubLocation | null>(null)
+  const [entries, setEntries] = useState<Array<NarrativeEntry>>([])
+  const [loadingEntries, setLoadingEntries] = useState(false)
+  const [selectedEntry, setSelectedEntry] = useState<NarrativeEntry | null>(null)
   const [narrativeText, setNarrativeText] = useState('')
-  const [fetching, setFetching] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -51,31 +65,35 @@ function RouteComponent() {
   }, [])
 
   useEffect(() => {
-    if (!selectedLocation || !date) return
-
-    setFetching(true)
+    if (!selectedLocation) return
+    setLoadingEntries(true)
+    setEntries([])
+    setSelectedEntry(null)
+    setNarrativeText('')
     setSaved(false)
-    apiFetch(`/api/narrative/${selectedLocation.csoCode}/${date}`)
+    apiFetch(`/api/narrative/${selectedLocation.csoCode}`)
       .then((res) => res.json())
-      .then((data) => {
-        setNarrativeText(data?.NarrativeText || '')
-      })
-      .catch(() => {
-        setNarrativeText('')
-      })
-      .finally(() => setFetching(false))
-  }, [selectedLocation, date])
+      .then((data: Array<NarrativeEntry>) => setEntries(data))
+      .catch(() => setEntries([]))
+      .finally(() => setLoadingEntries(false))
+  }, [selectedLocation])
 
   const handleLocationChange = (stationName: string) => {
     const loc = locations.find((l) => l.stationName === stationName) ?? null
     setSelectedLocation(loc)
+    setError(null)
+  }
+
+  const handleSelectEntry = (entry: NarrativeEntry) => {
+    setSelectedEntry(entry)
+    setNarrativeText(entry.NarrativeText || '')
     setSaved(false)
-    setNarrativeText('')
+    setError(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedLocation || !date || !narrativeText.trim()) return
+    if (!selectedLocation || !selectedEntry || !narrativeText.trim()) return
 
     setSaving(true)
     setSaved(false)
@@ -87,7 +105,7 @@ function RouteComponent() {
         body: JSON.stringify({
           csoCode: selectedLocation.csoCode,
           legalName: selectedLocation.legalName,
-          reportDate: date,
+          reportDate: formatDate(selectedEntry.ReportDate),
           narrativeText,
         }),
       })
@@ -96,6 +114,13 @@ function RouteComponent() {
         throw new Error(body.error || 'Failed to save.')
       }
       setSaved(true)
+      setEntries((prev) =>
+        prev.map((e) =>
+          e.ReportDate === selectedEntry.ReportDate
+            ? { ...e, NarrativeText: narrativeText }
+            : e,
+        ),
+      )
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.')
     } finally {
@@ -103,89 +128,98 @@ function RouteComponent() {
     }
   }
 
-  const canSubmit =
-    !!selectedLocation && !!date && narrativeText.trim().length > 0 && !saving
+  const canSubmit = !!selectedEntry && narrativeText.trim().length > 0 && !saving
 
   return (
-    <div className="max-w-2xl p-6 flex flex-col gap-6">
-      <h1 className="text-2xl font-bold">Station Narrative Summary</h1>
-
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        <div className="flex flex-wrap gap-4">
-          <div className="flex flex-col gap-1">
-            <Label>Station</Label>
-            <Select onValueChange={handleLocationChange}>
-              <SelectTrigger className="w-[220px]">
-                <SelectValue placeholder="Select a station" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Stations</SelectLabel>
-                  {locations.length > 0 ? (
-                    locations.map((loc) => (
-                      <SelectItem key={loc._id} value={loc.stationName}>
-                        {loc.stationName}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem disabled value="none">
-                      No stations available
-                    </SelectItem>
-                  )}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="date">Report Date</Label>
-            <input
-              id="date"
-              type="date"
-              value={date}
-              onChange={(e) => {
-                setDate(e.target.value)
-                setSaved(false)
-              }}
-              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            />
-          </div>
+    <div className="flex h-full">
+      {/* Left panel */}
+      <div className="w-72 flex flex-col border-r">
+        <div className="p-4 border-b">
+          <h1 className="text-base font-semibold mb-3">Station Narrative</h1>
+          <Select onValueChange={handleLocationChange}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a station" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Stations</SelectLabel>
+                {locations.map((loc) => (
+                  <SelectItem key={loc._id} value={loc.stationName}>
+                    {loc.stationName}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
 
-        {fetching && (
-          <p className="text-sm text-muted-foreground">
-            Loading existing record...
-          </p>
-        )}
-
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="narrative">Narrative</Label>
-          <Textarea
-            id="narrative"
-            value={narrativeText}
-            onChange={(e) => {
-              setNarrativeText(e.target.value)
-              setSaved(false)
-            }}
-            placeholder="Enter the station narrative summary..."
-            rows={8}
-            disabled={fetching}
-          />
-        </div>
-
-        {error && <p className="text-sm text-destructive">{error}</p>}
-
-        <div className="flex items-center gap-4">
-          <Button type="submit" disabled={!canSubmit}>
-            {saving ? 'Saving...' : 'Save'}
-          </Button>
-          {saved && (
-            <span className="text-sm text-green-600 font-medium">
-              Saved successfully.
-            </span>
+        <div className="flex-1 overflow-auto">
+          {loadingEntries && (
+            <p className="p-4 text-sm text-muted-foreground">Loading entries…</p>
           )}
+          {!loadingEntries && selectedLocation && entries.length === 0 && (
+            <p className="p-4 text-sm text-muted-foreground">No entries found.</p>
+          )}
+          {!loadingEntries && !selectedLocation && (
+            <p className="p-4 text-sm text-muted-foreground">Select a station to view entries.</p>
+          )}
+          {entries.map((entry) => (
+            <button
+              key={entry.ReportDate}
+              onClick={() => handleSelectEntry(entry)}
+              className={cn(
+                'w-full text-left px-4 py-3 border-b hover:bg-accent transition-colors',
+                selectedEntry?.ReportDate === entry.ReportDate && 'bg-accent',
+              )}
+            >
+              <div className="text-sm font-medium">{formatDate(entry.ReportDate)}</div>
+              <div className="text-xs text-muted-foreground truncate mt-0.5">
+                {entry.NarrativeText ? entry.NarrativeText.slice(0, 60) + (entry.NarrativeText.length > 60 ? '…' : '') : 'No narrative yet'}
+              </div>
+            </button>
+          ))}
         </div>
-      </form>
+      </div>
+
+      {/* Right panel */}
+      <div className="flex-1 overflow-auto p-6">
+        {!selectedEntry && (
+          <p className="text-sm text-muted-foreground">Select an entry to view and edit.</p>
+        )}
+        {selectedEntry && (
+          <form onSubmit={handleSubmit} className="max-w-2xl flex flex-col gap-5">
+            <div className="flex flex-col gap-0.5">
+              <h2 className="text-lg font-semibold">{selectedLocation?.stationName}</h2>
+              <p className="text-sm text-muted-foreground">Report Date: {formatDate(selectedEntry.ReportDate)}</p>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="narrative">Narrative</Label>
+              <Textarea
+                id="narrative"
+                value={narrativeText}
+                onChange={(e) => {
+                  setNarrativeText(e.target.value)
+                  setSaved(false)
+                }}
+                placeholder="Enter the station narrative summary…"
+                rows={10}
+              />
+            </div>
+
+            {error && <p className="text-sm text-destructive">{error}</p>}
+
+            <div className="flex items-center gap-4">
+              <Button type="submit" disabled={!canSubmit}>
+                {saving ? 'Saving…' : 'Save'}
+              </Button>
+              {saved && (
+                <span className="text-sm text-green-600 font-medium">Saved successfully.</span>
+              )}
+            </div>
+          </form>
+        )}
+      </div>
     </div>
   )
 }
