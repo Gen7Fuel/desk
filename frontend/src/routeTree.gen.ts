@@ -18,6 +18,7 @@ import { Route as AppbarFuelRouteImport } from './routes/_appbar/_fuel'
 import { Route as AppbarAdminRouteImport } from './routes/_appbar/_admin'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
 import { Route as AppbarSidebarSettingsRouteImport } from './routes/_appbar/_sidebar/settings'
+import { Route as AppbarSidebarReportsRouteImport } from './routes/_appbar/_sidebar/reports'
 import { Route as AppbarSidebarInventoryRouteImport } from './routes/_appbar/_sidebar/inventory'
 import { Route as AppbarSidebarHubRouteImport } from './routes/_appbar/_sidebar/hub'
 import { Route as AppbarSidebarCipherRouteImport } from './routes/_appbar/_sidebar/cipher'
@@ -28,13 +29,16 @@ import { Route as AppbarAdminSidebarRouteImport } from './routes/_appbar/_admin/
 import { Route as AppbarSidebarSettingsUsersRouteImport } from './routes/_appbar/_sidebar/settings/users'
 import { Route as AppbarSidebarSettingsRolesRouteImport } from './routes/_appbar/_sidebar/settings/roles'
 import { Route as AppbarSidebarSettingsLogsRouteImport } from './routes/_appbar/_sidebar/settings/logs'
+import { Route as AppbarSidebarReportsNarrativeRouteImport } from './routes/_appbar/_sidebar/reports/narrative'
 import { Route as AppbarSidebarInventoryCoremarkInitialOrderRouteImport } from './routes/_appbar/_sidebar/inventory/coremark-initial-order'
 import { Route as AppbarSidebarHubReceivablesRouteImport } from './routes/_appbar/_sidebar/hub/receivables'
 import { Route as AppbarSidebarHubPayablesRouteImport } from './routes/_appbar/_sidebar/hub/payables'
 import { Route as AppbarSidebarHubCdnRouteImport } from './routes/_appbar/_sidebar/hub/cdn'
 import { Route as AppbarSidebarCipherUnlockRouteImport } from './routes/_appbar/_sidebar/cipher/unlock'
 import { Route as AppbarSidebarCipherLockRouteImport } from './routes/_appbar/_sidebar/cipher/lock'
+import { Route as AppbarSidebarAcademyEmployeesRouteImport } from './routes/_appbar/_sidebar/academy/employees'
 import { Route as AppbarSidebarAcademyCoursesRouteImport } from './routes/_appbar/_sidebar/academy/courses'
+import { Route as AppbarSidebarAcademyCompletionsRouteImport } from './routes/_appbar/_sidebar/academy/completions'
 import { Route as AppbarAdminSidebarSubscriptionsRouteImport } from './routes/_appbar/_admin/_sidebar/subscriptions'
 import { Route as AppbarAdminSidebarSiteAssetsRouteImport } from './routes/_appbar/_admin/_sidebar/site-assets'
 import { Route as AppbarAdminSidebarPersonnelRouteImport } from './routes/_appbar/_admin/_sidebar/personnel'
@@ -98,6 +102,11 @@ const AppbarSidebarSettingsRoute = AppbarSidebarSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppbarSidebarRoute,
 } as any)
+const AppbarSidebarReportsRoute = AppbarSidebarReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AppbarSidebarRoute,
+} as any)
 const AppbarSidebarInventoryRoute = AppbarSidebarInventoryRouteImport.update({
   id: '/inventory',
   path: '/inventory',
@@ -150,6 +159,12 @@ const AppbarSidebarSettingsLogsRoute =
     path: '/logs',
     getParentRoute: () => AppbarSidebarSettingsRoute,
   } as any)
+const AppbarSidebarReportsNarrativeRoute =
+  AppbarSidebarReportsNarrativeRouteImport.update({
+    id: '/narrative',
+    path: '/narrative',
+    getParentRoute: () => AppbarSidebarReportsRoute,
+  } as any)
 const AppbarSidebarInventoryCoremarkInitialOrderRoute =
   AppbarSidebarInventoryCoremarkInitialOrderRouteImport.update({
     id: '/coremark-initial-order',
@@ -184,10 +199,22 @@ const AppbarSidebarCipherLockRoute = AppbarSidebarCipherLockRouteImport.update({
   path: '/lock',
   getParentRoute: () => AppbarSidebarCipherRoute,
 } as any)
+const AppbarSidebarAcademyEmployeesRoute =
+  AppbarSidebarAcademyEmployeesRouteImport.update({
+    id: '/academy/employees',
+    path: '/academy/employees',
+    getParentRoute: () => AppbarSidebarRoute,
+  } as any)
 const AppbarSidebarAcademyCoursesRoute =
   AppbarSidebarAcademyCoursesRouteImport.update({
     id: '/academy/courses',
     path: '/academy/courses',
+    getParentRoute: () => AppbarSidebarRoute,
+  } as any)
+const AppbarSidebarAcademyCompletionsRoute =
+  AppbarSidebarAcademyCompletionsRouteImport.update({
+    id: '/academy/completions',
+    path: '/academy/completions',
     getParentRoute: () => AppbarSidebarRoute,
   } as any)
 const AppbarAdminSidebarSubscriptionsRoute =
@@ -327,6 +354,7 @@ export interface FileRoutesByFullPath {
   '/kardpoll': typeof AppbarFuelKardpollRoute
   '/cipher': typeof AppbarSidebarCipherRouteWithChildren
   '/inventory': typeof AppbarSidebarInventoryRouteWithChildren
+  '/reports': typeof AppbarSidebarReportsRouteWithChildren
   '/settings': typeof AppbarSidebarSettingsRouteWithChildren
   '/access': typeof AppbarAdminSidebarAccessRouteWithChildren
   '/assets': typeof AppbarAdminSidebarAssetsRouteWithChildren
@@ -334,13 +362,16 @@ export interface FileRoutesByFullPath {
   '/personnel': typeof AppbarAdminSidebarPersonnelRouteWithChildren
   '/site-assets': typeof AppbarAdminSidebarSiteAssetsRouteWithChildren
   '/subscriptions': typeof AppbarAdminSidebarSubscriptionsRouteWithChildren
+  '/academy/completions': typeof AppbarSidebarAcademyCompletionsRoute
   '/academy/courses': typeof AppbarSidebarAcademyCoursesRouteWithChildren
+  '/academy/employees': typeof AppbarSidebarAcademyEmployeesRoute
   '/cipher/lock': typeof AppbarSidebarCipherLockRoute
   '/cipher/unlock': typeof AppbarSidebarCipherUnlockRoute
   '/hub/cdn': typeof AppbarSidebarHubCdnRoute
   '/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
   '/inventory/coremark-initial-order': typeof AppbarSidebarInventoryCoremarkInitialOrderRoute
+  '/reports/narrative': typeof AppbarSidebarReportsNarrativeRoute
   '/settings/logs': typeof AppbarSidebarSettingsLogsRoute
   '/settings/roles': typeof AppbarSidebarSettingsRolesRoute
   '/settings/users': typeof AppbarSidebarSettingsUsersRoute
@@ -370,17 +401,21 @@ export interface FileRoutesByTo {
   '/kardpoll': typeof AppbarFuelKardpollRoute
   '/cipher': typeof AppbarSidebarCipherRouteWithChildren
   '/inventory': typeof AppbarSidebarInventoryRouteWithChildren
+  '/reports': typeof AppbarSidebarReportsRouteWithChildren
   '/settings': typeof AppbarSidebarSettingsRouteWithChildren
   '/access': typeof AppbarAdminSidebarAccessRouteWithChildren
   '/assets': typeof AppbarAdminSidebarAssetsRouteWithChildren
   '/credentials': typeof AppbarAdminSidebarCredentialsRouteWithChildren
   '/subscriptions': typeof AppbarAdminSidebarSubscriptionsRouteWithChildren
+  '/academy/completions': typeof AppbarSidebarAcademyCompletionsRoute
+  '/academy/employees': typeof AppbarSidebarAcademyEmployeesRoute
   '/cipher/lock': typeof AppbarSidebarCipherLockRoute
   '/cipher/unlock': typeof AppbarSidebarCipherUnlockRoute
   '/hub/cdn': typeof AppbarSidebarHubCdnRoute
   '/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
   '/inventory/coremark-initial-order': typeof AppbarSidebarInventoryCoremarkInitialOrderRoute
+  '/reports/narrative': typeof AppbarSidebarReportsNarrativeRoute
   '/settings/logs': typeof AppbarSidebarSettingsLogsRoute
   '/settings/roles': typeof AppbarSidebarSettingsRolesRoute
   '/settings/users': typeof AppbarSidebarSettingsUsersRoute
@@ -417,6 +452,7 @@ export interface FileRoutesById {
   '/_appbar/_sidebar/cipher': typeof AppbarSidebarCipherRouteWithChildren
   '/_appbar/_sidebar/hub': typeof AppbarSidebarHubRouteWithChildren
   '/_appbar/_sidebar/inventory': typeof AppbarSidebarInventoryRouteWithChildren
+  '/_appbar/_sidebar/reports': typeof AppbarSidebarReportsRouteWithChildren
   '/_appbar/_sidebar/settings': typeof AppbarSidebarSettingsRouteWithChildren
   '/_appbar/_admin/_sidebar/access': typeof AppbarAdminSidebarAccessRouteWithChildren
   '/_appbar/_admin/_sidebar/assets': typeof AppbarAdminSidebarAssetsRouteWithChildren
@@ -424,13 +460,16 @@ export interface FileRoutesById {
   '/_appbar/_admin/_sidebar/personnel': typeof AppbarAdminSidebarPersonnelRouteWithChildren
   '/_appbar/_admin/_sidebar/site-assets': typeof AppbarAdminSidebarSiteAssetsRouteWithChildren
   '/_appbar/_admin/_sidebar/subscriptions': typeof AppbarAdminSidebarSubscriptionsRouteWithChildren
+  '/_appbar/_sidebar/academy/completions': typeof AppbarSidebarAcademyCompletionsRoute
   '/_appbar/_sidebar/academy/courses': typeof AppbarSidebarAcademyCoursesRouteWithChildren
+  '/_appbar/_sidebar/academy/employees': typeof AppbarSidebarAcademyEmployeesRoute
   '/_appbar/_sidebar/cipher/lock': typeof AppbarSidebarCipherLockRoute
   '/_appbar/_sidebar/cipher/unlock': typeof AppbarSidebarCipherUnlockRoute
   '/_appbar/_sidebar/hub/cdn': typeof AppbarSidebarHubCdnRoute
   '/_appbar/_sidebar/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/_appbar/_sidebar/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
   '/_appbar/_sidebar/inventory/coremark-initial-order': typeof AppbarSidebarInventoryCoremarkInitialOrderRoute
+  '/_appbar/_sidebar/reports/narrative': typeof AppbarSidebarReportsNarrativeRoute
   '/_appbar/_sidebar/settings/logs': typeof AppbarSidebarSettingsLogsRoute
   '/_appbar/_sidebar/settings/roles': typeof AppbarSidebarSettingsRolesRoute
   '/_appbar/_sidebar/settings/users': typeof AppbarSidebarSettingsUsersRoute
@@ -462,6 +501,7 @@ export interface FileRouteTypes {
     | '/kardpoll'
     | '/cipher'
     | '/inventory'
+    | '/reports'
     | '/settings'
     | '/access'
     | '/assets'
@@ -469,13 +509,16 @@ export interface FileRouteTypes {
     | '/personnel'
     | '/site-assets'
     | '/subscriptions'
+    | '/academy/completions'
     | '/academy/courses'
+    | '/academy/employees'
     | '/cipher/lock'
     | '/cipher/unlock'
     | '/hub/cdn'
     | '/hub/payables'
     | '/hub/receivables'
     | '/inventory/coremark-initial-order'
+    | '/reports/narrative'
     | '/settings/logs'
     | '/settings/roles'
     | '/settings/users'
@@ -505,17 +548,21 @@ export interface FileRouteTypes {
     | '/kardpoll'
     | '/cipher'
     | '/inventory'
+    | '/reports'
     | '/settings'
     | '/access'
     | '/assets'
     | '/credentials'
     | '/subscriptions'
+    | '/academy/completions'
+    | '/academy/employees'
     | '/cipher/lock'
     | '/cipher/unlock'
     | '/hub/cdn'
     | '/hub/payables'
     | '/hub/receivables'
     | '/inventory/coremark-initial-order'
+    | '/reports/narrative'
     | '/settings/logs'
     | '/settings/roles'
     | '/settings/users'
@@ -551,6 +598,7 @@ export interface FileRouteTypes {
     | '/_appbar/_sidebar/cipher'
     | '/_appbar/_sidebar/hub'
     | '/_appbar/_sidebar/inventory'
+    | '/_appbar/_sidebar/reports'
     | '/_appbar/_sidebar/settings'
     | '/_appbar/_admin/_sidebar/access'
     | '/_appbar/_admin/_sidebar/assets'
@@ -558,13 +606,16 @@ export interface FileRouteTypes {
     | '/_appbar/_admin/_sidebar/personnel'
     | '/_appbar/_admin/_sidebar/site-assets'
     | '/_appbar/_admin/_sidebar/subscriptions'
+    | '/_appbar/_sidebar/academy/completions'
     | '/_appbar/_sidebar/academy/courses'
+    | '/_appbar/_sidebar/academy/employees'
     | '/_appbar/_sidebar/cipher/lock'
     | '/_appbar/_sidebar/cipher/unlock'
     | '/_appbar/_sidebar/hub/cdn'
     | '/_appbar/_sidebar/hub/payables'
     | '/_appbar/_sidebar/hub/receivables'
     | '/_appbar/_sidebar/inventory/coremark-initial-order'
+    | '/_appbar/_sidebar/reports/narrative'
     | '/_appbar/_sidebar/settings/logs'
     | '/_appbar/_sidebar/settings/roles'
     | '/_appbar/_sidebar/settings/users'
@@ -655,6 +706,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppbarSidebarSettingsRouteImport
       parentRoute: typeof AppbarSidebarRoute
     }
+    '/_appbar/_sidebar/reports': {
+      id: '/_appbar/_sidebar/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AppbarSidebarReportsRouteImport
+      parentRoute: typeof AppbarSidebarRoute
+    }
     '/_appbar/_sidebar/inventory': {
       id: '/_appbar/_sidebar/inventory'
       path: '/inventory'
@@ -725,6 +783,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppbarSidebarSettingsLogsRouteImport
       parentRoute: typeof AppbarSidebarSettingsRoute
     }
+    '/_appbar/_sidebar/reports/narrative': {
+      id: '/_appbar/_sidebar/reports/narrative'
+      path: '/narrative'
+      fullPath: '/reports/narrative'
+      preLoaderRoute: typeof AppbarSidebarReportsNarrativeRouteImport
+      parentRoute: typeof AppbarSidebarReportsRoute
+    }
     '/_appbar/_sidebar/inventory/coremark-initial-order': {
       id: '/_appbar/_sidebar/inventory/coremark-initial-order'
       path: '/coremark-initial-order'
@@ -767,11 +832,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppbarSidebarCipherLockRouteImport
       parentRoute: typeof AppbarSidebarCipherRoute
     }
+    '/_appbar/_sidebar/academy/employees': {
+      id: '/_appbar/_sidebar/academy/employees'
+      path: '/academy/employees'
+      fullPath: '/academy/employees'
+      preLoaderRoute: typeof AppbarSidebarAcademyEmployeesRouteImport
+      parentRoute: typeof AppbarSidebarRoute
+    }
     '/_appbar/_sidebar/academy/courses': {
       id: '/_appbar/_sidebar/academy/courses'
       path: '/academy/courses'
       fullPath: '/academy/courses'
       preLoaderRoute: typeof AppbarSidebarAcademyCoursesRouteImport
+      parentRoute: typeof AppbarSidebarRoute
+    }
+    '/_appbar/_sidebar/academy/completions': {
+      id: '/_appbar/_sidebar/academy/completions'
+      path: '/academy/completions'
+      fullPath: '/academy/completions'
+      preLoaderRoute: typeof AppbarSidebarAcademyCompletionsRouteImport
       parentRoute: typeof AppbarSidebarRoute
     }
     '/_appbar/_admin/_sidebar/subscriptions': {
@@ -1129,6 +1208,17 @@ const AppbarSidebarInventoryRouteWithChildren =
     AppbarSidebarInventoryRouteChildren,
   )
 
+interface AppbarSidebarReportsRouteChildren {
+  AppbarSidebarReportsNarrativeRoute: typeof AppbarSidebarReportsNarrativeRoute
+}
+
+const AppbarSidebarReportsRouteChildren: AppbarSidebarReportsRouteChildren = {
+  AppbarSidebarReportsNarrativeRoute: AppbarSidebarReportsNarrativeRoute,
+}
+
+const AppbarSidebarReportsRouteWithChildren =
+  AppbarSidebarReportsRoute._addFileChildren(AppbarSidebarReportsRouteChildren)
+
 interface AppbarSidebarSettingsRouteChildren {
   AppbarSidebarSettingsLogsRoute: typeof AppbarSidebarSettingsLogsRoute
   AppbarSidebarSettingsRolesRoute: typeof AppbarSidebarSettingsRolesRoute
@@ -1168,17 +1258,23 @@ interface AppbarSidebarRouteChildren {
   AppbarSidebarCipherRoute: typeof AppbarSidebarCipherRouteWithChildren
   AppbarSidebarHubRoute: typeof AppbarSidebarHubRouteWithChildren
   AppbarSidebarInventoryRoute: typeof AppbarSidebarInventoryRouteWithChildren
+  AppbarSidebarReportsRoute: typeof AppbarSidebarReportsRouteWithChildren
   AppbarSidebarSettingsRoute: typeof AppbarSidebarSettingsRouteWithChildren
+  AppbarSidebarAcademyCompletionsRoute: typeof AppbarSidebarAcademyCompletionsRoute
   AppbarSidebarAcademyCoursesRoute: typeof AppbarSidebarAcademyCoursesRouteWithChildren
+  AppbarSidebarAcademyEmployeesRoute: typeof AppbarSidebarAcademyEmployeesRoute
 }
 
 const AppbarSidebarRouteChildren: AppbarSidebarRouteChildren = {
   AppbarSidebarCipherRoute: AppbarSidebarCipherRouteWithChildren,
   AppbarSidebarHubRoute: AppbarSidebarHubRouteWithChildren,
   AppbarSidebarInventoryRoute: AppbarSidebarInventoryRouteWithChildren,
+  AppbarSidebarReportsRoute: AppbarSidebarReportsRouteWithChildren,
   AppbarSidebarSettingsRoute: AppbarSidebarSettingsRouteWithChildren,
+  AppbarSidebarAcademyCompletionsRoute: AppbarSidebarAcademyCompletionsRoute,
   AppbarSidebarAcademyCoursesRoute:
     AppbarSidebarAcademyCoursesRouteWithChildren,
+  AppbarSidebarAcademyEmployeesRoute: AppbarSidebarAcademyEmployeesRoute,
 }
 
 const AppbarSidebarRouteWithChildren = AppbarSidebarRoute._addFileChildren(
