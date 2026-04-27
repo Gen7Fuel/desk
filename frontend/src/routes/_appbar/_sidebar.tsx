@@ -52,6 +52,13 @@ const sidebarLinks: Record<
       permission: 'academy.completions',
     },
   ],
+  reports: [
+    {
+      label: 'Narrative Summary',
+      path: '/reports/narrative',
+      permission: 'reports.narrative',
+    },
+  ],
 }
 
 export const Route = createFileRoute('/_appbar/_sidebar')({

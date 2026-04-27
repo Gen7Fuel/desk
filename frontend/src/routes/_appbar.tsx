@@ -12,6 +12,7 @@ import {
   Binary,
   BriefcaseBusiness,
   ClipboardList,
+  FileText,
   Fuel,
   GraduationCap,
   Headset,
@@ -91,6 +92,7 @@ function RouteComponent() {
   const isHubActive = location.pathname.startsWith('/hub')
   const isIssuesActive = location.pathname.startsWith('/issues')
   const isAcademyActive = location.pathname.startsWith('/academy')
+  const isReportsActive = location.pathname.startsWith('/reports')
 
   const adminTo =
     [
@@ -267,6 +269,22 @@ function RouteComponent() {
                 </Link>
               </TooltipTrigger>
               <TooltipContent side="right">Academy</TooltipContent>
+            </Tooltip>
+          )}
+          {can('reports', 'read') && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/reports/narrative"
+                  className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                    isReportsActive && 'bg-accent/80 text-accent-foreground',
+                  )}
+                >
+                  <FileText className="h-5 w-5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Reports</TooltipContent>
             </Tooltip>
           )}
           <div className="mt-auto flex flex-col items-center gap-2">

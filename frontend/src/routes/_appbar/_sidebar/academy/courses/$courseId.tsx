@@ -598,25 +598,48 @@ function RouteComponent() {
             </div>
             <div className="space-y-1.5">
               <Label>Thumbnail</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="https://..."
-                  value={thumbnail}
-                  onChange={(e) => setThumbnail(e.target.value)}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  disabled={thumbnailUploading}
-                  onClick={() => thumbnailFileRef.current?.click()}
-                  title="Upload image"
-                >
-                  {thumbnailUploading
-                    ? <Loader2 className="h-4 w-4 animate-spin" />
-                    : <ImagePlus className="h-4 w-4" />}
-                </Button>
-              </div>
+              {thumbnail ? (
+                <div className="relative">
+                  <img
+                    src={thumbnail}
+                    alt="Thumbnail preview"
+                    className="h-36 w-full rounded-md object-cover"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="absolute bottom-2 right-2"
+                    onClick={() => setThumbnail('')}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    disabled={thumbnailUploading}
+                    onClick={() => thumbnailFileRef.current?.click()}
+                    className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed py-8 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                  >
+                    {thumbnailUploading
+                      ? <Loader2 className="h-6 w-6 animate-spin" />
+                      : <ImagePlus className="h-6 w-6" />}
+                    {thumbnailUploading ? 'Uploading…' : 'Upload thumbnail image'}
+                  </button>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="h-px flex-1 bg-border" />
+                    or paste a URL
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+                  <Input
+                    placeholder="https://..."
+                    value={thumbnail}
+                    onChange={(e) => setThumbnail(e.target.value)}
+                  />
+                </div>
+              )}
               <input
                 ref={thumbnailFileRef}
                 type="file"
@@ -628,13 +651,6 @@ function RouteComponent() {
                   e.target.value = ''
                 }}
               />
-              {thumbnail && (
-                <img
-                  src={thumbnail}
-                  alt="Thumbnail preview"
-                  className="mt-2 h-24 rounded-md object-cover"
-                />
-              )}
             </div>
           </div>
 
