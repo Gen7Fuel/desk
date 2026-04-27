@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { authenticate, requirePermission } = require('../../middleware/auth')
-const { saveStationNarrative, getStationNarrative } = require('./narrative.sql')
+const { saveStationNarrative, getStationNarrative, getStationNarratives } = require('./narrative.sql')
 
 const PERM = 'reports.narrative'
 
@@ -15,6 +15,17 @@ router.post('/narrative', authenticate, requirePermission(PERM, 'create'), async
     res.json({ message: 'Narrative saved successfully.' })
   } catch (err) {
     console.error('Error saving narrative:', err)
+    res.status(500).json({ error: 'Internal server error.' })
+  }
+})
+
+router.get('/narrative/:csoCode', authenticate, requirePermission(PERM, 'read'), async (req, res) => {
+  try {
+    const { csoCode } = req.params
+    const records = await getStationNarratives(csoCode)
+    res.json(records)
+  } catch (err) {
+    console.error('Error fetching narratives:', err)
     res.status(500).json({ error: 'Internal server error.' })
   }
 })
