@@ -38,7 +38,6 @@ function RouteComponent() {
   )
   const [date, setDate] = useState('')
   const [narrativeText, setNarrativeText] = useState('')
-  const [suggestion, setSuggestion] = useState('')
   const [fetching, setFetching] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -59,17 +58,10 @@ function RouteComponent() {
     apiFetch(`/api/narrative/${selectedLocation.csoCode}/${date}`)
       .then((res) => res.json())
       .then((data) => {
-        if (data) {
-          setNarrativeText(data.NarrativeText || '')
-          setSuggestion(data.Suggestion || '')
-        } else {
-          setNarrativeText('')
-          setSuggestion('')
-        }
+        setNarrativeText(data?.NarrativeText || '')
       })
       .catch(() => {
         setNarrativeText('')
-        setSuggestion('')
       })
       .finally(() => setFetching(false))
   }, [selectedLocation, date])
@@ -78,6 +70,7 @@ function RouteComponent() {
     const loc = locations.find((l) => l.stationName === stationName) ?? null
     setSelectedLocation(loc)
     setSaved(false)
+    setNarrativeText('')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -96,7 +89,6 @@ function RouteComponent() {
           legalName: selectedLocation.legalName,
           reportDate: date,
           narrativeText,
-          suggestion,
         }),
       })
       if (!res.ok) {
@@ -177,21 +169,6 @@ function RouteComponent() {
             }}
             placeholder="Enter the station narrative summary..."
             rows={8}
-            disabled={fetching}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="suggestion">Suggestion</Label>
-          <Textarea
-            id="suggestion"
-            value={suggestion}
-            onChange={(e) => {
-              setSuggestion(e.target.value)
-              setSaved(false)
-            }}
-            placeholder="Enter any suggestions..."
-            rows={4}
             disabled={fetching}
           />
         </div>
