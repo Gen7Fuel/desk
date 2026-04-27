@@ -100,7 +100,7 @@ router.post('/upload', authenticate, requirePermission('academy.courses', 'updat
   if (!req.file) return res.status(400).json({ message: 'No file provided.' })
 
   const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING
-  const containerName = process.env.AZURE_VLS_CONTAINER
+  const containerName = process.env.AZURE_VLS_CONTAINER || process.env.AZURE_CONTAINER
 
   if (!connectionString || !containerName) {
     return res.status(500).json({ message: 'Azure VLS storage not configured.' })
