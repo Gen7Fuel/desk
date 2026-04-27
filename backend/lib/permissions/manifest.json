@@ -87,6 +87,12 @@
         "employees":   { "actions": ["create", "read", "delete"] },
         "completions": { "actions": ["read"] }
       }
+    },
+    "reports": {
+      "actions": ["read"],
+      "submodules": {
+        "narrative": { "actions": ["create", "read"] }
+      }
     }
   }
 }

@@ -23,6 +23,7 @@ const siteAssetsRoutes = require('./apps/site-assets/site-assets.routes')
 const academyRoutes = require('./apps/academy/course.routes')
 const employeeRoutes = require('./apps/academy/employee.routes')
 const completionRoutes = require('./apps/academy/completion.routes')
+const narrativeRoutes = require('./apps/narrative/narrative.routes')
 
 const app = express()
 const port = 5000
@@ -60,6 +61,7 @@ apiRouter.use(siteAssetsRoutes)
 apiRouter.use('/academy', academyRoutes)
 apiRouter.use('/academy', employeeRoutes)
 apiRouter.use('/academy', completionRoutes)
+apiRouter.use(narrativeRoutes)
 
 app.use('/api', apiRouter)
 
