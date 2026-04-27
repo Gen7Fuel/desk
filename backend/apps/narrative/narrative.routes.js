@@ -15,7 +15,7 @@ router.post('/narrative', authenticate, requirePermission(PERM, 'create'), async
     res.json({ message: 'Narrative saved successfully.' })
   } catch (err) {
     console.error('Error saving narrative:', err)
-    res.status(500).json({ error: 'Internal server error.' })
+    res.status(500).json({ error: err.message || 'Internal server error.', code: err.code, name: err.name })
   }
 })
 
@@ -26,7 +26,7 @@ router.get('/narrative/:csoCode', authenticate, requirePermission(PERM, 'read'),
     res.json(records)
   } catch (err) {
     console.error('Error fetching narratives:', err)
-    res.status(500).json({ error: 'Internal server error.' })
+    res.status(500).json({ error: err.message || 'Internal server error.', code: err.code, name: err.name })
   }
 })
 
@@ -37,7 +37,7 @@ router.get('/narrative/:csoCode/:date', authenticate, requirePermission(PERM, 'r
     res.json(record)
   } catch (err) {
     console.error('Error fetching narrative:', err)
-    res.status(500).json({ error: 'Internal server error.' })
+    res.status(500).json({ error: err.message || 'Internal server error.', code: err.code, name: err.name })
   }
 })
 
