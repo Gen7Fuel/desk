@@ -72,9 +72,15 @@ function RouteComponent() {
     setNarrativeText('')
     setSaved(false)
     apiFetch(`/api/narrative/${selectedLocation.csoCode}`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to load entries.')
-        return res.json()
+      .then(async (res) => {
+        const body = await res.json().catch(() => null)
+        if (!res.ok) {
+          throw new Error(
+            (body && (body.error || body.message)) ||
+              `Request failed with status ${res.status}`,
+          )
+        }
+        return body
       })
       .then((data: unknown) => setEntries(Array.isArray(data) ? data : []))
       .catch((err) => {
