@@ -1,5 +1,5 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   DndContext,
@@ -24,6 +24,8 @@ import {
   EyeOff,
   Globe,
   GripVertical,
+  ImagePlus,
+  Loader2,
   Pencil,
   Plus,
   Save,
@@ -43,6 +45,7 @@ import {
   publishCourse,
   unpublishCourse,
   updateCourse,
+  uploadAcademyAsset,
 } from '@/lib/academy-api'
 import { ItemEditorSheet } from '@/components/academy/ItemEditorSheet'
 import { Badge } from '@/components/ui/badge'
@@ -334,6 +337,21 @@ function RouteComponent() {
   const [sections, setSections] = useState<Array<DraftSection>>([])
   const [loaded, setLoaded] = useState(isNew)
 
+  const [thumbnailUploading, setThumbnailUploading] = useState(false)
+  const thumbnailFileRef = useRef<HTMLInputElement>(null)
+
+  const handleThumbnailUpload = async (file: File) => {
+    setThumbnailUploading(true)
+    try {
+      const { url } = await uploadAcademyAsset(file)
+      setThumbnail(url)
+    } catch {
+      toast.error('Upload failed')
+    } finally {
+      setThumbnailUploading(false)
+    }
+  }
+
   // Item editor sheet state
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<DraftItem | null>(null)
@@ -579,11 +597,36 @@ function RouteComponent() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Thumbnail URL</Label>
-              <Input
-                placeholder="https://..."
-                value={thumbnail}
-                onChange={(e) => setThumbnail(e.target.value)}
+              <Label>Thumbnail</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="https://..."
+                  value={thumbnail}
+                  onChange={(e) => setThumbnail(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  disabled={thumbnailUploading}
+                  onClick={() => thumbnailFileRef.current?.click()}
+                  title="Upload image"
+                >
+                  {thumbnailUploading
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <ImagePlus className="h-4 w-4" />}
+                </Button>
+              </div>
+              <input
+                ref={thumbnailFileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleThumbnailUpload(file)
+                  e.target.value = ''
+                }}
               />
               {thumbnail && (
                 <img
