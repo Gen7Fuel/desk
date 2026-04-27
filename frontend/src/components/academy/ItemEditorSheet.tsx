@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { VideoEditor, defaultVideoContent } from './VideoEditor'
 import { MCQEditor, defaultMCQContent } from './MCQEditor'
 import { FlipCardEditor, defaultFlipCardContent } from './FlipCardEditor'
@@ -66,8 +66,13 @@ export function ItemEditorSheet({ open, item, onSave, onClose }: Props) {
   const isNew = !item
   const [type, setType] = useState<AcademyItem['type']>(item?.type ?? 'video')
   const [content, setContent] = useState<Record<string, unknown>>(
-    item?.content ?? defaultContent(type),
+    item?.content ?? defaultContent(item?.type ?? 'video'),
   )
+
+  useEffect(() => {
+    setType(item?.type ?? 'video')
+    setContent(item?.content ?? defaultContent(item?.type ?? 'video'))
+  }, [item])
 
   const handleTypeChange = (t: AcademyItem['type']) => {
     setType(t)
