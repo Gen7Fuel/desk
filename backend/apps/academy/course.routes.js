@@ -1,6 +1,5 @@
 const express = require('express')
 const multer = require('multer')
-const { BlobServiceClient } = require('@azure/storage-blob')
 const { authenticate, requirePermission } = require('../../middleware/auth')
 
 const router = express.Router()
@@ -99,25 +98,18 @@ router.delete('/courses/:id', authenticate, requirePermission('academy.courses',
 router.post('/upload', authenticate, requirePermission('academy.courses', 'update'), upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No file provided.' })
 
-  const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING
-  const containerName = process.env.AZURE_VLS_CONTAINER || process.env.AZURE_CONTAINER
-
-  if (!connectionString || !containerName) {
-    return res.status(500).json({ message: 'Azure VLS storage not configured.' })
-  }
+  const cdnBase = process.env.CDN_BASE
+  if (!cdnBase) return res.status(500).json({ message: 'CDN not configured.' })
 
   try {
-    const safeName = req.file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_')
-    const blobName = `academy/${Date.now()}-${safeName}`
-    const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString)
-    const containerClient = blobServiceClient.getContainerClient(containerName)
-    const blockBlobClient = containerClient.getBlockBlobClient(blobName)
+    const form = new FormData()
+    form.append('file', new Blob([req.file.buffer], { type: req.file.mimetype }), req.file.originalname)
 
-    await blockBlobClient.upload(req.file.buffer, req.file.size, {
-      blobHTTPHeaders: { blobContentType: req.file.mimetype },
-    })
+    const response = await fetch(`${cdnBase}/cdn/upload`, { method: 'POST', body: form })
+    if (!response.ok) throw new Error(`CDN responded with ${response.status}`)
 
-    res.json({ url: blockBlobClient.url })
+    const { filename } = await response.json()
+    res.json({ url: `${cdnBase}/cdn/download/${filename}` })
   } catch (err) {
     console.error('[academy/upload] error:', err)
     res.status(500).json({ message: 'Upload failed', error: err.message })
