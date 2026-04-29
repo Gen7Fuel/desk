@@ -64,7 +64,7 @@ async function getStationNarratives(csoCode) {
   const req = p.request()
   req.input('Station_SK', sql.VarChar, String(csoCode))
   const result = await req.query(`
-    SELECT Station_SK, Station, ReportDate, NarrativeText, CreatedAt, UpdatedAt
+    SELECT Station_SK, Station, ReportDate, NarrativeText, Suggestion, CreatedAt, UpdatedAt
     FROM [FIN].[StationNarrativeSummary]
     WHERE Station_SK = @Station_SK
     ORDER BY ReportDate DESC

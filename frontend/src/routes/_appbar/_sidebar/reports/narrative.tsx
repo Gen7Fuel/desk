@@ -37,6 +37,7 @@ interface NarrativeEntry {
   Station: string
   ReportDate: string
   NarrativeText: string | null
+  Suggestion: string | null
   CreatedAt: string
   UpdatedAt: string
 }
@@ -203,6 +204,13 @@ function RouteComponent() {
               <h2 className="text-lg font-semibold">{selectedLocation?.stationName}</h2>
               <p className="text-sm text-muted-foreground">Report Date: {formatDate(selectedEntry.ReportDate)}</p>
             </div>
+
+            {can('reports.narrative', 'create') && selectedEntry.Suggestion && (
+              <div className="flex flex-col gap-1 rounded-md border bg-muted/40 p-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Suggestion</p>
+                <p className="text-sm whitespace-pre-wrap">{selectedEntry.Suggestion}</p>
+              </div>
+            )}
 
             <div className="flex flex-col gap-1">
               <Label htmlFor="narrative">Narrative</Label>
