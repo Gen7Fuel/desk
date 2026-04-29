@@ -42,8 +42,7 @@ interface NarrativeEntry {
 }
 
 function formatDate(dateStr: string) {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('en-CA') // YYYY-MM-DD
+  return String(dateStr).slice(0, 10)
 }
 
 function RouteComponent() {
