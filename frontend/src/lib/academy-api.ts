@@ -140,6 +140,22 @@ export async function getCompletions(
   return res.json()
 }
 
+export interface AcademyMediaFile {
+  name: string
+  fullPath: string
+  size: number
+  lastModified: string | null
+  contentType: string
+  url: string
+}
+
+export async function getAcademyMedia(): Promise<Array<AcademyMediaFile>> {
+  const res = await apiFetch('/api/academy/media')
+  if (!res.ok) throw new Error('Failed to fetch media')
+  const data = await res.json()
+  return data.files
+}
+
 export async function uploadAcademyAsset(file: File): Promise<{ url: string }> {
   const form = new FormData()
   form.append('file', file)

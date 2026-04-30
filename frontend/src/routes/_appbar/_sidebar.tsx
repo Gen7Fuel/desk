@@ -34,6 +34,11 @@ const sidebarLinks: Record<
       path: '/hub/receivables',
       permission: 'hub.receivables',
     },
+    {
+      label: 'Cash Management',
+      path: '/hub/cash-management',
+      permission: 'hub.cashManagement',
+    },
   ],
   academy: [
     {
@@ -50,6 +55,11 @@ const sidebarLinks: Record<
       label: 'Completions',
       path: '/academy/completions',
       permission: 'academy.completions',
+    },
+    {
+      label: 'Media',
+      path: '/academy/media',
+      permission: 'academy.courses',
     },
   ],
   reports: [
