@@ -61,9 +61,10 @@
     "hub": {
       "actions": ["read"],
       "submodules": {
-        "cdn":         { "actions": ["read", "delete"] },
-        "payables":    { "actions": ["read", "update", "delete"] },
-        "receivables": { "actions": ["read", "update", "delete"] }
+        "cdn":             { "actions": ["read", "delete"] },
+        "payables":        { "actions": ["read", "update", "delete"] },
+        "receivables":     { "actions": ["read", "update", "delete"] },
+        "cashManagement":  { "actions": ["read"] }
       }
     },
     "issues": {

@@ -34,8 +34,10 @@ import { Route as AppbarSidebarInventoryCoremarkInitialOrderRouteImport } from '
 import { Route as AppbarSidebarHubReceivablesRouteImport } from './routes/_appbar/_sidebar/hub/receivables'
 import { Route as AppbarSidebarHubPayablesRouteImport } from './routes/_appbar/_sidebar/hub/payables'
 import { Route as AppbarSidebarHubCdnRouteImport } from './routes/_appbar/_sidebar/hub/cdn'
+import { Route as AppbarSidebarHubCashManagementRouteImport } from './routes/_appbar/_sidebar/hub/cash-management'
 import { Route as AppbarSidebarCipherUnlockRouteImport } from './routes/_appbar/_sidebar/cipher/unlock'
 import { Route as AppbarSidebarCipherLockRouteImport } from './routes/_appbar/_sidebar/cipher/lock'
+import { Route as AppbarSidebarAcademyMediaRouteImport } from './routes/_appbar/_sidebar/academy/media'
 import { Route as AppbarSidebarAcademyEmployeesRouteImport } from './routes/_appbar/_sidebar/academy/employees'
 import { Route as AppbarSidebarAcademyCoursesRouteImport } from './routes/_appbar/_sidebar/academy/courses'
 import { Route as AppbarSidebarAcademyCompletionsRouteImport } from './routes/_appbar/_sidebar/academy/completions'
@@ -188,6 +190,12 @@ const AppbarSidebarHubCdnRoute = AppbarSidebarHubCdnRouteImport.update({
   path: '/cdn',
   getParentRoute: () => AppbarSidebarHubRoute,
 } as any)
+const AppbarSidebarHubCashManagementRoute =
+  AppbarSidebarHubCashManagementRouteImport.update({
+    id: '/cash-management',
+    path: '/cash-management',
+    getParentRoute: () => AppbarSidebarHubRoute,
+  } as any)
 const AppbarSidebarCipherUnlockRoute =
   AppbarSidebarCipherUnlockRouteImport.update({
     id: '/unlock',
@@ -199,6 +207,12 @@ const AppbarSidebarCipherLockRoute = AppbarSidebarCipherLockRouteImport.update({
   path: '/lock',
   getParentRoute: () => AppbarSidebarCipherRoute,
 } as any)
+const AppbarSidebarAcademyMediaRoute =
+  AppbarSidebarAcademyMediaRouteImport.update({
+    id: '/academy/media',
+    path: '/academy/media',
+    getParentRoute: () => AppbarSidebarRoute,
+  } as any)
 const AppbarSidebarAcademyEmployeesRoute =
   AppbarSidebarAcademyEmployeesRouteImport.update({
     id: '/academy/employees',
@@ -365,8 +379,10 @@ export interface FileRoutesByFullPath {
   '/academy/completions': typeof AppbarSidebarAcademyCompletionsRoute
   '/academy/courses': typeof AppbarSidebarAcademyCoursesRouteWithChildren
   '/academy/employees': typeof AppbarSidebarAcademyEmployeesRoute
+  '/academy/media': typeof AppbarSidebarAcademyMediaRoute
   '/cipher/lock': typeof AppbarSidebarCipherLockRoute
   '/cipher/unlock': typeof AppbarSidebarCipherUnlockRoute
+  '/hub/cash-management': typeof AppbarSidebarHubCashManagementRoute
   '/hub/cdn': typeof AppbarSidebarHubCdnRoute
   '/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
@@ -409,8 +425,10 @@ export interface FileRoutesByTo {
   '/subscriptions': typeof AppbarAdminSidebarSubscriptionsRouteWithChildren
   '/academy/completions': typeof AppbarSidebarAcademyCompletionsRoute
   '/academy/employees': typeof AppbarSidebarAcademyEmployeesRoute
+  '/academy/media': typeof AppbarSidebarAcademyMediaRoute
   '/cipher/lock': typeof AppbarSidebarCipherLockRoute
   '/cipher/unlock': typeof AppbarSidebarCipherUnlockRoute
+  '/hub/cash-management': typeof AppbarSidebarHubCashManagementRoute
   '/hub/cdn': typeof AppbarSidebarHubCdnRoute
   '/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
@@ -463,8 +481,10 @@ export interface FileRoutesById {
   '/_appbar/_sidebar/academy/completions': typeof AppbarSidebarAcademyCompletionsRoute
   '/_appbar/_sidebar/academy/courses': typeof AppbarSidebarAcademyCoursesRouteWithChildren
   '/_appbar/_sidebar/academy/employees': typeof AppbarSidebarAcademyEmployeesRoute
+  '/_appbar/_sidebar/academy/media': typeof AppbarSidebarAcademyMediaRoute
   '/_appbar/_sidebar/cipher/lock': typeof AppbarSidebarCipherLockRoute
   '/_appbar/_sidebar/cipher/unlock': typeof AppbarSidebarCipherUnlockRoute
+  '/_appbar/_sidebar/hub/cash-management': typeof AppbarSidebarHubCashManagementRoute
   '/_appbar/_sidebar/hub/cdn': typeof AppbarSidebarHubCdnRoute
   '/_appbar/_sidebar/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/_appbar/_sidebar/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
@@ -512,8 +532,10 @@ export interface FileRouteTypes {
     | '/academy/completions'
     | '/academy/courses'
     | '/academy/employees'
+    | '/academy/media'
     | '/cipher/lock'
     | '/cipher/unlock'
+    | '/hub/cash-management'
     | '/hub/cdn'
     | '/hub/payables'
     | '/hub/receivables'
@@ -556,8 +578,10 @@ export interface FileRouteTypes {
     | '/subscriptions'
     | '/academy/completions'
     | '/academy/employees'
+    | '/academy/media'
     | '/cipher/lock'
     | '/cipher/unlock'
+    | '/hub/cash-management'
     | '/hub/cdn'
     | '/hub/payables'
     | '/hub/receivables'
@@ -609,8 +633,10 @@ export interface FileRouteTypes {
     | '/_appbar/_sidebar/academy/completions'
     | '/_appbar/_sidebar/academy/courses'
     | '/_appbar/_sidebar/academy/employees'
+    | '/_appbar/_sidebar/academy/media'
     | '/_appbar/_sidebar/cipher/lock'
     | '/_appbar/_sidebar/cipher/unlock'
+    | '/_appbar/_sidebar/hub/cash-management'
     | '/_appbar/_sidebar/hub/cdn'
     | '/_appbar/_sidebar/hub/payables'
     | '/_appbar/_sidebar/hub/receivables'
@@ -818,6 +844,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppbarSidebarHubCdnRouteImport
       parentRoute: typeof AppbarSidebarHubRoute
     }
+    '/_appbar/_sidebar/hub/cash-management': {
+      id: '/_appbar/_sidebar/hub/cash-management'
+      path: '/cash-management'
+      fullPath: '/hub/cash-management'
+      preLoaderRoute: typeof AppbarSidebarHubCashManagementRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
     '/_appbar/_sidebar/cipher/unlock': {
       id: '/_appbar/_sidebar/cipher/unlock'
       path: '/unlock'
@@ -831,6 +864,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/cipher/lock'
       preLoaderRoute: typeof AppbarSidebarCipherLockRouteImport
       parentRoute: typeof AppbarSidebarCipherRoute
+    }
+    '/_appbar/_sidebar/academy/media': {
+      id: '/_appbar/_sidebar/academy/media'
+      path: '/academy/media'
+      fullPath: '/academy/media'
+      preLoaderRoute: typeof AppbarSidebarAcademyMediaRouteImport
+      parentRoute: typeof AppbarSidebarRoute
     }
     '/_appbar/_sidebar/academy/employees': {
       id: '/_appbar/_sidebar/academy/employees'
@@ -1179,12 +1219,14 @@ const AppbarSidebarCipherRouteWithChildren =
   AppbarSidebarCipherRoute._addFileChildren(AppbarSidebarCipherRouteChildren)
 
 interface AppbarSidebarHubRouteChildren {
+  AppbarSidebarHubCashManagementRoute: typeof AppbarSidebarHubCashManagementRoute
   AppbarSidebarHubCdnRoute: typeof AppbarSidebarHubCdnRoute
   AppbarSidebarHubPayablesRoute: typeof AppbarSidebarHubPayablesRoute
   AppbarSidebarHubReceivablesRoute: typeof AppbarSidebarHubReceivablesRoute
 }
 
 const AppbarSidebarHubRouteChildren: AppbarSidebarHubRouteChildren = {
+  AppbarSidebarHubCashManagementRoute: AppbarSidebarHubCashManagementRoute,
   AppbarSidebarHubCdnRoute: AppbarSidebarHubCdnRoute,
   AppbarSidebarHubPayablesRoute: AppbarSidebarHubPayablesRoute,
   AppbarSidebarHubReceivablesRoute: AppbarSidebarHubReceivablesRoute,
@@ -1263,6 +1305,7 @@ interface AppbarSidebarRouteChildren {
   AppbarSidebarAcademyCompletionsRoute: typeof AppbarSidebarAcademyCompletionsRoute
   AppbarSidebarAcademyCoursesRoute: typeof AppbarSidebarAcademyCoursesRouteWithChildren
   AppbarSidebarAcademyEmployeesRoute: typeof AppbarSidebarAcademyEmployeesRoute
+  AppbarSidebarAcademyMediaRoute: typeof AppbarSidebarAcademyMediaRoute
 }
 
 const AppbarSidebarRouteChildren: AppbarSidebarRouteChildren = {
@@ -1275,6 +1318,7 @@ const AppbarSidebarRouteChildren: AppbarSidebarRouteChildren = {
   AppbarSidebarAcademyCoursesRoute:
     AppbarSidebarAcademyCoursesRouteWithChildren,
   AppbarSidebarAcademyEmployeesRoute: AppbarSidebarAcademyEmployeesRoute,
+  AppbarSidebarAcademyMediaRoute: AppbarSidebarAcademyMediaRoute,
 }
 
 const AppbarSidebarRouteWithChildren = AppbarSidebarRoute._addFileChildren(
