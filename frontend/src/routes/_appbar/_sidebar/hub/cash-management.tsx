@@ -35,9 +35,29 @@ function getExternalToken(): string {
   return payload?.externalToken ?? ''
 }
 
+interface BankEntry {
+  amount: number
+}
+
 interface CashRecResponse {
   kardpoll: { sales: number; ar: number } | null
-  bank: { gblCreditsFiltered?: number } | null
+  bank: {
+    miscCredits?: BankEntry[]
+    gblCredits?: BankEntry[]
+    merchantFees?: number
+    gblCreditsFiltered?: number
+    ontarioIntegratedTax?: number
+    transferFrom?: number
+    nightDeposit?: number
+  } | null
+  cashSummary: {
+    totals: {
+      totalPos?: number
+      afdGiftCard?: number
+      kioskGiftCard?: number
+    }
+    handheldDebit?: number
+  } | null
 }
 
 function fmt(v: number): string {
@@ -115,10 +135,32 @@ function RouteComponent() {
     }
   }, [site, date])
 
+  // KARDPOLL = gblCreditsFiltered - (kardpoll.sales - kardpoll.ar)
   const gblCreditsFiltered = data?.bank?.gblCreditsFiltered ?? 0
   const kardpollSales = data?.kardpoll?.sales ?? 0
   const kardpollAr = data?.kardpoll?.ar ?? 0
   const kardpollValue = gblCreditsFiltered - (kardpollSales - kardpollAr)
+
+  // GBL = bankCrBal - bankPosRec
+  const sumAmounts = (arr?: BankEntry[]) =>
+    (arr ?? []).reduce((s, x) => s + (Number(x.amount) || 0), 0)
+
+  const bankPosRec =
+    (data?.cashSummary?.totals?.totalPos ?? 0) -
+    (data?.cashSummary?.totals?.afdGiftCard ?? 0) -
+    (data?.cashSummary?.totals?.kioskGiftCard ?? 0)
+
+  const bankCrBal =
+    sumAmounts(data?.bank?.miscCredits) +
+    sumAmounts(data?.bank?.gblCredits) +
+    (data?.bank?.merchantFees ?? 0) -
+    (data?.bank?.gblCreditsFiltered ?? 0) -
+    (data?.cashSummary?.handheldDebit ?? 0) -
+    (data?.bank?.ontarioIntegratedTax ?? 0) -
+    (data?.bank?.transferFrom ?? 0) -
+    (data?.bank?.nightDeposit ?? 0)
+
+  const gblValue = bankCrBal - bankPosRec
 
   return (
     <div className="flex h-full flex-col gap-6 overflow-auto p-6">
@@ -163,7 +205,11 @@ function RouteComponent() {
           value={`$${fmt(kardpollValue)}`}
           loading={loading}
         />
-        <MetricCard label="GBL" value="$0.00" loading={false} />
+        <MetricCard
+          label="GBL"
+          value={`$${fmt(gblValue)}`}
+          loading={loading}
+        />
       </div>
     </div>
   )
