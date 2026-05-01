@@ -154,7 +154,7 @@ export function ItemEditorSheet({ open, item, onSave, onClose }: Props) {
           <SheetTitle>{isNew ? 'Add Item' : 'Edit Item'}</SheetTitle>
         </SheetHeader>
 
-        <div className="flex-1 space-y-6 py-4">
+        <div className="flex-1 space-y-6 px-4 py-4">
           <div className="space-y-1.5">
             <Label>Item Type</Label>
             <Select
