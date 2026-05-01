@@ -19,14 +19,14 @@ router.get('/media', authenticate, requirePermission('academy.courses', 'read'),
     const expiresOn = new Date(Date.now() + 2 * 60 * 60 * 1000) // 2 hours
     const files = []
 
-    for await (const blob of containerClient.listBlobsFlat({ prefix: 'hub/academy/' })) {
+    for await (const blob of containerClient.listBlobsFlat({ prefix: 'academy/' })) {
       const blockBlobClient = containerClient.getBlockBlobClient(blob.name)
       const url = await blockBlobClient.generateSasUrl({
         permissions: BlobSASPermissions.parse('r'),
         expiresOn,
       })
       files.push({
-        name: blob.name.slice('hub/academy/'.length),
+        name: blob.name.slice('academy/'.length),
         fullPath: blob.name,
         size: blob.properties.contentLength ?? 0,
         lastModified: blob.properties.lastModified?.toISOString() ?? null,
