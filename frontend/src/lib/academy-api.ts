@@ -156,6 +156,17 @@ export async function getAcademyMedia(): Promise<Array<AcademyMediaFile>> {
   return data.files
 }
 
+export async function uploadAcademyMedia(file: File): Promise<AcademyMediaFile> {
+  const form = new FormData()
+  form.append('file', file)
+  const res = await apiFetch('/api/academy/media/upload', { method: 'POST', body: form })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error((body as { message?: string }).message ?? 'Upload failed')
+  }
+  return res.json()
+}
+
 export async function uploadAcademyAsset(file: File): Promise<{ url: string }> {
   const form = new FormData()
   form.append('file', file)
