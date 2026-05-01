@@ -48,10 +48,14 @@ function formatDate(dateStr: string) {
 
 function RouteComponent() {
   const [locations, setLocations] = useState<Array<HubLocation>>([])
-  const [selectedLocation, setSelectedLocation] = useState<HubLocation | null>(null)
+  const [selectedLocation, setSelectedLocation] = useState<HubLocation | null>(
+    null,
+  )
   const [entries, setEntries] = useState<Array<NarrativeEntry>>([])
   const [loadingEntries, setLoadingEntries] = useState(false)
-  const [selectedEntry, setSelectedEntry] = useState<NarrativeEntry | null>(null)
+  const [selectedEntry, setSelectedEntry] = useState<NarrativeEntry | null>(
+    null,
+  )
   const [narrativeText, setNarrativeText] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -140,7 +144,8 @@ function RouteComponent() {
     }
   }
 
-  const canSubmit = !!selectedEntry && narrativeText.trim().length > 0 && !saving
+  const canSubmit =
+    !!selectedEntry && narrativeText.trim().length > 0 && !saving
 
   return (
     <div className="flex h-full">
@@ -167,13 +172,19 @@ function RouteComponent() {
 
         <div className="flex-1 overflow-auto">
           {loadingEntries && (
-            <p className="p-4 text-sm text-muted-foreground">Loading entries…</p>
+            <p className="p-4 text-sm text-muted-foreground">
+              Loading entries…
+            </p>
           )}
           {!loadingEntries && selectedLocation && entries.length === 0 && (
-            <p className="p-4 text-sm text-muted-foreground">No entries found.</p>
+            <p className="p-4 text-sm text-muted-foreground">
+              No entries found.
+            </p>
           )}
           {!loadingEntries && !selectedLocation && (
-            <p className="p-4 text-sm text-muted-foreground">Select a station to view entries.</p>
+            <p className="p-4 text-sm text-muted-foreground">
+              Select a station to view entries.
+            </p>
           )}
           {entries.map((entry) => (
             <button
@@ -184,9 +195,14 @@ function RouteComponent() {
                 selectedEntry?.ReportDate === entry.ReportDate && 'bg-accent',
               )}
             >
-              <div className="text-sm font-medium">{formatDate(entry.ReportDate)}</div>
+              <div className="text-sm font-medium">
+                {formatDate(entry.ReportDate)}
+              </div>
               <div className="text-xs text-muted-foreground truncate mt-0.5">
-                {entry.NarrativeText ? entry.NarrativeText.slice(0, 60) + (entry.NarrativeText.length > 60 ? '…' : '') : 'No narrative yet'}
+                {entry.NarrativeText
+                  ? entry.NarrativeText.slice(0, 60) +
+                    (entry.NarrativeText.length > 60 ? '…' : '')
+                  : 'No narrative yet'}
               </div>
             </button>
           ))}
@@ -196,19 +212,32 @@ function RouteComponent() {
       {/* Right panel */}
       <div className="flex-1 overflow-auto p-6">
         {!selectedEntry && (
-          <p className="text-sm text-muted-foreground">Select an entry to view and edit.</p>
+          <p className="text-sm text-muted-foreground">
+            Select an entry to view and edit.
+          </p>
         )}
         {selectedEntry && (
-          <form onSubmit={handleSubmit} className="max-w-2xl flex flex-col gap-5">
+          <form
+            onSubmit={handleSubmit}
+            className="max-w-2xl flex flex-col gap-5"
+          >
             <div className="flex flex-col gap-0.5">
-              <h2 className="text-lg font-semibold">{selectedLocation?.stationName}</h2>
-              <p className="text-sm text-muted-foreground">Report Date: {formatDate(selectedEntry.ReportDate)}</p>
+              <h2 className="text-lg font-semibold">
+                {selectedLocation?.stationName}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Report Date: {formatDate(selectedEntry.ReportDate)}
+              </p>
             </div>
 
             {can('reports.narrative', 'create') && selectedEntry.Suggestion && (
               <div className="flex flex-col gap-1 rounded-md border bg-muted/40 p-3">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Suggestion</p>
-                <p className="text-sm whitespace-pre-wrap">{selectedEntry.Suggestion}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Suggestion
+                </p>
+                <p className="text-sm whitespace-pre-wrap">
+                  {selectedEntry.Suggestion}
+                </p>
               </div>
             )}
 
@@ -233,7 +262,9 @@ function RouteComponent() {
                 {saving ? 'Saving…' : 'Save'}
               </Button>
               {saved && (
-                <span className="text-sm text-green-600 font-medium">Saved successfully.</span>
+                <span className="text-sm text-green-600 font-medium">
+                  Saved successfully.
+                </span>
               )}
             </div>
           </form>
