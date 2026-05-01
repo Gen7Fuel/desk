@@ -156,6 +156,15 @@ export async function getAcademyMedia(): Promise<Array<AcademyMediaFile>> {
   return data.files
 }
 
+export async function getAcademyMediaSasUrl(path: string): Promise<string> {
+  const res = await apiFetch(
+    `/api/academy/media/sas?path=${encodeURIComponent(path)}`,
+  )
+  if (!res.ok) throw new Error('Failed to generate media URL')
+  const data = await res.json()
+  return (data as { url: string }).url
+}
+
 export async function uploadAcademyMedia(file: File): Promise<AcademyMediaFile> {
   const form = new FormData()
   form.append('file', file)

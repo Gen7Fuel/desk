@@ -44,6 +44,34 @@ router.get('/media', authenticate, requirePermission('academy.courses', 'read'),
   }
 })
 
+router.get('/media/sas', authenticate, requirePermission('academy.courses', 'update'), async (req, res) => {
+  const blobPath = String(req.query.path || '').trim()
+  if (!blobPath) return res.status(400).json({ message: 'path is required' })
+
+  const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING
+  const containerName = process.env.AZURE_CONTAINER
+
+  if (!connectionString || !containerName) {
+    return res.status(500).json({ message: 'Azure storage not configured.' })
+  }
+
+  try {
+    const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString)
+    const containerClient = blobServiceClient.getContainerClient(containerName)
+    const blockBlobClient = containerClient.getBlockBlobClient(blobPath)
+
+    const url = await blockBlobClient.generateSasUrl({
+      permissions: BlobSASPermissions.parse('r'),
+      expiresOn: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000), // 10 years
+    })
+
+    res.json({ url })
+  } catch (err) {
+    console.error('[academy/media/sas] error:', err)
+    res.status(500).json({ message: 'Failed to generate URL', error: err.message })
+  }
+})
+
 router.post('/media/upload', authenticate, requirePermission('academy.courses', 'update'), upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No file provided.' })
 
