@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { FileVideo } from 'lucide-react'
-import { getAcademyMedia, getAcademyMediaSasUrl } from '@/lib/academy-api'
+import { useRef, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { FileVideo, Upload } from 'lucide-react'
+import { getAcademyMedia, getAcademyMediaSasUrl, uploadAcademyMedia } from '@/lib/academy-api'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -39,7 +39,11 @@ function MediaPicker({
   onClose: () => void
   onSelect: (fullPath: string) => Promise<void>
 }) {
+  const queryClient = useQueryClient()
+  const uploadInputRef = useRef<HTMLInputElement>(null)
   const [selecting, setSelecting] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
 
   const { data, isLoading } = useQuery({
     queryKey: ['academy-media'],
@@ -58,12 +62,55 @@ function MediaPicker({
     }
   }
 
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setUploading(true)
+    setUploadError('')
+    try {
+      const uploaded = await uploadAcademyMedia(file)
+      await queryClient.invalidateQueries({ queryKey: ['academy-media'] })
+      await handleSelect(uploaded.fullPath)
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const busy = uploading || !!selecting
+
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Select Video from Media Library</DialogTitle>
         </DialogHeader>
+
+        <div className="flex items-center justify-between">
+          {uploadError && (
+            <p className="text-sm text-destructive">{uploadError}</p>
+          )}
+          <div className="ml-auto">
+            <input
+              ref={uploadInputRef}
+              type="file"
+              accept="video/*"
+              className="hidden"
+              onChange={handleUpload}
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={() => uploadInputRef.current?.click()}
+            >
+              <Upload className="h-4 w-4" />
+              {uploading ? 'Uploading…' : 'Upload Video'}
+            </Button>
+          </div>
+        </div>
 
         {isLoading && (
           <p className="text-sm text-muted-foreground">Loading media…</p>
@@ -79,7 +126,7 @@ function MediaPicker({
           {videoFiles.map((file) => (
             <button
               key={file.fullPath}
-              disabled={!!selecting}
+              disabled={busy}
               onClick={() => void handleSelect(file.fullPath)}
               className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm hover:bg-muted disabled:opacity-50"
             >
