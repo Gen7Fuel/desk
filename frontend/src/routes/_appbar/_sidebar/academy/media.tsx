@@ -31,7 +31,16 @@ export const Route = createFileRoute('/_appbar/_sidebar/academy/media')({
   },
 })
 
-const IMAGE_EXTS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'avif'])
+const IMAGE_EXTS = new Set([
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+  'svg',
+  'bmp',
+  'avif',
+])
 const VIDEO_EXTS = new Set(['mp4', 'webm', 'ogg', 'mov'])
 
 function getExt(name: string): string {
@@ -46,7 +55,8 @@ function formatSize(bytes: number): string {
 
 function FileTypeIcon({ name }: { name: string }) {
   const ext = getExt(name)
-  if (VIDEO_EXTS.has(ext)) return <FileVideo className="h-4 w-4 text-blue-500" />
+  if (VIDEO_EXTS.has(ext))
+    return <FileVideo className="h-4 w-4 text-blue-500" />
   if (IMAGE_EXTS.has(ext)) return <Image className="h-4 w-4 text-green-500" />
   return <Image className="h-4 w-4 text-muted-foreground" />
 }
@@ -165,7 +175,9 @@ function RouteComponent() {
                   <FileTypeIcon name={file.name} />
                 </TableCell>
                 <TableCell className="font-mono text-sm">{file.name}</TableCell>
-                <TableCell className="text-sm">{formatSize(file.size)}</TableCell>
+                <TableCell className="text-sm">
+                  {formatSize(file.size)}
+                </TableCell>
                 <TableCell className="text-sm">
                   {file.lastModified
                     ? new Date(file.lastModified).toLocaleString()

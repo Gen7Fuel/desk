@@ -42,8 +42,8 @@ interface BankEntry {
 interface CashRecResponse {
   kardpoll: { sales: number; ar: number } | null
   bank: {
-    miscCredits?: BankEntry[]
-    gblCredits?: BankEntry[]
+    miscCredits?: Array<BankEntry>
+    gblCredits?: Array<BankEntry>
     merchantFees?: number
     gblCreditsFiltered?: number
     ontarioIntegratedTax?: number
@@ -142,13 +142,13 @@ function RouteComponent() {
   const kardpollValue = gblCreditsFiltered - (kardpollSales - kardpollAr)
 
   // GBL = bankCrBal - bankPosRec
-  const sumAmounts = (arr?: BankEntry[]) =>
+  const sumAmounts = (arr?: Array<BankEntry>) =>
     (arr ?? []).reduce((s, x) => s + (Number(x.amount) || 0), 0)
 
   const bankPosRec =
-    (data?.cashSummary?.totals?.totalPos ?? 0) -
-    (data?.cashSummary?.totals?.afdGiftCard ?? 0) -
-    (data?.cashSummary?.totals?.kioskGiftCard ?? 0)
+    (data?.cashSummary?.totals.totalPos ?? 0) -
+    (data?.cashSummary?.totals.afdGiftCard ?? 0) -
+    (data?.cashSummary?.totals.kioskGiftCard ?? 0)
 
   const bankCrBal =
     sumAmounts(data?.bank?.miscCredits) +
@@ -205,11 +205,7 @@ function RouteComponent() {
           value={`$${fmt(kardpollValue)}`}
           loading={loading}
         />
-        <MetricCard
-          label="GBL"
-          value={`$${fmt(gblValue)}`}
-          loading={loading}
-        />
+        <MetricCard label="GBL" value={`$${fmt(gblValue)}`} loading={loading} />
       </div>
     </div>
   )
