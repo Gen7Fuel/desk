@@ -131,10 +131,10 @@ function RouteComponent() {
       }
       setSaved(true)
       setEntries((prev) =>
-        prev.map((e) =>
-          e.ReportDate === selectedEntry.ReportDate
-            ? { ...e, NarrativeText: narrativeText }
-            : e,
+        prev.map((entry) =>
+          entry.ReportDate === selectedEntry.ReportDate
+            ? { ...entry, NarrativeText: narrativeText }
+            : entry,
         ),
       )
     } catch (err: any) {
