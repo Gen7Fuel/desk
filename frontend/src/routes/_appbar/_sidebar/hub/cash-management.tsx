@@ -126,7 +126,7 @@ function CalcSheet({
   loading,
 }: {
   title: string
-  rows: Row[]
+  rows: Array<Row>
   total: number
   loading: boolean
 }) {
@@ -248,13 +248,13 @@ function RouteComponent() {
 
   // ── Row definitions ─────────────────────────────────────────────────────────
 
-  const kardpollRows: Row[] = [
+  const kardpollRows: Array<Row> = [
     { kind: 'row', label: 'GBL Credits Filtered', value: gblCreditsFiltered },
     { kind: 'row', label: 'Less: Kardpoll Sales',  value: -kardpollSales },
     { kind: 'row', label: 'Add: Kardpoll AR',      value: kardpollAr },
   ]
 
-  const gblRows: Row[] = [
+  const gblRows: Array<Row> = [
     { kind: 'section', label: 'Bank Credit Balance' },
     { kind: 'row', label: 'Misc Credits',                value: miscCreditsTotal },
     { kind: 'row', label: 'GBL Credits',                 value: gblCreditsTotal },
