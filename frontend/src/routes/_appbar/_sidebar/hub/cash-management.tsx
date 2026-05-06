@@ -315,7 +315,7 @@ function RouteComponent() {
       })
       if (!entityRes.ok) throw new Error('Failed to fetch Sage entity')
       const entityData = await entityRes.json() as { 'ia::result': { id: string } }
-      const locationId = entityData['ia::result']?.id
+      const locationId = entityData['ia::result'].id
       if (!locationId) throw new Error('Could not resolve Sage location ID')
 
       // 4. Sage department id (Operations, key 6)
@@ -324,7 +324,7 @@ function RouteComponent() {
       })
       if (!deptRes.ok) throw new Error('Failed to fetch Sage department')
       const deptData = await deptRes.json() as { 'ia::result': { id: string } }
-      const departmentId = deptData['ia::result']?.id
+      const departmentId = deptData['ia::result'].id
       if (!departmentId) throw new Error('Could not resolve Sage department ID')
 
       // 5. AR rows from Hub (purchase orders + kardpoll entries)
