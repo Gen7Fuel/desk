@@ -53,6 +53,7 @@ interface Payable {
   amount: number
   images: Array<string>
   createdAt: string
+  date?: string
   requestInvoice?: boolean
 }
 
@@ -186,7 +187,7 @@ function PayableDateCell({
     <Popover>
       <PopoverTrigger asChild>
         <button className="w-full cursor-pointer rounded px-1 text-left hover:bg-muted/50">
-          {new Date(payable.createdAt).toLocaleDateString('en-CA')}
+          {payable.date || new Date(payable.createdAt).toLocaleDateString('en-CA')}
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -243,8 +244,8 @@ function RouteComponent() {
 
       const params = new URLSearchParams({
         location: selected._id,
-        from: new Date(`${from}T00:00:00Z`).toISOString(),
-        to: new Date(`${to}T23:59:59Z`).toISOString(),
+        from,
+        to,
       })
 
       const res = await fetch(`${HUB}/api/payables?${params}`, {
@@ -330,6 +331,7 @@ function RouteComponent() {
 
       if (field === 'createdAt') {
         body.createdAt = `${value}T12:00:00.000Z`
+        body.date = value
       } else if (field === 'amount') {
         body.amount = parseFloat(value)
       } else {
@@ -656,6 +658,7 @@ function RouteComponent() {
                               const token = getExternalToken()
                               const body = {
                                 createdAt: `${newVal}T12:00:00.000Z`,
+                                date: newVal,
                               }
                               const res = await fetch(
                                 `${HUB}/api/payables/${payable._id}`,
@@ -681,7 +684,7 @@ function RouteComponent() {
                                 setPayables((prev) =>
                                   prev.map((p) =>
                                     p._id === payable._id
-                                      ? { ...p, createdAt: body.createdAt }
+                                      ? { ...p, createdAt: body.createdAt, date: newVal }
                                       : p,
                                   ),
                                 )
