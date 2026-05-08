@@ -272,7 +272,7 @@ function RouteComponent() {
 
   useEffect(() => {
     if (!site || !date) return
-    const ctrl = { cancelled: false }
+    const ctrl: { cancelled: boolean } = { cancelled: false }
     setLoading(true)
     setError('')
     setData(null)
