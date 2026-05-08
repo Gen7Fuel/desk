@@ -469,8 +469,6 @@ function RouteComponent() {
           txnAmount: amount.toFixed(2),
           description: desc,
           lineNumber: ln++,
-          baseCurrency: 'CAD',
-          currency: 'CAD',
           isTax: false,
           glAccount: { id: gl },
           dimensions: {
@@ -503,7 +501,6 @@ function RouteComponent() {
         description: `Cash Management - ${site} - ${aggregatedDates.join(', ')}`,
         baseCurrency: 'CAD',
         currency: 'CAD',
-        state: 'draft',
         reconciliationState: 'uncleared',
         isInclusiveTax: false,
         bankAccount: { id: '10019' },
@@ -513,8 +510,6 @@ function RouteComponent() {
           typeId: 'Intacct Daily Rate',
           rate: 1,
         },
-        paymentMethod: 'recordTransfer',
-        sourceModule: 'cashManagement',
         lines,
       }
 
@@ -528,10 +523,13 @@ function RouteComponent() {
       })
 
       if (!receiptRes.ok) {
-        const body = await receiptRes.json().catch(() => ({}))
-        throw new Error(
-          (body as { message?: string }).message ?? `Sage returned ${receiptRes.status}`,
-        )
+        const body = await receiptRes.json().catch(() => ({})) as Record<string, unknown>
+        console.error('[other-receipt] Sage error body:', JSON.stringify(body, null, 2))
+        const detail =
+          (body['ia::error'] as { message?: string } | undefined)?.message ??
+          (body.message as string | undefined) ??
+          JSON.stringify(body)
+        throw new Error(`Sage ${receiptRes.status}: ${detail}`)
       }
 
       setSageSuccess(true)
