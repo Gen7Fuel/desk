@@ -272,7 +272,7 @@ function RouteComponent() {
 
   useEffect(() => {
     if (!site || !date) return
-    const ctrl: { cancelled: boolean } = { cancelled: false }
+    const ac = new AbortController()
     setLoading(true)
     setError('')
     setData(null)
@@ -280,40 +280,37 @@ function RouteComponent() {
 
     resolveAggregateDates(site, date)
       .then(async (dates) => {
-        if (ctrl.cancelled) return
         setAggregatedDates(dates)
 
         const responses = await Promise.all(
           dates.map((d) =>
             fetch(
               `${HUB}/api/cash-rec/entries?site=${encodeURIComponent(site)}&date=${encodeURIComponent(d)}`,
-              { headers: { Authorization: `Bearer ${getExternalToken()}` } },
+              { headers: { Authorization: `Bearer ${getExternalToken()}` }, signal: ac.signal },
             ).then((r) => (r.ok ? (r.json() as Promise<CashRecResponse>) : null)),
           ),
         )
-        if (ctrl.cancelled) return
         const valid = responses.filter(Boolean) as Array<CashRecResponse>
         setData(valid.length ? sumResponses(valid) : null)
 
         const tagRes = await fetch(
           `${HUB}/api/cash-rec/tags?site=${encodeURIComponent(site)}&startDate=${date}&endDate=${date}`,
-          { headers: { Authorization: `Bearer ${getExternalToken()}` } },
+          { headers: { Authorization: `Bearer ${getExternalToken()}` }, signal: ac.signal },
         )
-        if (!ctrl.cancelled && tagRes.ok) {
+        if (tagRes.ok) {
           const tags = await tagRes.json() as Array<{ date: string }>
           setIsHoliday(tags.some((t) => t.date === date))
         }
+        setLoading(false)
       })
       .catch((err: unknown) => {
-        if (!ctrl.cancelled)
-          setError(err instanceof Error ? err.message : 'Failed to load data')
-      })
-      .finally(() => {
-        if (!ctrl.cancelled) setLoading(false)
+        if (err instanceof Error && err.name === 'AbortError') return
+        setError(err instanceof Error ? err.message : 'Failed to load data')
+        setLoading(false)
       })
 
     return () => {
-      ctrl.cancelled = true
+      ac.abort()
     }
   }, [site, date, refreshKey])
 
