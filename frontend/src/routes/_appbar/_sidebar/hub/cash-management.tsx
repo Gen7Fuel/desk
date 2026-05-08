@@ -89,7 +89,7 @@ function fmtVal(v: number): string {
 
 // ── Aggregation helpers ───────────────────────────────────────────────────────
 
-async function resolveAggregateDates(site: string, selectedDate: string): Promise<string[]> {
+async function resolveAggregateDates(site: string, selectedDate: string): Promise<Array<string>> {
   const windowStart = format(subDays(parseISO(selectedDate), 14), 'yyyy-MM-dd')
   const tagsRes = await fetch(
     `${HUB}/api/cash-rec/tags?site=${encodeURIComponent(site)}&startDate=${windowStart}&endDate=${selectedDate}`,
@@ -101,7 +101,7 @@ async function resolveAggregateDates(site: string, selectedDate: string): Promis
       : [],
   )
 
-  const dates: string[] = [selectedDate]
+  const dates: Array<string> = [selectedDate]
   let cursor = subDays(parseISO(selectedDate), 1)
   for (let i = 0; i < 14; i++) {
     const ds = format(cursor, 'yyyy-MM-dd')
@@ -116,7 +116,7 @@ async function resolveAggregateDates(site: string, selectedDate: string): Promis
   return dates
 }
 
-function sumResponses(arr: CashRecResponse[]): CashRecResponse {
+function sumResponses(arr: Array<CashRecResponse>): CashRecResponse {
   const sumNum = (fn: (r: CashRecResponse) => number | undefined) =>
     arr.reduce((s, r) => s + (fn(r) ?? 0), 0)
 
@@ -259,7 +259,7 @@ function RouteComponent() {
   const [date, setDate] = useState(todayIso())
   const [refreshKey, setRefreshKey] = useState(0)
   const [data, setData] = useState<CashRecResponse | null>(null)
-  const [aggregatedDates, setAggregatedDates] = useState<string[]>([todayIso()])
+  const [aggregatedDates, setAggregatedDates] = useState<Array<string>>([todayIso()])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -272,7 +272,7 @@ function RouteComponent() {
 
   useEffect(() => {
     if (!site || !date) return
-    let cancelled = false
+    const ctrl = { cancelled: false }
     setLoading(true)
     setError('')
     setData(null)
@@ -280,7 +280,7 @@ function RouteComponent() {
 
     resolveAggregateDates(site, date)
       .then(async (dates) => {
-        if (cancelled) return
+        if (ctrl.cancelled) return
         setAggregatedDates(dates)
 
         const responses = await Promise.all(
@@ -291,29 +291,29 @@ function RouteComponent() {
             ).then((r) => (r.ok ? (r.json() as Promise<CashRecResponse>) : null)),
           ),
         )
-        if (cancelled) return
-        const valid = responses.filter(Boolean) as CashRecResponse[]
+        if (ctrl.cancelled) return
+        const valid = responses.filter(Boolean) as Array<CashRecResponse>
         setData(valid.length ? sumResponses(valid) : null)
 
         const tagRes = await fetch(
           `${HUB}/api/cash-rec/tags?site=${encodeURIComponent(site)}&startDate=${date}&endDate=${date}`,
           { headers: { Authorization: `Bearer ${getExternalToken()}` } },
         )
-        if (!cancelled && tagRes.ok) {
+        if (!ctrl.cancelled && tagRes.ok) {
           const tags = await tagRes.json() as Array<{ date: string }>
           setIsHoliday(tags.some((t) => t.date === date))
         }
       })
       .catch((err: unknown) => {
-        if (!cancelled)
+        if (!ctrl.cancelled)
           setError(err instanceof Error ? err.message : 'Failed to load data')
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!ctrl.cancelled) setLoading(false)
       })
 
     return () => {
-      cancelled = true
+      ctrl.cancelled = true
     }
   }, [site, date, refreshKey])
 
@@ -432,7 +432,7 @@ function RouteComponent() {
             fetch(
               `${HUB}/api/purchase-orders?startDate=${d}&endDate=${d}&stationName=${encodeURIComponent(site)}`,
               { headers: { Authorization: `Bearer ${getExternalToken()}` } },
-            ).then((r) => (r.ok ? (r.json() as Promise<Array<ArRow>>) : ([] as ArRow[]))),
+            ).then((r) => (r.ok ? (r.json() as Promise<Array<ArRow>>) : ([] as Array<ArRow>))),
           ),
         ),
         Promise.all(
@@ -441,9 +441,9 @@ function RouteComponent() {
               `${HUB}/api/cash-rec/kardpoll-entries?site=${encodeURIComponent(site)}&date=${encodeURIComponent(d)}`,
               { headers: { Authorization: `Bearer ${getExternalToken()}` } },
             ).then(async (r) => {
-              if (!r.ok) return [] as ArRow[]
-              const doc = await r.json() as { ar_rows?: ArRow[] }
-              return Array.isArray(doc?.ar_rows) ? doc.ar_rows : ([] as ArRow[])
+              if (!r.ok) return [] as Array<ArRow>
+              const doc = await r.json() as { ar_rows?: Array<ArRow> }
+              return Array.isArray(doc.ar_rows) ? doc.ar_rows : ([] as Array<ArRow>)
             }),
           ),
         ),
