@@ -57,3 +57,55 @@ This is a full-stack internal tool for **Gen7 Fuel** covering fuel invoicing, pe
 ### CI/CD
 - GitHub Actions: `.github/workflows/ci.yml` runs frontend lint/build + backend tests on PRs
 - `.github/workflows/deploy.yml` SSH-deploys to production server
+
+## Hub Integration
+
+Desk's "Hub" pages (`frontend/src/routes/_appbar/_sidebar/hub/`) call the Hub app (`https://app.gen7fuel.com`) directly from the browser using a short-lived external token embedded in the Desk JWT.
+
+### Auth mechanism
+- `frontend/src/lib/permissions.ts` → `getTokenPayload()` returns the decoded Desk JWT.
+- The JWT contains an `externalToken` field issued by Hub.
+- Hub calls use `Authorization: Bearer <externalToken>` — never the Desk JWT directly.
+- Helper `getExternalToken()` is defined inline in each hub page to extract this field.
+
+### Hub backend structure (`thehub/backend/`)
+```
+backend/
+├── app.js                  # Entry point; registers all routes + middleware
+├── middleware/
+│   └── authMiddleware.js   # auth (HTTP) + authSocket (Socket.IO)
+├── models/                 # Mongoose schemas (one file per entity)
+│   ├── CashRec.js              – KardpollReport + BankStatement schemas
+│   ├── CashSummaryNew.js       – Daily cash summary totals
+│   ├── CashRecTag.js           – Per-site holiday/day tags (site, date)
+│   ├── Location.js             – Store locations + sageEntityKey
+│   ├── Transactions.js         – POS receivables
+│   └── ...
+├── routes/                 # Express routers (one file per feature)
+│   ├── cashRecRoutes.js        – /api/cash-rec/*
+│   ├── cashSummaryNewRoutes.js
+│   └── ...
+├── services/               # Business logic separated from routes
+├── cron_jobs/              # Scheduled tasks (weekly AR report, etc.)
+├── queues/                 # BullMQ email queue (backed by Redis)
+└── utils/                  # Shared helpers (PDF generation, number parsing)
+```
+
+Routes mounted **before** `app.use(auth)` in Hub's `app.js` are public; everything after requires a valid token.
+
+### Hub endpoints used by Desk
+
+| Method | Path | Used in |
+|--------|------|---------|
+| GET | `/api/cash-rec/entries?site=&date=` | cash-management — main data fetch (single day) |
+| GET | `/api/cash-rec/tags?site=&startDate=&endDate=` | cash-management — holiday tag lookup |
+| POST | `/api/cash-rec/tags` | cash-management — mark day as holiday |
+| DELETE | `/api/cash-rec/tags?site=&date=` | cash-management — remove holiday tag |
+| GET | `/api/cash-rec/kardpoll-entries?site=&date=` | cash-management — AR rows for Sage receipt |
+| GET | `/api/locations` | cash-management + SitePicker — location list + sageEntityKey |
+| GET | `/api/purchase-orders?startDate=&endDate=&stationName=` | cash-management — AR PO rows for Sage receipt |
+
+### Key constants (Desk frontend)
+```ts
+const HUB = 'https://app.gen7fuel.com'  // defined at top of each hub page
+```

@@ -63,7 +63,15 @@
       "Bash(rm '/c/Users/MohammadHasan/workspace/desk/frontend/src/routes/_appbar/_sidebar/academy/courses.$courseId.tsx')",
       "Bash(mkdir -p \"C:/Users/MohammadHasan/workspace/thehub/backend/models/academy\")",
       "Bash(mkdir -p \"C:/Users/MohammadHasan/workspace/thehub/backend/routes/academy\")",
-      "Bash(xargs ls *)"
+      "Bash(xargs ls *)",
+      "Bash(Get-ChildItem *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\MohammadHasan\\\\workspace\\\\desk\\\\frontend\" -Directory | Select-Object -First 20 | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\MohammadHasan\\\\workspace\\\\desk\\\\frontend\\\\src\" -Recurse | Where-Object { $_.Extension -match '\\\\.\\(ts|tsx\\)$' } | Select-Object -First 30 | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\MohammadHasan\\\\workspace\\\\desk\\\\frontend\\\\src\\\\routes\\\\_appbar\\\\_sidebar\\\\hub\" -File 2>$null | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\MohammadHasan\\\\workspace\\\\desk\\\\frontend\\\\src\\\\lib\" -File | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\MohammadHasan\\\\workspace\\\\desk\\\\frontend\\\\src\\\\components\\\\ui\" -File | ForEach-Object { $_.Name })",
+      "Bash(findstr /R \"checked.*useState\\\\|toggle.*useState\\\\|selected.*useState\" src\\\\routes\\\\*appbar*\\\\*sidebar*\\\\hub\\\\*.tsx)",
+      "Bash(Select-Object Name)"
     ]
   }
 }
