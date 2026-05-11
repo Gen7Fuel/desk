@@ -9,7 +9,8 @@
     "test": "vitest run",
     "lint": "eslint",
     "format": "prettier",
-    "check": "prettier --write . && eslint --fix"
+    "check": "prettier --write . && eslint --fix",
+    "lock": "node ../scripts/relock.mjs frontend"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
