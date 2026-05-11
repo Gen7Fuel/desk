@@ -27,7 +27,7 @@ export const Route = createFileRoute('/_appbar/_sidebar/reports/narrative')({
 
 interface HubLocation {
   _id: string
-  stationName: string
+  name: string
   csoCode: string
   legalName: string
 }
@@ -95,7 +95,7 @@ function RouteComponent() {
   }, [selectedLocation])
 
   const handleLocationChange = (stationName: string) => {
-    const loc = locations.find((l) => l.stationName === stationName) ?? null
+    const loc = locations.find((l) => l.name === stationName) ?? null
     setSelectedLocation(loc)
     setError(null)
   }
@@ -161,8 +161,8 @@ function RouteComponent() {
               <SelectGroup>
                 <SelectLabel>Stations</SelectLabel>
                 {locations.map((loc) => (
-                  <SelectItem key={loc._id} value={loc.stationName}>
-                    {loc.stationName}
+                  <SelectItem key={loc._id} value={loc.name}>
+                    {loc.name}
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -223,7 +223,7 @@ function RouteComponent() {
           >
             <div className="flex flex-col gap-0.5">
               <h2 className="text-lg font-semibold">
-                {selectedLocation?.stationName}
+                {selectedLocation?.name}
               </h2>
               <p className="text-sm text-muted-foreground">
                 Report Date: {formatDate(selectedEntry.ReportDate)}

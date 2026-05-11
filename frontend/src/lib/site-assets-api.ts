@@ -2,7 +2,7 @@ import { apiFetch } from './api'
 
 export interface LocationOption {
   _id: string
-  stationName: string
+  name: string
 }
 
 export interface SiteAsset {

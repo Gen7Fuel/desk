@@ -8,11 +8,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { apiFetch } from '@/lib/api'
 
 interface Location {
   _id: string
-  stationName: string
+  name: string
 }
 
 interface SitePickerProps {
@@ -35,7 +34,7 @@ export function SitePicker({
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    apiFetch('https://app.gen7fuel.com/api/locations')
+    fetch('https://app.gen7fuel.com/api/locations')
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
         return res.json()
@@ -78,8 +77,8 @@ export function SitePicker({
           <SelectLabel>{label}</SelectLabel>
           {locations.length > 0 ? (
             locations.map((location) => (
-              <SelectItem key={location._id} value={location.stationName}>
-                {location.stationName}
+              <SelectItem key={location._id} value={location.name}>
+                {location.name}
               </SelectItem>
             ))
           ) : (

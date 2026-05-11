@@ -45,7 +45,7 @@ interface Payable {
   vendorName: string
   location: {
     _id: string
-    stationName: string
+    name: string
     csoCode: string
   }
   notes: string
@@ -234,9 +234,9 @@ function RouteComponent() {
       const locRes = await fetch(`${HUB}/api/locations`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      const locations: Array<{ _id: string; stationName: string }> =
+      const locations: Array<{ _id: string; name: string }> =
         await locRes.json()
-      const selected = locations.find((l) => l.stationName === site)
+      const selected = locations.find((l) => l.name === site)
       if (!selected) {
         setPayables([])
         return
@@ -378,7 +378,7 @@ function RouteComponent() {
         )
 
         // Sync safesheet
-        const stationName = currentPayable.location.stationName
+        const stationName = currentPayable.location.name
         const dateStr = toLocalDate(currentPayable.createdAt)
 
         if (field === 'paymentMethod') {
@@ -690,7 +690,7 @@ function RouteComponent() {
                                 )
                                 if (payable.paymentMethod === 'safe') {
                                   const stationName =
-                                    payable.location.stationName
+                                    payable.location.name
                                   const oldDateStr = toLocalDate(
                                     payable.createdAt,
                                   )

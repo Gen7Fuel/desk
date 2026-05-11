@@ -403,8 +403,8 @@ function RouteComponent() {
         headers: { Authorization: `Bearer ${getExternalToken()}` },
       })
       if (!locRes.ok) throw new Error('Failed to fetch Hub locations')
-      const locations = await locRes.json() as Array<{ stationName: string; sageEntityKey?: string }>
-      const loc = locations.find((l) => l.stationName === site)
+      const locations = await locRes.json() as Array<{ name: string; sageEntityKey?: string }>
+      const loc = locations.find((l) => l.name === site)
       if (!loc?.sageEntityKey) throw new Error(`No Sage entity key configured for "${site}"`)
 
       const entityRes = await apiFetch(`/api/sage/entity/${loc.sageEntityKey}`, {
@@ -427,7 +427,7 @@ function RouteComponent() {
         Promise.all(
           aggregatedDates.map((d) =>
             fetch(
-              `${HUB}/api/purchase-orders?startDate=${d}&endDate=${d}&stationName=${encodeURIComponent(site)}`,
+              `${HUB}/api/purchase-orders?startDate=${d}&endDate=${d}&site=${encodeURIComponent(site)}`,
               { headers: { Authorization: `Bearer ${getExternalToken()}` } },
             ).then((r) => (r.ok ? (r.json() as Promise<Array<ArRow>>) : ([] as Array<ArRow>))),
           ),
