@@ -165,10 +165,15 @@ export async function getAcademyMediaSasUrl(path: string): Promise<string> {
   return (data as { url: string }).url
 }
 
-export async function uploadAcademyMedia(file: File): Promise<AcademyMediaFile> {
+export async function uploadAcademyMedia(
+  file: File,
+): Promise<AcademyMediaFile> {
   const form = new FormData()
   form.append('file', file)
-  const res = await apiFetch('/api/academy/media/upload', { method: 'POST', body: form })
+  const res = await apiFetch('/api/academy/media/upload', {
+    method: 'POST',
+    body: form,
+  })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error((body as { message?: string }).message ?? 'Upload failed')

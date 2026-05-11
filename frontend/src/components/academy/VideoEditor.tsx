@@ -1,7 +1,11 @@
 import { useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { FileVideo, Upload } from 'lucide-react'
-import { getAcademyMedia, getAcademyMediaSasUrl, uploadAcademyMedia } from '@/lib/academy-api'
+import {
+  getAcademyMedia,
+  getAcademyMediaSasUrl,
+  uploadAcademyMedia,
+} from '@/lib/academy-api'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'

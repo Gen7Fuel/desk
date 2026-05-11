@@ -34,13 +34,21 @@ export function MCQEditor({ content, onChange }: Props) {
     update({
       options: [
         ...content.options,
-        { id: crypto.randomUUID(), text: '', isCorrect: false, feedbackType: 'wrong', feedback: '' },
+        {
+          id: crypto.randomUUID(),
+          text: '',
+          isCorrect: false,
+          feedbackType: 'wrong',
+          feedback: '',
+        },
       ],
     })
 
   const updateOption = (id: string, patch: Partial<MCQOption>) =>
     update({
-      options: content.options.map((o) => o.id === id ? { ...o, ...patch } : o),
+      options: content.options.map((o) =>
+        o.id === id ? { ...o, ...patch } : o,
+      ),
     })
 
   const toggleCorrect = (id: string) => {
@@ -50,7 +58,11 @@ export function MCQEditor({ content, onChange }: Props) {
     update({
       options: content.options.map((o) =>
         o.id === id
-          ? { ...o, isCorrect: willBeCorrect, feedbackType: willBeCorrect ? 'correct' : 'wrong' }
+          ? {
+              ...o,
+              isCorrect: willBeCorrect,
+              feedbackType: willBeCorrect ? 'correct' : 'wrong',
+            }
           : o,
       ),
     })
@@ -75,7 +87,8 @@ export function MCQEditor({ content, onChange }: Props) {
         <div>
           <Label>Options</Label>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Click the circle to mark correct answer(s). Set feedback text shown in the modal when the option is selected.
+            Click the circle to mark correct answer(s). Set feedback text shown
+            in the modal when the option is selected.
           </p>
         </div>
 
@@ -87,7 +100,9 @@ export function MCQEditor({ content, onChange }: Props) {
                 type="button"
                 onClick={() => toggleCorrect(option.id)}
                 className="shrink-0 text-muted-foreground hover:text-primary"
-                title={option.isCorrect ? 'Mark as incorrect' : 'Mark as correct'}
+                title={
+                  option.isCorrect ? 'Mark as incorrect' : 'Mark as correct'
+                }
               >
                 {option.isCorrect ? (
                   <CheckCircle2 className="h-5 w-5 text-primary" />
@@ -99,7 +114,9 @@ export function MCQEditor({ content, onChange }: Props) {
                 className={cn('flex-1', option.isCorrect && 'border-primary')}
                 placeholder="Option text"
                 value={option.text}
-                onChange={(e) => updateOption(option.id, { text: e.target.value })}
+                onChange={(e) =>
+                  updateOption(option.id, { text: e.target.value })
+                }
               />
               <Button
                 variant="ghost"
@@ -113,11 +130,15 @@ export function MCQEditor({ content, onChange }: Props) {
             {/* Feedback type toggle — only for incorrect options */}
             {!option.isCorrect && (
               <div className="flex items-center gap-2 pl-7">
-                <span className="text-xs text-muted-foreground shrink-0">Modal color:</span>
+                <span className="text-xs text-muted-foreground shrink-0">
+                  Modal color:
+                </span>
                 <div className="flex gap-1">
                   <button
                     type="button"
-                    onClick={() => updateOption(option.id, { feedbackType: 'wrong' })}
+                    onClick={() =>
+                      updateOption(option.id, { feedbackType: 'wrong' })
+                    }
                     className={cn(
                       'rounded-md px-2.5 py-1 text-xs font-semibold transition-colors',
                       (option.feedbackType ?? 'wrong') === 'wrong'
@@ -129,7 +150,9 @@ export function MCQEditor({ content, onChange }: Props) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => updateOption(option.id, { feedbackType: 'close' })}
+                    onClick={() =>
+                      updateOption(option.id, { feedbackType: 'close' })
+                    }
                     className={cn(
                       'rounded-md px-2.5 py-1 text-xs font-semibold transition-colors',
                       option.feedbackType === 'close'
@@ -152,7 +175,9 @@ export function MCQEditor({ content, onChange }: Props) {
                     : 'Feedback shown in the modal when this answer is selected…'
                 }
                 value={option.feedback ?? ''}
-                onChange={(e) => updateOption(option.id, { feedback: e.target.value })}
+                onChange={(e) =>
+                  updateOption(option.id, { feedback: e.target.value })
+                }
                 rows={2}
                 className="text-xs"
               />
@@ -168,7 +193,9 @@ export function MCQEditor({ content, onChange }: Props) {
 
       <div className="space-y-1.5">
         <Label>Explanation (optional)</Label>
-        <p className="text-xs text-muted-foreground">Shown after answering — mainly used for multi-select questions.</p>
+        <p className="text-xs text-muted-foreground">
+          Shown after answering — mainly used for multi-select questions.
+        </p>
         <Textarea
           placeholder="Shown after checking answer"
           value={content.explanation}
@@ -183,8 +210,20 @@ export function MCQEditor({ content, onChange }: Props) {
 export const defaultMCQContent = (): MCQContent => ({
   question: '',
   options: [
-    { id: crypto.randomUUID(), text: '', isCorrect: false, feedbackType: 'wrong', feedback: '' },
-    { id: crypto.randomUUID(), text: '', isCorrect: false, feedbackType: 'wrong', feedback: '' },
+    {
+      id: crypto.randomUUID(),
+      text: '',
+      isCorrect: false,
+      feedbackType: 'wrong',
+      feedback: '',
+    },
+    {
+      id: crypto.randomUUID(),
+      text: '',
+      isCorrect: false,
+      feedbackType: 'wrong',
+      feedback: '',
+    },
   ],
   explanation: '',
 })

@@ -187,7 +187,8 @@ function PayableDateCell({
     <Popover>
       <PopoverTrigger asChild>
         <button className="w-full cursor-pointer rounded px-1 text-left hover:bg-muted/50">
-          {payable.date || new Date(payable.createdAt).toLocaleDateString('en-CA')}
+          {payable.date ||
+            new Date(payable.createdAt).toLocaleDateString('en-CA')}
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -684,13 +685,16 @@ function RouteComponent() {
                                 setPayables((prev) =>
                                   prev.map((p) =>
                                     p._id === payable._id
-                                      ? { ...p, createdAt: body.createdAt, date: newVal }
+                                      ? {
+                                          ...p,
+                                          createdAt: body.createdAt,
+                                          date: newVal,
+                                        }
                                       : p,
                                   ),
                                 )
                                 if (payable.paymentMethod === 'safe') {
-                                  const stationName =
-                                    payable.location.name
+                                  const stationName = payable.location.name
                                   const oldDateStr = toLocalDate(
                                     payable.createdAt,
                                   )

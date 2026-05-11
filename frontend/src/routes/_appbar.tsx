@@ -86,7 +86,7 @@ function RouteComponent() {
     !!matchRoute({ to: '/kardpoll', fuzzy: true }) ||
     !!matchRoute({ to: '/fuel-rec', fuzzy: true })
   const isCipherActive = !!matchRoute({ to: '/cipher', fuzzy: true })
-const isSettingsActive = !!matchRoute({ to: '/settings', fuzzy: true })
+  const isSettingsActive = !!matchRoute({ to: '/settings', fuzzy: true })
   const isHubActive = location.pathname.startsWith('/hub')
   const isIssuesActive = location.pathname.startsWith('/issues')
   const isAcademyActive = location.pathname.startsWith('/academy')

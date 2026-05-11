@@ -63,9 +63,7 @@ export const Route = createFileRoute('/_appbar/issues')({
         headers: { Authorization: `Bearer ${extToken}` },
       })
         .then((r) => r.json())
-        .then((data: Array<{ name: string }>) =>
-          data.map((d) => d.name),
-        ),
+        .then((data: Array<{ name: string }>) => data.map((d) => d.name)),
     ])
     const manualIssues = manual.status === 'fulfilled' ? manual.value : []
     const auditIssues = auditRes.status === 'fulfilled' ? auditRes.value : []
