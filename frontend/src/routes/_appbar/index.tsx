@@ -8,7 +8,6 @@ import {
   Fuel,
   GraduationCap,
   Key,
-  Package,
   RefreshCw,
   Settings,
   Tablet,
@@ -72,14 +71,6 @@ function RouteComponent() {
       icon: Binary,
       visible: can('cipher', 'read'),
       to: '/cipher/lock',
-    },
-    {
-      key: 'inventory',
-      label: 'Inventory',
-      description: 'Coremark and initial order tracking',
-      icon: Package,
-      visible: can('inventory', 'read'),
-      to: '/inventory/coremark-initial-order',
     },
     {
       key: 'hub',

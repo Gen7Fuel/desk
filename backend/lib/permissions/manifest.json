@@ -52,12 +52,6 @@
         "unlock": { "actions": ["create", "read", "update", "delete"] }
       }
     },
-    "inventory": {
-      "actions": ["read"],
-      "submodules": {
-        "coremarkInitialOrder": { "actions": ["create", "read", "update", "delete"] }
-      }
-    },
     "hub": {
       "actions": ["read"],
       "submodules": {

@@ -18,7 +18,6 @@ import {
   Headset,
   LayoutGrid,
   LogOut,
-  Package,
   Settings,
   Tablet,
 } from 'lucide-react'
@@ -87,8 +86,7 @@ function RouteComponent() {
     !!matchRoute({ to: '/kardpoll', fuzzy: true }) ||
     !!matchRoute({ to: '/fuel-rec', fuzzy: true })
   const isCipherActive = !!matchRoute({ to: '/cipher', fuzzy: true })
-  const isInventoryActive = !!matchRoute({ to: '/inventory', fuzzy: true })
-  const isSettingsActive = !!matchRoute({ to: '/settings', fuzzy: true })
+const isSettingsActive = !!matchRoute({ to: '/settings', fuzzy: true })
   const isHubActive = location.pathname.startsWith('/hub')
   const isIssuesActive = location.pathname.startsWith('/issues')
   const isAcademyActive = location.pathname.startsWith('/academy')
@@ -115,15 +113,6 @@ function RouteComponent() {
       { path: '/cipher/lock', perm: 'cipher.lock' },
       { path: '/cipher/unlock', perm: 'cipher.unlock' },
     ].find((r) => can(r.perm, 'read'))?.path ?? '/cipher/lock'
-
-  const inventoryTo =
-    [
-      {
-        path: '/inventory/coremark-initial-order',
-        perm: 'inventory.coremarkInitialOrder',
-      },
-    ].find((r) => can(r.perm, 'read'))?.path ??
-    '/inventory/coremark-initial-order'
 
   const hubTo =
     [
@@ -205,22 +194,6 @@ function RouteComponent() {
                 </Link>
               </TooltipTrigger>
               <TooltipContent side="right">Cipher</TooltipContent>
-            </Tooltip>
-          )}
-          {can('inventory', 'read') && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  to={inventoryTo}
-                  className={cn(
-                    'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
-                    isInventoryActive && 'bg-accent/80 text-accent-foreground',
-                  )}
-                >
-                  <Package className="h-5 w-5" />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Inventory</TooltipContent>
             </Tooltip>
           )}
           {can('issues', 'read') && (
