@@ -10,7 +10,8 @@
     "start": "node index.js",
     "dev": "nodemon -L index.js",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lock": "node ../scripts/relock.mjs backend"
   },
   "dependencies": {
     "@azure/storage-blob": "^12.31.0",
