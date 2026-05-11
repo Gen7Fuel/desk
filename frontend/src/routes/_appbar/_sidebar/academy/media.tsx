@@ -35,7 +35,14 @@ export const Route = createFileRoute('/_appbar/_sidebar/academy/media')({
 })
 
 const IMAGE_EXTS = new Set([
-  'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'avif',
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+  'svg',
+  'bmp',
+  'avif',
 ])
 const VIDEO_EXTS = new Set(['mp4', 'webm', 'ogg', 'mov'])
 
@@ -58,7 +65,8 @@ function fmtTime(s: number): string {
 
 function FileTypeIcon({ name }: { name: string }) {
   const ext = getExt(name)
-  if (VIDEO_EXTS.has(ext)) return <FileVideo className="h-4 w-4 text-blue-500" />
+  if (VIDEO_EXTS.has(ext))
+    return <FileVideo className="h-4 w-4 text-blue-500" />
   if (IMAGE_EXTS.has(ext)) return <Image className="h-4 w-4 text-green-500" />
   return <Image className="h-4 w-4 text-muted-foreground" />
 }
@@ -111,12 +119,8 @@ function VideoPlayer({ src }: { src: string }) {
         ref={videoRef}
         src={src}
         className="w-full rounded-md bg-black"
-        onTimeUpdate={() =>
-          setCurrentTime(videoRef.current?.currentTime ?? 0)
-        }
-        onDurationChange={() =>
-          setDuration(videoRef.current?.duration ?? 0)
-        }
+        onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime ?? 0)}
+        onDurationChange={() => setDuration(videoRef.current?.duration ?? 0)}
         onEnded={() => {
           setPlaying(false)
           setCurrentTime(0)
@@ -174,7 +178,10 @@ function PreviewPanel({
     <div className="flex h-full flex-col border-l bg-background">
       {/* Panel header */}
       <div className="flex items-center justify-between border-b px-4 py-3">
-        <span className="truncate font-mono text-sm font-medium" title={file.name}>
+        <span
+          className="truncate font-mono text-sm font-medium"
+          title={file.name}
+        >
           {file.name}
         </span>
         <button
@@ -230,7 +237,9 @@ function PreviewPanel({
 function RouteComponent() {
   const queryClient = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [selectedFile, setSelectedFile] = useState<AcademyMediaFile | null>(null)
+  const [selectedFile, setSelectedFile] = useState<AcademyMediaFile | null>(
+    null,
+  )
   const [search, setSearch] = useState('')
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')

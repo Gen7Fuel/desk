@@ -10,13 +10,6 @@ const sidebarLinks: Record<
     { label: 'Lock', path: '/cipher/lock', permission: 'cipher.lock' },
     { label: 'Unlock', path: '/cipher/unlock', permission: 'cipher.unlock' },
   ],
-  inventory: [
-    {
-      label: 'CoreMark Initial Order',
-      path: '/inventory/coremark-initial-order',
-      permission: 'inventory.coremarkInitialOrder',
-    },
-  ],
   settings: [
     { label: 'Users', path: '/settings/users', permission: 'settings.users' },
     { label: 'Roles', path: '/settings/roles', permission: 'settings.roles' },

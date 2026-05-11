@@ -1,7 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { FileSpreadsheet, UploadCloud } from 'lucide-react'
-import type ExcelJS from 'exceljs'
 import { can, getTokenPayload } from '@/lib/permissions'
 import { createLog } from '@/lib/log-api'
 import { cn } from '@/lib/utils'

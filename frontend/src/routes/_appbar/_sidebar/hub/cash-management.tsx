@@ -89,7 +89,10 @@ function fmtVal(v: number): string {
 
 // ── Aggregation helpers ───────────────────────────────────────────────────────
 
-async function resolveAggregateDates(site: string, selectedDate: string): Promise<Array<string>> {
+async function resolveAggregateDates(
+  site: string,
+  selectedDate: string,
+): Promise<Array<string>> {
   const windowStart = format(subDays(parseISO(selectedDate), 14), 'yyyy-MM-dd')
   const tagsRes = await fetch(
     `${HUB}/api/cash-rec/tags?site=${encodeURIComponent(site)}&startDate=${windowStart}&endDate=${selectedDate}`,
@@ -97,7 +100,7 @@ async function resolveAggregateDates(site: string, selectedDate: string): Promis
   )
   const taggedDates = new Set<string>(
     tagsRes.ok
-      ? (await tagsRes.json() as Array<{ date: string }>).map((t) => t.date)
+      ? ((await tagsRes.json()) as Array<{ date: string }>).map((t) => t.date)
       : [],
   )
 
@@ -141,9 +144,13 @@ function sumResponses(arr: Array<CashRecResponse>): CashRecResponse {
         kioskGiftCard: sumNum((r) => r.cashSummary?.totals.kioskGiftCard),
         totalSales: sumNum((r) => r.cashSummary?.totals.totalSales),
         item_sales: sumNum((r) => r.cashSummary?.totals.item_sales),
-        report_canadian_cash: sumNum((r) => r.cashSummary?.totals.report_canadian_cash),
+        report_canadian_cash: sumNum(
+          (r) => r.cashSummary?.totals.report_canadian_cash,
+        ),
         missedCpl: sumNum((r) => r.cashSummary?.totals.missedCpl),
-        canadian_cash_collected: sumNum((r) => r.cashSummary?.totals.canadian_cash_collected),
+        canadian_cash_collected: sumNum(
+          (r) => r.cashSummary?.totals.canadian_cash_collected,
+        ),
         couponsAccepted: sumNum((r) => r.cashSummary?.totals.couponsAccepted),
         giftCertificates: sumNum((r) => r.cashSummary?.totals.giftCertificates),
       },
@@ -259,7 +266,9 @@ function RouteComponent() {
   const [date, setDate] = useState(todayIso())
   const [refreshKey, setRefreshKey] = useState(0)
   const [data, setData] = useState<CashRecResponse | null>(null)
-  const [aggregatedDates, setAggregatedDates] = useState<Array<string>>([todayIso()])
+  const [aggregatedDates, setAggregatedDates] = useState<Array<string>>([
+    todayIso(),
+  ])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -286,8 +295,13 @@ function RouteComponent() {
           dates.map((d) =>
             fetch(
               `${HUB}/api/cash-rec/entries?site=${encodeURIComponent(site)}&date=${encodeURIComponent(d)}`,
-              { headers: { Authorization: `Bearer ${getExternalToken()}` }, signal: ac.signal },
-            ).then((r) => (r.ok ? (r.json() as Promise<CashRecResponse>) : null)),
+              {
+                headers: { Authorization: `Bearer ${getExternalToken()}` },
+                signal: ac.signal,
+              },
+            ).then((r) =>
+              r.ok ? (r.json() as Promise<CashRecResponse>) : null,
+            ),
           ),
         )
         const valid = responses.filter(Boolean) as Array<CashRecResponse>
@@ -295,10 +309,13 @@ function RouteComponent() {
 
         const tagRes = await fetch(
           `${HUB}/api/cash-rec/tags?site=${encodeURIComponent(site)}&startDate=${date}&endDate=${date}`,
-          { headers: { Authorization: `Bearer ${getExternalToken()}` }, signal: ac.signal },
+          {
+            headers: { Authorization: `Bearer ${getExternalToken()}` },
+            signal: ac.signal,
+          },
         )
         if (tagRes.ok) {
-          const tags = await tagRes.json() as Array<{ date: string }>
+          const tags = (await tagRes.json()) as Array<{ date: string }>
           setIsHoliday(tags.some((t) => t.date === date))
         }
         setLoading(false)
@@ -322,43 +339,52 @@ function RouteComponent() {
   const num = (v: number | undefined | null) => v ?? 0
 
   const gblCreditsFiltered = num(data?.bank?.gblCreditsFiltered)
-  const kardpollSales      = num(data?.kardpoll?.sales)
-  const kardpollAr         = num(data?.kardpoll?.ar)
-  const kardpollValue      = gblCreditsFiltered - (kardpollSales - kardpollAr)
+  const kardpollSales = num(data?.kardpoll?.sales)
+  const kardpollAr = num(data?.kardpoll?.ar)
+  const kardpollValue = gblCreditsFiltered - (kardpollSales - kardpollAr)
 
-  const miscCreditsTotal  = sumAmounts(data?.bank?.miscCredits)
-  const gblCreditsTotal   = sumAmounts(data?.bank?.gblCredits)
-  const merchantFees      = num(data?.bank?.merchantFees)
-  const ontarioIntTax     = num(data?.bank?.ontarioIntegratedTax)
-  const transferFrom      = num(data?.bank?.transferFrom)
-  const nightDeposit      = num(data?.bank?.nightDeposit)
-  const handheldDebit     = num(data?.cashSummary?.handheldDebit)
-  const totalPos          = num(data?.cashSummary?.totals.totalPos)
-  const afdGiftCard       = num(data?.cashSummary?.totals.afdGiftCard)
-  const kioskGiftCard     = num(data?.cashSummary?.totals.kioskGiftCard)
+  const miscCreditsTotal = sumAmounts(data?.bank?.miscCredits)
+  const gblCreditsTotal = sumAmounts(data?.bank?.gblCredits)
+  const merchantFees = num(data?.bank?.merchantFees)
+  const ontarioIntTax = num(data?.bank?.ontarioIntegratedTax)
+  const transferFrom = num(data?.bank?.transferFrom)
+  const nightDeposit = num(data?.bank?.nightDeposit)
+  const handheldDebit = num(data?.cashSummary?.handheldDebit)
+  const totalPos = num(data?.cashSummary?.totals.totalPos)
+  const afdGiftCard = num(data?.cashSummary?.totals.afdGiftCard)
+  const kioskGiftCard = num(data?.cashSummary?.totals.kioskGiftCard)
 
   const bankCrBal =
-    miscCreditsTotal + gblCreditsTotal + merchantFees
-    - gblCreditsFiltered - handheldDebit
-    - ontarioIntTax - transferFrom - nightDeposit
+    miscCreditsTotal +
+    gblCreditsTotal +
+    merchantFees -
+    gblCreditsFiltered -
+    handheldDebit -
+    ontarioIntTax -
+    transferFrom -
+    nightDeposit
 
   const bankPosRec = totalPos - afdGiftCard - kioskGiftCard
-  const gblValue   = bankCrBal - bankPosRec
+  const gblValue = bankCrBal - bankPosRec
 
-  const totalSales           = num(data?.cashSummary?.totals.totalSales)
-  const itemSales            = num(data?.cashSummary?.totals.item_sales)
-  const reportedCanadianCash = num(data?.cashSummary?.totals.report_canadian_cash)
-  const missedCpl            = num(data?.cashSummary?.totals.missedCpl)
-  const canadianCashCollected = num(data?.cashSummary?.totals.canadian_cash_collected)
-  const couponsAccepted      = num(data?.cashSummary?.totals.couponsAccepted)
-  const giftCertificates     = num(data?.cashSummary?.totals.giftCertificates)
+  const totalSales = num(data?.cashSummary?.totals.totalSales)
+  const itemSales = num(data?.cashSummary?.totals.item_sales)
+  const reportedCanadianCash = num(
+    data?.cashSummary?.totals.report_canadian_cash,
+  )
+  const missedCpl = num(data?.cashSummary?.totals.missedCpl)
+  const canadianCashCollected = num(
+    data?.cashSummary?.totals.canadian_cash_collected,
+  )
+  const couponsAccepted = num(data?.cashSummary?.totals.couponsAccepted)
+  const giftCertificates = num(data?.cashSummary?.totals.giftCertificates)
 
-  const gblSales     = totalSales - itemSales - reportedCanadianCash - missedCpl
-  const cashSales    = reportedCanadianCash
-  const storeSales   = itemSales
-  const safeDep      = canadianCashCollected
+  const gblSales = totalSales - itemSales - reportedCanadianCash - missedCpl
+  const cashSales = reportedCanadianCash
+  const storeSales = itemSales
+  const safeDep = canadianCashCollected
   const gcRedemption = afdGiftCard + kioskGiftCard
-  const loyalty      = couponsAccepted + giftCertificates
+  const loyalty = couponsAccepted + giftCertificates
 
   // ── Holiday toggle ──────────────────────────────────────────────────────────
 
@@ -368,7 +394,10 @@ function RouteComponent() {
       if (isHoliday) {
         await fetch(
           `${HUB}/api/cash-rec/tags?site=${encodeURIComponent(site)}&date=${encodeURIComponent(date)}`,
-          { method: 'DELETE', headers: { Authorization: `Bearer ${getExternalToken()}` } },
+          {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${getExternalToken()}` },
+          },
         )
       } else {
         await fetch(`${HUB}/api/cash-rec/tags`, {
@@ -397,21 +426,32 @@ function RouteComponent() {
     try {
       const tokenRes = await apiFetch('/api/sage/connect', { method: 'POST' })
       if (!tokenRes.ok) throw new Error('Failed to get Sage token')
-      const { access_token: sageToken } = await tokenRes.json() as { access_token: string }
+      const { access_token: sageToken } = (await tokenRes.json()) as {
+        access_token: string
+      }
 
       const locRes = await fetch(`${HUB}/api/locations`, {
         headers: { Authorization: `Bearer ${getExternalToken()}` },
       })
       if (!locRes.ok) throw new Error('Failed to fetch Hub locations')
-      const locations = await locRes.json() as Array<{ stationName: string; sageEntityKey?: string }>
-      const loc = locations.find((l) => l.stationName === site)
-      if (!loc?.sageEntityKey) throw new Error(`No Sage entity key configured for "${site}"`)
+      const locations = (await locRes.json()) as Array<{
+        name: string
+        sageEntityKey?: string
+      }>
+      const loc = locations.find((l) => l.name === site)
+      if (!loc?.sageEntityKey)
+        throw new Error(`No Sage entity key configured for "${site}"`)
 
-      const entityRes = await apiFetch(`/api/sage/entity/${loc.sageEntityKey}`, {
-        headers: { 'X-Sage-Token': sageToken },
-      })
+      const entityRes = await apiFetch(
+        `/api/sage/entity/${loc.sageEntityKey}`,
+        {
+          headers: { 'X-Sage-Token': sageToken },
+        },
+      )
       if (!entityRes.ok) throw new Error('Failed to fetch Sage entity')
-      const entityData = await entityRes.json() as { 'ia::result': { id: string } }
+      const entityData = (await entityRes.json()) as {
+        'ia::result': { id: string }
+      }
       const locationId = entityData['ia::result'].id
       if (!locationId) throw new Error('Could not resolve Sage location ID')
 
@@ -419,7 +459,9 @@ function RouteComponent() {
         headers: { 'X-Sage-Token': sageToken },
       })
       if (!deptRes.ok) throw new Error('Failed to fetch Sage department')
-      const deptData = await deptRes.json() as { 'ia::result': { id: string } }
+      const deptData = (await deptRes.json()) as {
+        'ia::result': { id: string }
+      }
       const departmentId = deptData['ia::result'].id
       if (!departmentId) throw new Error('Could not resolve Sage department ID')
 
@@ -427,9 +469,11 @@ function RouteComponent() {
         Promise.all(
           aggregatedDates.map((d) =>
             fetch(
-              `${HUB}/api/purchase-orders?startDate=${d}&endDate=${d}&stationName=${encodeURIComponent(site)}`,
+              `${HUB}/api/purchase-orders?startDate=${d}&endDate=${d}&site=${encodeURIComponent(site)}`,
               { headers: { Authorization: `Bearer ${getExternalToken()}` } },
-            ).then((r) => (r.ok ? (r.json() as Promise<Array<ArRow>>) : ([] as Array<ArRow>))),
+            ).then((r) =>
+              r.ok ? (r.json() as Promise<Array<ArRow>>) : ([] as Array<ArRow>),
+            ),
           ),
         ),
         Promise.all(
@@ -439,8 +483,10 @@ function RouteComponent() {
               { headers: { Authorization: `Bearer ${getExternalToken()}` } },
             ).then(async (r) => {
               if (!r.ok) return [] as Array<ArRow>
-              const doc = await r.json() as { ar_rows?: Array<ArRow> }
-              return Array.isArray(doc.ar_rows) ? doc.ar_rows : ([] as Array<ArRow>)
+              const doc = (await r.json()) as { ar_rows?: Array<ArRow> }
+              return Array.isArray(doc.ar_rows)
+                ? doc.ar_rows
+                : ([] as Array<ArRow>)
             }),
           ),
         ),
@@ -450,7 +496,7 @@ function RouteComponent() {
       const kardpollArRows: Array<ArRow> = kardpollResults.flat()
 
       const isGpmc = (row: ArRow) =>
-        ((row.customerName ?? row.customer) ?? '').toUpperCase().includes('GPMC')
+        (row.customerName ?? row.customer ?? '').toUpperCase().includes('GPMC')
 
       const allArRows = [...poRows, ...kardpollArRows]
       const gpmcRows = allArRows.filter(isGpmc)
@@ -469,8 +515,6 @@ function RouteComponent() {
           txnAmount: amount.toFixed(2),
           description: desc,
           lineNumber: ln++,
-          baseCurrency: 'CAD',
-          currency: 'CAD',
           isTax: false,
           glAccount: { id: gl },
           dimensions: {
@@ -485,15 +529,27 @@ function RouteComponent() {
       addLine('40010', kardpollSales, 'Kardpoll Sales')
       addLine('40010', ontarioIntTax, 'Ontario Integrated Tax')
       addLine('40200', storeSales, 'Store Sales')
-      addLine('10011', -safeDep, `Safe Deposit ${format(parseISO(date), 'dd/MM/yyyy')}`)
+      addLine(
+        '10011',
+        -safeDep,
+        `Safe Deposit ${format(parseISO(date), 'dd/MM/yyyy')}`,
+      )
       addLine('10011', nightDeposit, 'Night Deposit')
       addLine('52250', -gcRedemption, 'Gift Card Redemption')
       addLine('52175', -loyalty, 'Loyalty')
       if (nonGpmcTotal !== 0) addLine('10440', -nonGpmcTotal, 'Total AR POs')
       for (const row of gpmcRows) {
-        addLine('55100', -(Number(row.amount) || 0), row.customerName ?? row.customer ?? 'GPMC')
+        addLine(
+          '55100',
+          -(Number(row.amount) || 0),
+          row.customerName ?? row.customer ?? 'GPMC',
+        )
       }
-      addLine('55050', kardpollValue, kardpollValue >= 0 ? 'Kardpoll Paid' : 'Kardpoll Short')
+      addLine(
+        '55050',
+        kardpollValue,
+        kardpollValue >= 0 ? 'Kardpoll Paid' : 'Kardpoll Short',
+      )
       addLine('55050', gblValue, gblValue >= 0 ? 'GBL Paid' : 'GBL Short')
 
       const payload = {
@@ -503,7 +559,6 @@ function RouteComponent() {
         description: `Cash Management - ${site} - ${aggregatedDates.join(', ')}`,
         baseCurrency: 'CAD',
         currency: 'CAD',
-        state: 'draft',
         reconciliationState: 'uncleared',
         isInclusiveTax: false,
         bankAccount: { id: '10019' },
@@ -513,8 +568,6 @@ function RouteComponent() {
           typeId: 'Intacct Daily Rate',
           rate: 1,
         },
-        paymentMethod: 'recordTransfer',
-        sourceModule: 'cashManagement',
         lines,
       }
 
@@ -528,15 +581,26 @@ function RouteComponent() {
       })
 
       if (!receiptRes.ok) {
-        const body = await receiptRes.json().catch(() => ({}))
-        throw new Error(
-          (body as { message?: string }).message ?? `Sage returned ${receiptRes.status}`,
+        const body = (await receiptRes.json().catch(() => ({}))) as Record<
+          string,
+          unknown
+        >
+        console.error(
+          '[other-receipt] Sage error body:',
+          JSON.stringify(body, null, 2),
         )
+        const detail =
+          (body['ia::error'] as { message?: string } | undefined)?.message ??
+          (body.message as string | undefined) ??
+          JSON.stringify(body)
+        throw new Error(`Sage ${receiptRes.status}: ${detail}`)
       }
 
       setSageSuccess(true)
     } catch (err: unknown) {
-      setSageError(err instanceof Error ? err.message : 'Failed to create Sage entry')
+      setSageError(
+        err instanceof Error ? err.message : 'Failed to create Sage entry',
+      )
     } finally {
       setSageLoading(false)
     }
@@ -546,27 +610,35 @@ function RouteComponent() {
 
   const kardpollRows: Array<Row> = [
     { kind: 'row', label: 'GBL Credits Filtered', value: gblCreditsFiltered },
-    { kind: 'row', label: 'Less: Kardpoll Sales',  value: -kardpollSales },
-    { kind: 'row', label: 'Add: Kardpoll AR',      value: kardpollAr },
+    { kind: 'row', label: 'Less: Kardpoll Sales', value: -kardpollSales },
+    { kind: 'row', label: 'Add: Kardpoll AR', value: kardpollAr },
   ]
 
   const gblRows: Array<Row> = [
     { kind: 'section', label: 'Bank Credit Balance' },
-    { kind: 'row', label: 'Misc Credits',                 value: miscCreditsTotal },
-    { kind: 'row', label: 'GBL Credits',                  value: gblCreditsTotal },
-    { kind: 'row', label: 'Merchant Fees',                value: merchantFees },
-    { kind: 'row', label: 'Less: GBL Credits Filtered',   value: -gblCreditsFiltered },
-    { kind: 'row', label: 'Less: Handheld Debit',         value: -handheldDebit },
-    { kind: 'row', label: 'Less: Ontario Integrated Tax', value: -ontarioIntTax },
-    { kind: 'row', label: 'Less: Transfer From',          value: -transferFrom },
-    { kind: 'row', label: 'Less: Night Deposit',          value: -nightDeposit },
-    { kind: 'subtotal', label: 'Bank Cr. Balance',        value: bankCrBal },
+    { kind: 'row', label: 'Misc Credits', value: miscCreditsTotal },
+    { kind: 'row', label: 'GBL Credits', value: gblCreditsTotal },
+    { kind: 'row', label: 'Merchant Fees', value: merchantFees },
+    {
+      kind: 'row',
+      label: 'Less: GBL Credits Filtered',
+      value: -gblCreditsFiltered,
+    },
+    { kind: 'row', label: 'Less: Handheld Debit', value: -handheldDebit },
+    {
+      kind: 'row',
+      label: 'Less: Ontario Integrated Tax',
+      value: -ontarioIntTax,
+    },
+    { kind: 'row', label: 'Less: Transfer From', value: -transferFrom },
+    { kind: 'row', label: 'Less: Night Deposit', value: -nightDeposit },
+    { kind: 'subtotal', label: 'Bank Cr. Balance', value: bankCrBal },
     { kind: 'spacer' },
     { kind: 'section', label: 'Bank POS Rec' },
-    { kind: 'row', label: 'Total POS',                    value: totalPos },
-    { kind: 'row', label: 'Less: AFD Gift Card',          value: -afdGiftCard },
-    { kind: 'row', label: 'Less: Kiosk Gift Card',        value: -kioskGiftCard },
-    { kind: 'subtotal', label: 'Bank POS Rec',            value: bankPosRec },
+    { kind: 'row', label: 'Total POS', value: totalPos },
+    { kind: 'row', label: 'Less: AFD Gift Card', value: -afdGiftCard },
+    { kind: 'row', label: 'Less: Kiosk Gift Card', value: -kioskGiftCard },
+    { kind: 'subtotal', label: 'Bank POS Rec', value: bankPosRec },
   ]
 
   const selectedDow = getDay(parseISO(date))
@@ -632,7 +704,9 @@ function RouteComponent() {
       {aggregatedDates.length > 1 && (
         <p className="text-sm text-muted-foreground">
           Aggregating {aggregatedDates.length} days:{' '}
-          {aggregatedDates.map((d) => format(parseISO(d), 'EEE MMM d')).join(', ')}
+          {aggregatedDates
+            .map((d) => format(parseISO(d), 'EEE MMM d'))
+            .join(', ')}
         </p>
       )}
 
@@ -661,11 +735,11 @@ function RouteComponent() {
           {sageLoading ? 'Creating…' : 'Create Other Receipt in Sage'}
         </Button>
         {sageSuccess && (
-          <p className="text-sm text-green-600">Other Receipt created as draft in Sage.</p>
+          <p className="text-sm text-green-600">
+            Other Receipt created as draft in Sage.
+          </p>
         )}
-        {sageError && (
-          <p className="text-sm text-destructive">{sageError}</p>
-        )}
+        {sageError && <p className="text-sm text-destructive">{sageError}</p>}
       </div>
     </div>
   )
