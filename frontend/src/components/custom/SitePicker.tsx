@@ -11,7 +11,7 @@ import {
 
 interface Location {
   _id: string
-  name: string
+  stationName: string
 }
 
 interface SitePickerProps {
@@ -39,7 +39,9 @@ export function SitePicker({
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
         return res.json()
       })
-      .then((data: Array<Location>) => setLocations(data))
+      .then((data: Array<Location>) =>
+        setLocations(data.filter((l) => l.stationName)),
+      )
       .catch((err) => {
         console.error('Error fetching locations:', err)
         setError('Failed to load locations')
@@ -77,8 +79,8 @@ export function SitePicker({
           <SelectLabel>{label}</SelectLabel>
           {locations.length > 0 ? (
             locations.map((location) => (
-              <SelectItem key={location._id} value={location.name}>
-                {location.name}
+              <SelectItem key={location._id} value={location.stationName}>
+                {location.stationName}
               </SelectItem>
             ))
           ) : (

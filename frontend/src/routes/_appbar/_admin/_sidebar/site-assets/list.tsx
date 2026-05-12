@@ -105,7 +105,7 @@ function RouteComponent() {
   // Collect unique site names from loaded assets + locations for the filter bar
   const siteNames = Array.from(
     new Set([
-      ...(locations?.map((l) => l.name) ?? []),
+      ...(locations?.map((l) => l.stationName) ?? []),
       ...(assets?.map((a) => a.site) ?? []),
     ]),
   ).sort()
@@ -398,8 +398,8 @@ function RouteComponent() {
                   </SelectTrigger>
                   <SelectContent>
                     {locations?.map((loc) => (
-                      <SelectItem key={loc._id} value={loc.name}>
-                        {loc.name}
+                      <SelectItem key={loc._id} value={loc.stationName}>
+                        {loc.stationName}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -153,8 +153,8 @@ function RouteComponent() {
             </SelectTrigger>
             <SelectContent>
               {locations?.map((loc) => (
-                <SelectItem key={loc._id} value={loc.name}>
-                  {loc.name}
+                <SelectItem key={loc._id} value={loc.stationName}>
+                  {loc.stationName}
                 </SelectItem>
               ))}
             </SelectContent>
