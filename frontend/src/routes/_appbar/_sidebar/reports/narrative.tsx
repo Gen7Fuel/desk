@@ -62,7 +62,7 @@ function RouteComponent() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    apiFetch('https://app.gen7fuel.com/api/locations')
+    fetch('https://app.gen7fuel.com/api/locations')
       .then((res) => res.json())
       .then((data: Array<HubLocation>) => setLocations(data))
       .catch(() => setError('Failed to load stations.'))
