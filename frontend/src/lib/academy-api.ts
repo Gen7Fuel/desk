@@ -2,6 +2,7 @@ import { apiFetch } from './api'
 
 export interface AcademyItem {
   _id?: string
+  title?: string
   type: 'hotspot' | 'video' | 'mcq' | 'flip-card' | 'ordering' | 'matching'
   order: number
   content: Record<string, unknown>

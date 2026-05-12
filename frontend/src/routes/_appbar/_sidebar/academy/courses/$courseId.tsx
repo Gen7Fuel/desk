@@ -110,6 +110,7 @@ function fromDraftToPayload(
       type: s.type,
       items: s.items.map((item, ii) => ({
         _id: item._id,
+        title: item.title ?? '',
         type: item.type,
         order: ii,
         content: item.content,
@@ -176,6 +177,7 @@ function SortableItemRow({ item, onEdit, onDelete }: SortableItemRowProps) {
 }
 
 function getItemSummary(item: DraftItem): string {
+  if (item.title) return item.title
   const c = item.content
   switch (item.type) {
     case 'video':
@@ -504,7 +506,7 @@ function RouteComponent() {
           ...s,
           items: s.items.map((i) =>
             i.localId === editingItem.localId
-              ? { ...i, type: saved.type, content: saved.content }
+              ? { ...i, title: saved.title, type: saved.type, content: saved.content }
               : i,
           ),
         }
