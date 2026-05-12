@@ -59,7 +59,7 @@ type BOLPhoto = {
 }
 
 type HubLocation = {
-  name: string
+  stationName: string
   legalName?: string
 }
 
@@ -97,7 +97,7 @@ function RouteComponent() {
       .then((data: Array<HubLocation>) => {
         const map: Record<string, string> = {}
         for (const loc of data) {
-          if (loc.legalName) map[loc.name] = loc.legalName
+          if (loc.legalName) map[loc.stationName] = loc.legalName
         }
         setLocationNames(map)
       })

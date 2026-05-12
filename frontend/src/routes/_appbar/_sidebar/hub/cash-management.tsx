@@ -435,10 +435,10 @@ function RouteComponent() {
       })
       if (!locRes.ok) throw new Error('Failed to fetch Hub locations')
       const locations = (await locRes.json()) as Array<{
-        name: string
+        stationName: string
         sageEntityKey?: string
       }>
-      const loc = locations.find((l) => l.name === site)
+      const loc = locations.find((l) => l.stationName === site)
       if (!loc?.sageEntityKey)
         throw new Error(`No Sage entity key configured for "${site}"`)
 

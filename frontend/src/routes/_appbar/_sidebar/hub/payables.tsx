@@ -235,9 +235,9 @@ function RouteComponent() {
       const locRes = await fetch(`${HUB}/api/locations`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      const locations: Array<{ _id: string; name: string }> =
+      const locations: Array<{ _id: string; stationName: string }> =
         await locRes.json()
-      const selected = locations.find((l) => l.name === site)
+      const selected = locations.find((l) => l.stationName === site)
       if (!selected) {
         setPayables([])
         return
@@ -694,7 +694,7 @@ function RouteComponent() {
                                   ),
                                 )
                                 if (payable.paymentMethod === 'safe') {
-                                  const stationName = payable.location.name
+                                  const stationName = payable.location.stationName
                                   const oldDateStr = toLocalDate(
                                     payable.createdAt,
                                   )
