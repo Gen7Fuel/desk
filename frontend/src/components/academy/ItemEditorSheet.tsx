@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 const ITEM_TYPES: Array<{ value: AcademyItem['type']; label: string }> = [
   { value: 'video', label: 'Video' },
@@ -64,12 +65,14 @@ interface Props {
 
 export function ItemEditorSheet({ open, item, onSave, onClose }: Props) {
   const isNew = !item
+  const [title, setTitle] = useState(item?.title ?? '')
   const [type, setType] = useState<AcademyItem['type']>(item?.type ?? 'video')
   const [content, setContent] = useState<Record<string, unknown>>(
     item?.content ?? defaultContent(item?.type ?? 'video'),
   )
 
   useEffect(() => {
+    setTitle(item?.title ?? '')
     setType(item?.type ?? 'video')
     setContent(item?.content ?? defaultContent(item?.type ?? 'video'))
   }, [item])
@@ -82,6 +85,7 @@ export function ItemEditorSheet({ open, item, onSave, onClose }: Props) {
   const handleSave = () => {
     onSave({
       ...item,
+      title,
       type,
       order: item?.order ?? 0,
       content,
@@ -155,6 +159,15 @@ export function ItemEditorSheet({ open, item, onSave, onClose }: Props) {
         </SheetHeader>
 
         <div className="flex-1 space-y-6 px-4 py-4">
+          <div className="space-y-1.5">
+            <Label>Title</Label>
+            <Input
+              placeholder="e.g. Introduction to Safety Procedures"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </div>
+
           <div className="space-y-1.5">
             <Label>Item Type</Label>
             <Select
