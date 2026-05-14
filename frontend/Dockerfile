@@ -15,5 +15,7 @@ RUN npm run build
 # ── Stage 2: serve static files with Caddy ────────────────────────────────────
 FROM caddy:alpine
 
+RUN apk add --no-cache wget
+
 # Copy built SPA assets — Caddy serves them via file_server in the Caddyfile
 COPY --from=builder /app/dist /srv
