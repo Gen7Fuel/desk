@@ -4,7 +4,8 @@ FROM node:25-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --prefer-offline
 
 COPY . .
 ARG VITE_CDN_BASE

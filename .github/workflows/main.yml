@@ -1,0 +1,197 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend-image: ${{ steps.images.outputs.backend-image }}
+      frontend-image: ${{ steps.images.outputs.frontend-image }}
+      owner: ${{ steps.images.outputs.owner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+
+      - id: images
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "owner=${OWNER}" >> $GITHUB_OUTPUT
+          if [ "${{ steps.filter.outputs.backend }}" = "true" ]; then
+            echo "backend-image=ghcr.io/${OWNER}/desk-api:${{ github.sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "backend-image=ghcr.io/${OWNER}/desk-api:latest" >> $GITHUB_OUTPUT
+          fi
+          if [ "${{ steps.filter.outputs.frontend }}" = "true" ]; then
+            echo "frontend-image=ghcr.io/${OWNER}/desk-frontend:${{ github.sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "frontend-image=ghcr.io/${OWNER}/desk-frontend:latest" >> $GITHUB_OUTPUT
+          fi
+
+  # Only runs when backend/** changed
+  build-backend:
+    runs-on: ubuntu-latest
+    needs: check-changes
+    if: needs.check-changes.outputs.backend == 'true'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push api
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ needs.check-changes.outputs.backend-image }}
+            ghcr.io/${{ needs.check-changes.outputs.owner }}/desk-api:latest
+          cache-from: type=gha,scope=desk-api
+          cache-to: type=gha,mode=max,scope=desk-api
+
+  # Only runs when frontend/** changed
+  build-frontend:
+    runs-on: ubuntu-latest
+    needs: check-changes
+    if: needs.check-changes.outputs.frontend == 'true'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ needs.check-changes.outputs.frontend-image }}
+            ghcr.io/${{ needs.check-changes.outputs.owner }}/desk-frontend:latest
+          build-args: |
+            VITE_CDN_BASE=${{ secrets.VITE_CDN_BASE }}
+            VITE_CDN_ADMIN_TOKEN=${{ secrets.VITE_CDN_ADMIN_TOKEN }}
+          cache-from: type=gha,scope=desk-frontend
+          cache-to: type=gha,mode=max,scope=desk-frontend
+
+  # Runs as long as neither build failed — skipped builds are fine
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend, check-changes]
+    if: |
+      always() &&
+      needs.build-backend.result != 'failure' &&
+      needs.build-frontend.result != 'failure'
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e
+            cd ~/desk
+
+            # ---- Login to GHCR ----
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # ---- Pull latest config ----
+            GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git pull origin main
+
+            # ---- Write .env ----
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" > backend/.env
+            echo "SAGE_CLIENT_ID=${{ secrets.SAGE_CLIENT_ID }}" >> backend/.env
+            echo "SAGE_CLIENT_SECRET=${{ secrets.SAGE_CLIENT_SECRET }}" >> backend/.env
+            echo "SAGE_CALLBACK_URL=${{ secrets.SAGE_CALLBACK_URL }}" >> backend/.env
+            echo "AZURE_STORAGE_CONNECTION_STRING=${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" >> backend/.env
+            echo "AZURE_CONTAINER=${{ secrets.AZURE_CONTAINER }}" >> backend/.env
+            echo "CDN_BASE=${{ secrets.CDN_BASE }}" >> backend/.env
+            echo "CDN_ADMIN_TOKEN=${{ secrets.CDN_ADMIN_TOKEN }}" >> backend/.env
+            echo "ACADEMY_BASE=${{ secrets.ACADEMY_BASE }}" >> backend/.env
+            echo "ACADEMY_ADMIN_TOKEN=${{ secrets.ACADEMY_ADMIN_TOKEN }}" >> backend/.env
+            echo "SQL_USER=${{ secrets.SQL_USER }}" >> backend/.env
+            echo "SQL_PASSWORD=${{ secrets.SQL_PASSWORD }}" >> backend/.env
+
+            # ---- Image references (built in CI or latest fallback) ----
+            export FRONTEND_IMAGE=${{ needs.check-changes.outputs.frontend-image }}
+            export BACKEND_IMAGE=${{ needs.check-changes.outputs.backend-image }}
+
+            BACKEND_CHANGED=${{ needs.check-changes.outputs.backend }}
+            FRONTEND_CHANGED=${{ needs.check-changes.outputs.frontend }}
+
+            # ---- Deploy API (only if changed) ----
+            if [ "$BACKEND_CHANGED" = "true" ]; then
+                echo "Deploying api (new image: $BACKEND_IMAGE)..."
+                OLD_API=$(docker inspect --format='{{.Image}}' desk-api 2>/dev/null || echo "")
+                docker pull $BACKEND_IMAGE
+                if docker compose up -d --no-deps --wait api; then
+                    echo "SUCCESS: API is healthy."
+                else
+                    echo "FATAL: API failed health check!"
+                    docker logs desk-api --tail 50
+                    if [ -n "$OLD_API" ]; then
+                        echo "Rolling back api to $OLD_API..."
+                        export BACKEND_IMAGE=$OLD_API
+                        docker compose up -d --no-deps api
+                    fi
+                    exit 1
+                fi
+            else
+                echo "Skipping api deploy (no changes)."
+            fi
+
+            # ---- Deploy Frontend/Caddy (only if changed) ----
+            if [ "$FRONTEND_CHANGED" = "true" ]; then
+                echo "Deploying caddy (new image: $FRONTEND_IMAGE)..."
+                OLD_CADDY=$(docker inspect --format='{{.Image}}' desk-caddy 2>/dev/null || echo "")
+                docker pull $FRONTEND_IMAGE
+                if docker compose up -d --no-deps --wait caddy; then
+                    echo "SUCCESS: Caddy is healthy."
+                else
+                    echo "FATAL: Caddy failed health check!"
+                    docker logs desk-caddy --tail 50
+                    if [ -n "$OLD_CADDY" ]; then
+                        echo "Rolling back caddy to $OLD_CADDY..."
+                        export FRONTEND_IMAGE=$OLD_CADDY
+                        docker compose up -d --no-deps caddy
+                    fi
+                    exit 1
+                fi
+            else
+                echo "Skipping frontend deploy (no changes)."
+            fi
+
+            # ---- Clean up dangling images ----
+            docker image prune -f
