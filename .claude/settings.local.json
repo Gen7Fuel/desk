@@ -73,14 +73,10 @@
       "Bash(findstr /R \"checked.*useState\\\\|toggle.*useState\\\\|selected.*useState\" src\\\\routes\\\\*appbar*\\\\*sidebar*\\\\hub\\\\*.tsx)",
       "Bash(Select-Object Name)",
       "PowerShell(Select-String -Path C:\\\\Users\\\\MohammadHasan\\\\workspace\\\\desk\\\\frontend\\\\package-lock.json -Pattern '\"version\": \"1\\\\.' | Where-Object { $_.LineNumber -gt 984 -and $_.LineNumber -lt 1010 } | Select-Object -First 5)",
-<<<<<<< feature/cdn-admin
       "PowerShell(git *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(git push *)"
-=======
-      "PowerShell(git *)"
->>>>>>> main
     ]
   }
 }
