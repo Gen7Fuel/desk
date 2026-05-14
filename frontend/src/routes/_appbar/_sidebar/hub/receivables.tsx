@@ -79,6 +79,7 @@ function RouteComponent() {
   const [site, setSite] = useState('Rankin')
   const [purchaseOrders, setPurchaseOrders] = useState<Array<PurchaseOrder>>([])
   const [loading, setLoading] = useState(false)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   const [editingCell, setEditingCell] = useState<{
     id: string
@@ -95,11 +96,12 @@ function RouteComponent() {
   const fetchPurchaseOrders = async () => {
     if (!from || !to || !site) return
     setLoading(true)
+    setFetchError(null)
     try {
       const token = getExternalToken()
       const params = new URLSearchParams({
-        startDate: new Date(`${from}T00:00:00Z`).toISOString(),
-        endDate: new Date(`${to}T23:59:59Z`).toISOString(),
+        startDate: from,
+        endDate: to,
         stationName: site,
       })
 
@@ -109,9 +111,15 @@ function RouteComponent() {
           'X-Required-Permission': 'po',
         },
       })
+      if (!res.ok) {
+        setFetchError(`Error ${res.status}: ${res.statusText}`)
+        setPurchaseOrders([])
+        return
+      }
       const data: unknown = await res.json()
       setPurchaseOrders(Array.isArray(data) ? data : [])
     } catch {
+      setFetchError('Network error — could not reach Hub.')
       setPurchaseOrders([])
     } finally {
       setLoading(false)
@@ -638,7 +646,7 @@ function RouteComponent() {
                     colSpan={7}
                     className="px-4 py-8 text-center text-muted-foreground"
                   >
-                    No purchase orders found.
+                    {fetchError ?? 'No purchase orders found.'}
                   </td>
                 </tr>
               )}
