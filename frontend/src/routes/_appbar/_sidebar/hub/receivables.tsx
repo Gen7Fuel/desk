@@ -100,7 +100,7 @@ function RouteComponent() {
       const params = new URLSearchParams({
         startDate: new Date(`${from}T00:00:00Z`).toISOString(),
         endDate: new Date(`${to}T23:59:59Z`).toISOString(),
-        site: site,
+        stationName: site,
       })
 
       const res = await fetch(`${HUB}/api/purchase-orders?${params}`, {
