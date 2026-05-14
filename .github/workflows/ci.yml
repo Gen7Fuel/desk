@@ -1,11 +1,8 @@
-name: CI & Deploy
+name: CI
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
-  workflow_dispatch:
+    branches: [ main ]
 
 jobs:
   frontend:
@@ -71,46 +68,3 @@ jobs:
             exit 1
           fi
           echo "Audit passed (xlsx excluded — no fix available)"
-
-  deploy:
-    name: Deploy to Production
-    needs: [frontend, backend]
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Deploy to server
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-        #   command_timeout: 30m
-          script: |
-            set -e
-            cd ~/desk
-
-            # Pull latest code
-            GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git pull origin main
-
-            # Write .env (echo avoids heredoc indentation issues)
-            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" > backend/.env
-            echo "SAGE_CLIENT_ID=${{ secrets.SAGE_CLIENT_ID }}" >> backend/.env
-            echo "SAGE_CLIENT_SECRET=${{ secrets.SAGE_CLIENT_SECRET }}" >> backend/.env
-            echo "SAGE_CALLBACK_URL=${{ secrets.SAGE_CALLBACK_URL }}" >> backend/.env
-            echo "AZURE_STORAGE_CONNECTION_STRING=${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" >> backend/.env
-            echo "AZURE_CONTAINER=${{ secrets.AZURE_CONTAINER }}" >> backend/.env
-            echo "CDN_BASE=${{ secrets.CDN_BASE }}" >> backend/.env
-            echo "CDN_ADMIN_TOKEN=${{ secrets.CDN_ADMIN_TOKEN }}" >> backend/.env
-            echo "ACADEMY_BASE=${{ secrets.ACADEMY_BASE }}" >> backend/.env
-            echo "ACADEMY_ADMIN_TOKEN=${{ secrets.ACADEMY_ADMIN_TOKEN }}" >> backend/.env
-            echo "SQL_USER=${{ secrets.SQL_USER }}" >> backend/.env
-            echo "SQL_PASSWORD=${{ secrets.SQL_PASSWORD }}" >> backend/.env
-
-            # Rebuild and restart, wait for healthy
-            export VITE_CDN_BASE="${{ secrets.VITE_CDN_BASE }}"
-            export VITE_CDN_ADMIN_TOKEN="${{ secrets.VITE_CDN_ADMIN_TOKEN }}"
-            docker compose up -d --build --force-recreate --wait
-
-            # Clean up old images
-            docker image prune -f

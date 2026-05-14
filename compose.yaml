@@ -1,11 +1,7 @@
 services:
   caddy:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        - VITE_CDN_BASE
-        - VITE_CDN_ADMIN_TOKEN
+    container_name: desk-caddy
+    image: ${FRONTEND_IMAGE}
     restart: unless-stopped
     ports:
       - "3500:80"
@@ -13,15 +9,21 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:2019/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     networks:
       - desk
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
   api:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    container_name: desk-api
+    image: ${BACKEND_IMAGE}
     restart: unless-stopped
     env_file: ./backend/.env
     dns:
