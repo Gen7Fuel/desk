@@ -76,7 +76,9 @@
       "PowerShell(git *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "WebFetch(domain:www.intacct.com)",
+      "Bash(dir \"C:\\\\Users\\\\MohammadHasan\\\\workspace\\\\desk\\\\backend\" /B)"
     ]
   }
 }

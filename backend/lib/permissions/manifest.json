@@ -58,7 +58,8 @@
         "cdn":             { "actions": ["read", "delete"] },
         "payables":        { "actions": ["read", "update", "delete"] },
         "receivables":     { "actions": ["read", "update", "delete"] },
-        "cashManagement":  { "actions": ["read"] }
+        "cashManagement":  { "actions": ["read"] },
+        "fleetCards":      { "actions": ["create", "read", "update", "delete"] }
       }
     },
     "issues": {
