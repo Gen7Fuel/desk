@@ -2,10 +2,9 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
+import type { FleetCard, FleetCardStatus } from '@/lib/fleet-card-api'
 import {
   FLEET_CARD_STATUSES,
-  type FleetCard,
-  type FleetCardStatus,
   createFleetCard,
   deleteFleetCard,
   formatCardNumber,
