@@ -455,16 +455,6 @@ function RouteComponent() {
       const locationId = entityData['ia::result'].id
       if (!locationId) throw new Error('Could not resolve Sage location ID')
 
-      const deptRes = await apiFetch('/api/sage/department/6', {
-        headers: { 'X-Sage-Token': sageToken },
-      })
-      if (!deptRes.ok) throw new Error('Failed to fetch Sage department')
-      const deptData = (await deptRes.json()) as {
-        'ia::result': { id: string }
-      }
-      const departmentId = deptData['ia::result'].id
-      if (!departmentId) throw new Error('Could not resolve Sage department ID')
-
       const [poResults, kardpollResults] = await Promise.all([
         Promise.all(
           aggregatedDates.map((d) =>
@@ -519,7 +509,6 @@ function RouteComponent() {
           glAccount: { id: gl },
           dimensions: {
             location: { id: locationId },
-            department: { id: departmentId },
           },
         })
       }
@@ -561,8 +550,8 @@ function RouteComponent() {
         currency: 'CAD',
         reconciliationState: 'uncleared',
         isInclusiveTax: false,
-        bankAccount: { id: '10019' },
-        undepositedGLAccount: { id: '2000' },
+        undepositedGLAccount: { id: '10019' },
+        paymentMethod: 'eft',
         depositDate: date,
         exchangeRate: {
           date,

@@ -32,6 +32,11 @@ const sidebarLinks: Record<
       path: '/hub/cash-management',
       permission: 'hub.cashManagement',
     },
+    {
+      label: 'Fleet Cards',
+      path: '/hub/fleet-cards',
+      permission: 'hub.fleetCards',
+    },
   ],
   academy: [
     {
