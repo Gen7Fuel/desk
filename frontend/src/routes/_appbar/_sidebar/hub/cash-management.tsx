@@ -562,6 +562,7 @@ function RouteComponent() {
         reconciliationState: 'uncleared',
         isInclusiveTax: false,
         bankAccount: { id: '10019' },
+        undepositedGLAccount: { id: '2000' },
         depositDate: date,
         exchangeRate: {
           date,
