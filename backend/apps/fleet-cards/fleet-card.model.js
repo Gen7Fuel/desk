@@ -4,9 +4,9 @@ const FleetCardSchema = new mongoose.Schema(
   {
     cardNumber: { type: String, required: true, unique: true, match: /^\d{16}$/ },
     accountName: { type: String, required: true },
-    driverName: { type: String, required: true },
-    numberPlate: { type: String, required: true },
-    makeModel: { type: String, required: true },
+    driverName: { type: String, default: '' },
+    numberPlate: { type: String, default: '' },
+    makeModel: { type: String, default: '' },
     status: {
       type: String,
       enum: ['active', 'inactive', 'lost', 'cancelled'],

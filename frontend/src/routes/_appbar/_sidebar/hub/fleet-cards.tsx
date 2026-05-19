@@ -151,7 +151,6 @@ function CardForm({
             id="driverName"
             value={form.driverName}
             onChange={(e) => set('driverName', e.target.value)}
-            required
           />
         </div>
 
@@ -161,7 +160,6 @@ function CardForm({
             id="numberPlate"
             value={form.numberPlate}
             onChange={(e) => set('numberPlate', e.target.value)}
-            required
           />
         </div>
 
@@ -171,7 +169,6 @@ function CardForm({
             id="makeModel"
             value={form.makeModel}
             onChange={(e) => set('makeModel', e.target.value)}
-            required
           />
         </div>
 
@@ -210,7 +207,7 @@ function CardForm({
         <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" size="sm" disabled={isPending || !cardValid}>
+        <Button type="submit" size="sm" disabled={isPending || !cardValid || !form.accountName.trim()}>
           {isPending ? 'Saving…' : 'Save'}
         </Button>
       </DialogFooter>
