@@ -455,40 +455,82 @@ function RouteComponent() {
       const locationId = entityData['ia::result'].id
       if (!locationId) throw new Error('Could not resolve Sage location ID')
 
-      const [poResults, kardpollResults] = await Promise.all([
-        Promise.all(
-          aggregatedDates.map((d) =>
-            fetch(
-              `${HUB}/api/purchase-orders?startDate=${d}&endDate=${d}&site=${encodeURIComponent(site)}`,
-              { headers: { Authorization: `Bearer ${getExternalToken()}` } },
-            ).then((r) =>
-              r.ok ? (r.json() as Promise<Array<ArRow>>) : ([] as Array<ArRow>),
-            ),
-          ),
-        ),
-        Promise.all(
-          aggregatedDates.map((d) =>
-            fetch(
-              `${HUB}/api/cash-rec/kardpoll-entries?site=${encodeURIComponent(site)}&date=${encodeURIComponent(d)}`,
-              { headers: { Authorization: `Bearer ${getExternalToken()}` } },
-            ).then(async (r) => {
-              if (!r.ok) return [] as Array<ArRow>
-              const doc = (await r.json()) as { ar_rows?: Array<ArRow> }
-              return Array.isArray(doc.ar_rows)
-                ? doc.ar_rows
-                : ([] as Array<ArRow>)
-            }),
-          ),
-        ),
-      ])
+      const dayEntryRes = await fetch(
+        `${HUB}/api/cash-rec/entries?site=${encodeURIComponent(site)}&date=${encodeURIComponent(date)}`,
+        { headers: { Authorization: `Bearer ${getExternalToken()}` } },
+      )
+      const dayEntry: CashRecResponse | null = dayEntryRes.ok
+        ? ((await dayEntryRes.json()) as CashRecResponse)
+        : null
 
-      const poRows: Array<ArRow> = poResults.flat()
-      const kardpollArRows: Array<ArRow> = kardpollResults.flat()
+      const rn = (v: number | undefined | null) => v ?? 0
+      const sumAmt = (arr?: Array<BankEntry>) =>
+        (arr ?? []).reduce((s, x) => s + (Number(x.amount) || 0), 0)
+
+      const d_gblCreditsFiltered = rn(dayEntry?.bank?.gblCreditsFiltered)
+      const d_kardpollSales = rn(dayEntry?.kardpoll?.sales)
+      const d_kardpollAr = rn(dayEntry?.kardpoll?.ar)
+      const d_miscCreditsTotal = sumAmt(dayEntry?.bank?.miscCredits)
+      const d_gblCreditsTotal = sumAmt(dayEntry?.bank?.gblCredits)
+      const d_merchantFees = rn(dayEntry?.bank?.merchantFees)
+      const d_ontarioIntTax = rn(dayEntry?.bank?.ontarioIntegratedTax)
+      const d_transferFrom = rn(dayEntry?.bank?.transferFrom)
+      const d_nightDeposit = rn(dayEntry?.bank?.nightDeposit)
+      const d_handheldDebit = rn(dayEntry?.cashSummary?.handheldDebit)
+      const d_totalPos = rn(dayEntry?.cashSummary?.totals.totalPos)
+      const d_afdGiftCard = rn(dayEntry?.cashSummary?.totals.afdGiftCard)
+      const d_kioskGiftCard = rn(dayEntry?.cashSummary?.totals.kioskGiftCard)
+      const d_totalSales = rn(dayEntry?.cashSummary?.totals.totalSales)
+      const d_itemSales = rn(dayEntry?.cashSummary?.totals.item_sales)
+      const d_reportedCanadianCash = rn(
+        dayEntry?.cashSummary?.totals.report_canadian_cash,
+      )
+      const d_missedCpl = rn(dayEntry?.cashSummary?.totals.missedCpl)
+      const d_canadianCashCollected = rn(
+        dayEntry?.cashSummary?.totals.canadian_cash_collected,
+      )
+      const d_couponsAccepted = rn(dayEntry?.cashSummary?.totals.couponsAccepted)
+      const d_giftCertificates = rn(dayEntry?.cashSummary?.totals.giftCertificates)
+
+      const d_bankCrBal =
+        d_miscCreditsTotal +
+        d_gblCreditsTotal +
+        d_merchantFees -
+        d_gblCreditsFiltered -
+        d_handheldDebit -
+        d_ontarioIntTax -
+        d_transferFrom -
+        d_nightDeposit
+      const d_bankPosRec = d_totalPos - d_afdGiftCard - d_kioskGiftCard
+      const d_gblSales =
+        d_totalSales - d_itemSales - d_reportedCanadianCash - d_missedCpl
+      const d_kardpollValue =
+        d_gblCreditsFiltered - (d_kardpollSales - d_kardpollAr)
+      const d_gblValue = d_bankCrBal - d_bankPosRec
+      const d_gcRedemption = d_afdGiftCard + d_kioskGiftCard
+      const d_loyalty = d_couponsAccepted + d_giftCertificates
+
+      const [poRes, kardpollRes] = await Promise.all([
+        fetch(
+          `${HUB}/api/purchase-orders?startDate=${date}&endDate=${date}&site=${encodeURIComponent(site)}`,
+          { headers: { Authorization: `Bearer ${getExternalToken()}` } },
+        ).then((r) =>
+          r.ok ? (r.json() as Promise<Array<ArRow>>) : ([] as Array<ArRow>),
+        ),
+        fetch(
+          `${HUB}/api/cash-rec/kardpoll-entries?site=${encodeURIComponent(site)}&date=${encodeURIComponent(date)}`,
+          { headers: { Authorization: `Bearer ${getExternalToken()}` } },
+        ).then(async (r) => {
+          if (!r.ok) return [] as Array<ArRow>
+          const doc = (await r.json()) as { ar_rows?: Array<ArRow> }
+          return Array.isArray(doc.ar_rows) ? doc.ar_rows : ([] as Array<ArRow>)
+        }),
+      ])
 
       const isGpmc = (row: ArRow) =>
         (row.customerName ?? row.customer ?? '').toUpperCase().includes('GPMC')
 
-      const allArRows = [...poRows, ...kardpollArRows]
+      const allArRows = [...poRes, ...kardpollRes]
       const gpmcRows = allArRows.filter(isGpmc)
       const nonGpmcTotal = allArRows
         .filter((r) => !isGpmc(r))
@@ -513,19 +555,19 @@ function RouteComponent() {
         })
       }
 
-      addLine('40010', gblSales, 'GBL Sales')
-      addLine('40010', cashSales, 'Cash Sales')
-      addLine('40010', kardpollSales, 'Kardpoll Sales')
-      addLine('40010', ontarioIntTax, 'Ontario Integrated Tax')
-      addLine('40200', storeSales, 'Store Sales')
+      addLine('40010', d_gblSales, 'GBL Sales')
+      addLine('40010', d_reportedCanadianCash, 'Cash Sales')
+      addLine('40010', d_kardpollSales, 'Kardpoll Sales')
+      addLine('40010', d_ontarioIntTax, 'Ontario Integrated Tax')
+      addLine('40200', d_itemSales, 'Store Sales')
       addLine(
         '10011',
-        -safeDep,
+        -d_canadianCashCollected,
         `Safe Deposit ${format(parseISO(date), 'dd/MM/yyyy')}`,
       )
-      addLine('10011', nightDeposit, 'Night Deposit')
-      addLine('52250', -gcRedemption, 'Gift Card Redemption')
-      addLine('52175', -loyalty, 'Loyalty')
+      addLine('10011', d_nightDeposit, 'Night Deposit')
+      addLine('52250', -d_gcRedemption, 'Gift Card Redemption')
+      addLine('52175', -d_loyalty, 'Loyalty')
       if (nonGpmcTotal !== 0) addLine('10440', -nonGpmcTotal, 'Total AR POs')
       for (const row of gpmcRows) {
         addLine(
@@ -536,18 +578,19 @@ function RouteComponent() {
       }
       addLine(
         '55050',
-        kardpollValue,
-        kardpollValue >= 0 ? 'Kardpoll Paid' : 'Kardpoll Short',
+        d_kardpollValue,
+        d_kardpollValue >= 0 ? 'Kardpoll Paid' : 'Kardpoll Short',
       )
-      addLine('55050', gblValue, gblValue >= 0 ? 'GBL Paid' : 'GBL Short')
+      addLine('55050', d_gblValue, d_gblValue >= 0 ? 'GBL Paid' : 'GBL Short')
 
       const payload = {
         payer: 'Daily Sales',
         txnDate: date,
         txnPaidDate: date,
-        description: `Cash Management - ${site} - ${aggregatedDates.join(', ')}`,
+        description: `Cash Management - ${site} - ${date}`,
         baseCurrency: 'CAD',
         currency: 'CAD',
+        txnCurrency: 'CAD',
         reconciliationState: 'uncleared',
         isInclusiveTax: false,
         undepositedGLAccount: { id: '10019' },
@@ -555,7 +598,7 @@ function RouteComponent() {
         depositDate: date,
         exchangeRate: {
           date,
-          typeId: 'Intacct Daily Rate',
+          typeId: null,
           rate: 1,
         },
         lines,
