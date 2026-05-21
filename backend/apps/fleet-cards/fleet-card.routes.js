@@ -18,7 +18,7 @@ router.get('/fleet-cards/:id', authenticate, requirePermission(PERM, 'read'), as
 
 router.post('/fleet-cards', authenticate, requirePermission(PERM, 'create'), async (req, res) => {
   const { cardNumber, accountName, driverName, numberPlate, makeModel, status, notes } = req.body
-  if (!cardNumber || !accountName || !driverName || !numberPlate || !makeModel) {
+  if (!cardNumber || !accountName) {
     return res.status(400).json({ error: 'Missing required fields' })
   }
   const stripped = cardNumber.replace(/\s/g, '')

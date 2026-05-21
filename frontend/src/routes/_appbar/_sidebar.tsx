@@ -37,6 +37,11 @@ const sidebarLinks: Record<
       path: '/hub/fleet-cards',
       permission: 'hub.fleetCards',
     },
+    {
+      label: 'AR Customers',
+      path: '/hub/ar-customers',
+      permission: 'hub.arCustomers',
+    },
   ],
   academy: [
     {

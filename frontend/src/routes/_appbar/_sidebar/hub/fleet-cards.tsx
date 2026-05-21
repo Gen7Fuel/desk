@@ -11,6 +11,7 @@ import {
   getFleetCards,
   updateFleetCard,
 } from '@/lib/fleet-card-api'
+import { getArCustomers } from '@/lib/ar-customer-api'
 import { can } from '@/lib/permissions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -25,6 +26,11 @@ import {
   DialogPortal,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from '@/components/ui/popover'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -57,15 +63,16 @@ const STATUS_BADGE: Record<FleetCardStatus, string> = {
   active: 'bg-green-100 text-green-800',
   inactive: 'bg-gray-100 text-gray-600',
   lost: 'bg-red-100 text-red-800',
+  stolen: 'bg-purple-100 text-purple-800',
   cancelled: 'bg-yellow-100 text-yellow-800',
 }
 
 const EMPTY_FORM = {
-  cardNumber: '',
-  accountName: '',
+  fleetCardNumber: '',
+  customerName: '',
   driverName: '',
   numberPlate: '',
-  makeModel: '',
+  vehicleMakeModel: '',
   status: 'active' as FleetCardStatus,
   notes: '',
 }
@@ -93,21 +100,35 @@ function CardForm({
   description?: string
 }) {
   const [form, setForm] = useState<FormState>(initial)
+  const [acOpen, setAcOpen] = useState(false)
+
+  const { data: arCustomers = [] } = useQuery({
+    queryKey: ['ar-customers'],
+    queryFn: getArCustomers,
+  })
+
+  const suggestions = form.customerName.trim()
+    ? arCustomers
+        .filter((c) =>
+          c.name.toLowerCase().includes(form.customerName.toLowerCase()),
+        )
+        .slice(0, 8)
+    : []
 
   function set(field: keyof FormState, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
   function handleCardNumberChange(raw: string) {
-    set('cardNumber', formatCardInput(raw))
+    set('fleetCardNumber', formatCardInput(raw))
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    onSubmit({ ...form, cardNumber: form.cardNumber.replace(/\s/g, '') })
+    onSubmit({ ...form, fleetCardNumber: form.fleetCardNumber.replace(/\s/g, '') })
   }
 
-  const digits = form.cardNumber.replace(/\s/g, '')
+  const digits = form.fleetCardNumber.replace(/\s/g, '')
   const cardValid = digits.length === 16
 
   return (
@@ -125,24 +146,56 @@ function CardForm({
           <Input
             id="cardNumber"
             placeholder="XXXX XXXX XXXX XXXX"
-            value={form.cardNumber}
+            value={form.fleetCardNumber}
             onChange={(e) => handleCardNumberChange(e.target.value)}
             className="font-mono tracking-widest"
             required
           />
-          {form.cardNumber && !cardValid && (
+          {form.fleetCardNumber && !cardValid && (
             <p className="text-xs text-destructive">Must be exactly 16 digits</p>
           )}
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="accountName">Account Name</Label>
-          <Input
-            id="accountName"
-            value={form.accountName}
-            onChange={(e) => set('accountName', e.target.value)}
-            required
-          />
+          <Popover
+            open={acOpen && suggestions.length > 0}
+            onOpenChange={setAcOpen}
+          >
+            <PopoverAnchor asChild>
+              <Input
+                id="accountName"
+                value={form.customerName}
+                onChange={(e) => {
+                  set('customerName', e.target.value)
+                  setAcOpen(true)
+                }}
+                onFocus={() => setAcOpen(true)}
+                required
+              />
+            </PopoverAnchor>
+            <PopoverContent
+              align="start"
+              sideOffset={4}
+              className="p-0 w-[var(--radix-popover-anchor-width)]"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
+              {suggestions.map((c) => (
+                <button
+                  key={c._id}
+                  type="button"
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-accent"
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    set('customerName', c.name)
+                    setAcOpen(false)
+                  }}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
         </div>
 
         <div className="space-y-1.5">
@@ -167,8 +220,8 @@ function CardForm({
           <Label htmlFor="makeModel">Make &amp; Model</Label>
           <Input
             id="makeModel"
-            value={form.makeModel}
-            onChange={(e) => set('makeModel', e.target.value)}
+            value={form.vehicleMakeModel}
+            onChange={(e) => set('vehicleMakeModel', e.target.value)}
           />
         </div>
 
@@ -207,7 +260,7 @@ function CardForm({
         <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" size="sm" disabled={isPending || !cardValid || !form.accountName.trim()}>
+        <Button type="submit" size="sm" disabled={isPending || !cardValid || !form.customerName.trim()}>
           {isPending ? 'Saving…' : 'Save'}
         </Button>
       </DialogFooter>
@@ -235,7 +288,7 @@ function RouteComponent() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Omit<FleetCard, '_id' | 'createdAt' | 'updatedAt'>> }) =>
+    mutationFn: ({ id, data }: { id: string; data: Partial<Omit<FleetCard, '_id' | 'customerId' | 'customerEmail'>> }) =>
       updateFleetCard(id, data),
     onSuccess: () => { invalidate(); setEditCard(null) },
     onError: (err) => alert(err instanceof Error ? err.message : 'Failed to update'),
@@ -299,12 +352,12 @@ function RouteComponent() {
             {cards.map((card) => (
               <TableRow key={card._id}>
                 <TableCell className="font-mono tracking-widest text-sm">
-                  {formatCardNumber(card.cardNumber)}
+                  {formatCardNumber(card.fleetCardNumber)}
                 </TableCell>
-                <TableCell>{card.accountName}</TableCell>
+                <TableCell>{card.customerName}</TableCell>
                 <TableCell>{card.driverName}</TableCell>
                 <TableCell>{card.numberPlate}</TableCell>
-                <TableCell>{card.makeModel}</TableCell>
+                <TableCell>{card.vehicleMakeModel}</TableCell>
                 <TableCell>
                   <Badge
                     className={`capitalize ${STATUS_BADGE[card.status]}`}
@@ -372,11 +425,11 @@ function RouteComponent() {
               <CardForm
                 title="Edit Fleet Card"
                 initial={{
-                  cardNumber: formatCardNumber(editCard.cardNumber),
-                  accountName: editCard.accountName,
+                  fleetCardNumber: formatCardNumber(editCard.fleetCardNumber),
+                  customerName: editCard.customerName,
                   driverName: editCard.driverName,
                   numberPlate: editCard.numberPlate,
-                  makeModel: editCard.makeModel,
+                  vehicleMakeModel: editCard.vehicleMakeModel,
                   status: editCard.status,
                   notes: editCard.notes,
                 }}
@@ -404,7 +457,7 @@ function RouteComponent() {
               <DialogDescription>
                 This will permanently delete the card{' '}
                 <strong className="font-mono">
-                  {deleteCard ? formatCardNumber(deleteCard.cardNumber) : ''}
+                  {deleteCard ? formatCardNumber(deleteCard.fleetCardNumber) : ''}
                 </strong>{' '}
                 assigned to <strong>{deleteCard?.driverName}</strong>. This
                 action cannot be undone.
