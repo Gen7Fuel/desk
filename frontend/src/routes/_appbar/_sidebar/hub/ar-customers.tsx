@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2, Pencil, Trash2, Upload } from 'lucide-react'
@@ -9,6 +9,7 @@ import {
   syncArCustomers,
   updateArCustomer,
 } from '@/lib/ar-customer-api'
+import { getFleetCards } from '@/lib/fleet-card-api'
 import { can } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
 import {
@@ -103,7 +104,7 @@ function SyncZone({ onSynced }: { onSynced: () => void }) {
   const isPending = syncMutation.isPending
 
   return (
-    <div className="mb-6">
+    <div>
       <div
         role="button"
         tabIndex={0}
@@ -117,7 +118,7 @@ function SyncZone({ onSynced }: { onSynced: () => void }) {
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         className={[
-          'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-6 py-10 text-sm transition-colors',
+          'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-3 py-4 text-sm transition-colors',
           isPending
             ? 'cursor-not-allowed opacity-60 border-muted'
             : dragOver
@@ -127,18 +128,18 @@ function SyncZone({ onSynced }: { onSynced: () => void }) {
       >
         {isPending ? (
           <>
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span>Syncing…</span>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-xs">Syncing…</span>
           </>
         ) : dragOver ? (
           <>
-            <Upload className="h-6 w-6" />
-            <span>Drop file to sync</span>
+            <Upload className="h-4 w-4" />
+            <span className="text-xs">Drop file to sync</span>
           </>
         ) : (
           <>
-            <Upload className="h-6 w-6" />
-            <span>Drop .xls file here or click to browse</span>
+            <Upload className="h-4 w-4" />
+            <span className="text-center text-xs">Upload CSO export of house accounts</span>
           </>
         )}
       </div>
@@ -300,13 +301,34 @@ function EditDialog({
 
 function RouteComponent() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [editCustomer, setEditCustomer] = useState<ArCustomer | null>(null)
   const [deleteCustomer, setDeleteCustomer] = useState<ArCustomer | null>(null)
+  const [nameFilter, setNameFilter] = useState('')
 
   const { data: customers = [], isLoading, error } = useQuery({
     queryKey: ['ar-customers'],
     queryFn: getArCustomers,
   })
+
+  const { data: fleetCards = [] } = useQuery({
+    queryKey: ['fleet-cards'],
+    queryFn: getFleetCards,
+  })
+
+  const filteredCustomers = nameFilter.trim()
+    ? customers.filter((c) =>
+        c.name.toLowerCase().includes(nameFilter.toLowerCase()),
+      )
+    : customers
+
+  const cardCountByCustomerName = fleetCards.reduce<Record<string, number>>(
+    (acc, card) => {
+      if (card.customerName) acc[card.customerName] = (acc[card.customerName] ?? 0) + 1
+      return acc
+    },
+    {},
+  )
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteArCustomer(id),
@@ -320,18 +342,31 @@ function RouteComponent() {
 
   return (
     <div className="p-6">
-      <div className="mb-4">
-        <h1 className="text-lg font-semibold">AR Customers</h1>
-        <p className="text-sm text-muted-foreground">
-          {customers.length} customer{customers.length !== 1 ? 's' : ''}
-        </p>
+      <div className="mb-6 flex items-center gap-4">
+        <div className="flex flex-1 items-center justify-between gap-4">
+          <div>
+            <h1 className="text-lg font-semibold">AR Customers</h1>
+            <p className="text-sm text-muted-foreground">
+              {filteredCustomers.length}{nameFilter.trim() ? ` of ${customers.length}` : ''} customer{customers.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          <div className="flex flex-1 justify-center">
+            <Input
+              placeholder="Filter by name…"
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.target.value)}
+              className="max-w-xs"
+            />
+          </div>
+        </div>
+        <div className="w-1/4 shrink-0">
+          <SyncZone
+            onSynced={() =>
+              queryClient.invalidateQueries({ queryKey: ['ar-customers'] })
+            }
+          />
+        </div>
       </div>
-
-      <SyncZone
-        onSynced={() =>
-          queryClient.invalidateQueries({ queryKey: ['ar-customers'] })
-        }
-      />
 
       {isLoading && (
         <p className="text-sm text-muted-foreground">Loading…</p>
@@ -350,26 +385,41 @@ function RouteComponent() {
               <TableHead>Phone</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Notes</TableHead>
+              <TableHead>Cards</TableHead>
               <TableHead className="w-20"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {customers.length === 0 && (
+            {filteredCustomers.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="text-center text-sm text-muted-foreground"
                 >
-                  No AR customers found. Upload a file to sync.
+                  {customers.length === 0
+                    ? 'No AR customers found. Upload a file to sync.'
+                    : 'No customers match the filter.'}
                 </TableCell>
               </TableRow>
             )}
-            {customers.map((customer) => (
+            {filteredCustomers.map((customer) => (
               <TableRow key={customer._id}>
                 <TableCell className="font-mono text-sm">
                   {customer.customerId}
                 </TableCell>
-                <TableCell>{customer.name}</TableCell>
+                <TableCell>
+                  <button
+                    className="hover:underline text-left"
+                    onClick={() =>
+                      navigate({
+                        to: '/hub/fleet-cards',
+                        search: { account: customer.name },
+                      })
+                    }
+                  >
+                    {customer.name}
+                  </button>
+                </TableCell>
                 <TableCell>{formatCurrency(customer.creditLimit)}</TableCell>
                 <TableCell className="text-sm">
                   {orDash(customer.phone)}
@@ -379,6 +429,9 @@ function RouteComponent() {
                 </TableCell>
                 <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
                   {orDash(customer.notes)}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {cardCountByCustomerName[customer.name] ?? 0}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
