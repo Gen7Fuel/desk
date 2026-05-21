@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
@@ -52,6 +52,9 @@ import { Textarea } from '@/components/ui/textarea'
 
 export const Route = createFileRoute('/_appbar/_sidebar/hub/fleet-cards')({
   component: RouteComponent,
+  validateSearch: (search: Record<string, unknown>) => ({
+    account: typeof search.account === 'string' ? search.account : undefined,
+  }),
   beforeLoad: () => {
     if (typeof window !== 'undefined' && !can('hub.fleetCards', 'read')) {
       throw redirect({ to: '/' })
@@ -270,9 +273,15 @@ function CardForm({
 
 function RouteComponent() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate({ from: '/hub/fleet-cards' })
+  const { account: accountFilter } = Route.useSearch()
   const [createOpen, setCreateOpen] = useState(false)
   const [editCard, setEditCard] = useState<FleetCard | null>(null)
   const [deleteCard, setDeleteCard] = useState<FleetCard | null>(null)
+
+  function setAccountFilter(name: string | null) {
+    navigate({ search: (prev) => ({ ...prev, account: name ?? undefined }), replace: true })
+  }
 
   const { data: cards = [], isLoading, error } = useQuery({
     queryKey: ['fleet-cards'],
@@ -280,6 +289,12 @@ function RouteComponent() {
   })
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['fleet-cards'] })
+
+  const filteredCards = accountFilter
+    ? cards.filter((c) => c.customerName === accountFilter)
+    : cards
+
+
 
   const createMutation = useMutation({
     mutationFn: createFleetCard,
@@ -306,7 +321,19 @@ function RouteComponent() {
         <div>
           <h1 className="text-lg font-semibold">Fleet Cards</h1>
           <p className="text-sm text-muted-foreground">
-            {cards.length} card{cards.length !== 1 ? 's' : ''}
+            {filteredCards.length}{accountFilter ? ` of ${cards.length}` : ''} card{cards.length !== 1 ? 's' : ''}
+            {accountFilter && (
+              <>
+                {' '}— <span className="font-medium text-foreground">{accountFilter}</span>
+                <button
+                  className="ml-1 text-muted-foreground hover:text-foreground"
+                  onClick={() => setAccountFilter(null)}
+                  aria-label="Clear filter"
+                >
+                  ×
+                </button>
+              </>
+            )}
           </p>
         </div>
         {can('hub.fleetCards', 'create') && (
@@ -339,22 +366,29 @@ function RouteComponent() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {cards.length === 0 && (
+            {filteredCards.length === 0 && (
               <TableRow>
                 <TableCell
                   colSpan={8}
                   className="text-center text-sm text-muted-foreground"
                 >
-                  No fleet cards found.
+                  {cards.length === 0 ? 'No fleet cards found.' : 'No cards for this account.'}
                 </TableCell>
               </TableRow>
             )}
-            {cards.map((card) => (
+            {filteredCards.map((card) => (
               <TableRow key={card._id}>
                 <TableCell className="font-mono tracking-widest text-sm">
                   {formatCardNumber(card.fleetCardNumber)}
                 </TableCell>
-                <TableCell>{card.customerName}</TableCell>
+                <TableCell>
+                  <button
+                    className="hover:underline text-left"
+                    onClick={() => setAccountFilter(accountFilter === card.customerName ? null : card.customerName)}
+                  >
+                    {card.customerName}
+                  </button>
+                </TableCell>
                 <TableCell>{card.driverName}</TableCell>
                 <TableCell>{card.numberPlate}</TableCell>
                 <TableCell>{card.vehicleMakeModel}</TableCell>
