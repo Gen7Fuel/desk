@@ -78,7 +78,8 @@
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
       "WebFetch(domain:www.intacct.com)",
-      "Bash(dir \"C:\\\\Users\\\\MohammadHasan\\\\workspace\\\\desk\\\\backend\" /B)"
+      "Bash(dir \"C:\\\\Users\\\\MohammadHasan\\\\workspace\\\\desk\\\\backend\" /B)",
+      "Bash(python3 *)"
     ]
   }
 }
