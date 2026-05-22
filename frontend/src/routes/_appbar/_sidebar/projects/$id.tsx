@@ -1,7 +1,6 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { Task as GanttTask } from 'gantt-task-react'
 import { Gantt, ViewMode } from 'gantt-task-react'
 import 'gantt-task-react/dist/index.css'
 import { format } from 'date-fns'
@@ -13,8 +12,9 @@ import {
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { can } from '@/lib/permissions'
+import type { Task as GanttTask } from 'gantt-task-react'
 import type { ProjectTask, ProjectUser, TaskStatus } from '@/lib/projects-api'
+import { can } from '@/lib/permissions'
 import {
   createProjectTask,
   deleteProjectTask,
