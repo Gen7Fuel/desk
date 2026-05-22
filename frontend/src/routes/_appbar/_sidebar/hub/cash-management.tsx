@@ -102,18 +102,27 @@ async function resolveAggregateDates(
       : [],
   )
 
-  const dates: Array<string> = [selectedDate]
-  let cursor = subDays(parseISO(selectedDate), 1)
-  for (let i = 0; i < 14; i++) {
-    const ds = format(cursor, 'yyyy-MM-dd')
-    const dow = getDay(cursor) // 0=Sun 5=Fri 6=Sat
-    if (dow === 0 || dow === 5 || dow === 6 || taggedDates.has(ds)) {
-      dates.unshift(ds)
-      cursor = subDays(cursor, 1)
-    } else {
-      break
-    }
+  const isHW = (d: Date) => {
+    const dow = getDay(d)
+    return dow === 0 || dow === 5 || dow === 6 || taggedDates.has(format(d, 'yyyy-MM-dd'))
   }
+
+  const sel = parseISO(selectedDate)
+  // Non-holiday, non-weekend days show only themselves
+  if (!isHW(sel)) return [selectedDate]
+
+  // Always include the immediately previous day
+  let prev = subDays(sel, 1)
+  const dates: Array<string> = [format(prev, 'yyyy-MM-dd'), selectedDate]
+
+  // Walk further back only while the included previous day is also holiday/weekend
+  while (isHW(prev)) {
+    const next = subDays(prev, 1)
+    if (!isHW(next)) break
+    prev = next
+    dates.unshift(format(prev, 'yyyy-MM-dd'))
+  }
+
   return dates
 }
 
