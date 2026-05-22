@@ -107,7 +107,7 @@ async function resolveAggregateDates(
   for (let i = 0; i < 14; i++) {
     const ds = format(cursor, 'yyyy-MM-dd')
     const dow = getDay(cursor) // 0=Sun 5=Fri 6=Sat
-    if (dow === 5 || dow === 6 || taggedDates.has(ds)) {
+    if (dow === 0 || dow === 5 || dow === 6 || taggedDates.has(ds)) {
       dates.unshift(ds)
       cursor = subDays(cursor, 1)
     } else {
@@ -677,7 +677,7 @@ function RouteComponent() {
   ]
 
   const selectedDow = getDay(parseISO(date))
-  const isAutoTagged = selectedDow === 5 || selectedDow === 6
+  const isAutoTagged = selectedDow === 0 || selectedDow === 5 || selectedDow === 6
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
