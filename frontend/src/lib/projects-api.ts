@@ -15,7 +15,7 @@ export interface ProjectTask {
   progress: number
   startDate: string
   endDate: string
-  dependencies?: string[]
+  dependencies?: Array<string>
   order: number
   createdAt: string
   updatedAt: string
@@ -157,7 +157,7 @@ export async function createProjectTask(
     progress: number
     startDate: string
     endDate: string
-    dependencies?: string[]
+    dependencies?: Array<string>
     order?: number
   },
 ): Promise<ProjectTask> {
@@ -186,7 +186,7 @@ export async function updateProjectTask(
     progress: number
     startDate: string
     endDate: string
-    dependencies: string[]
+    dependencies: Array<string>
     order: number
   }>,
 ): Promise<ProjectTask> {

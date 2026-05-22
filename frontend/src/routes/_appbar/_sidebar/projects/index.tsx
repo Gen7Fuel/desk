@@ -5,13 +5,13 @@ import { format } from 'date-fns'
 import { FolderKanban, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { can } from '@/lib/permissions'
+import type { ProjectStatus } from '@/lib/projects-api'
 import {
   createProject,
   deleteProject,
   getProjectTemplates,
   getProjects,
   projectKeys,
-  type ProjectStatus,
 } from '@/lib/projects-api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'

@@ -1,18 +1,20 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Gantt, ViewMode, type Task as GanttTask } from 'gantt-task-react'
+import type { Task as GanttTask } from 'gantt-task-react'
+import { Gantt, ViewMode } from 'gantt-task-react'
 import 'gantt-task-react/dist/index.css'
 import { format } from 'date-fns'
 import {
   ArrowLeft,
-  LayoutList,
   GanttChartSquare,
+  LayoutList,
   Plus,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { can } from '@/lib/permissions'
+import type { ProjectTask, ProjectUser, TaskStatus } from '@/lib/projects-api'
 import {
   createProjectTask,
   deleteProjectTask,
@@ -21,9 +23,6 @@ import {
   getProjectUsers,
   projectKeys,
   updateProjectTask,
-  type ProjectTask,
-  type ProjectUser,
-  type TaskStatus,
 } from '@/lib/projects-api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -130,9 +129,9 @@ function TaskDialog({
   )
 
   // Reset form when editTask changes
-  const setField = <K extends keyof typeof form>(
-    key: K,
-    val: (typeof form)[K],
+  const setField = <TKey extends keyof typeof form>(
+    key: TKey,
+    val: (typeof form)[TKey],
   ) => setForm((prev) => ({ ...prev, [key]: val }))
 
   const saveMutation = useMutation({
