@@ -5,7 +5,7 @@ WORKDIR /app
 
 COPY package*.json ./
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev --prefer-offline
+    npm install --omit=dev --prefer-offline
 
 # ── Stage 2: final runtime image ─────────────────────────────────────────────
 FROM node:25-alpine
