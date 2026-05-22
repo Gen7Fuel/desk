@@ -58,7 +58,8 @@ export const projectKeys = {
   all: ['projects'] as const,
   lists: () => [...projectKeys.all, 'list'] as const,
   detail: (id: string) => [...projectKeys.all, 'detail', id] as const,
-  tasks: (projectId: string) => [...projectKeys.all, 'tasks', projectId] as const,
+  tasks: (projectId: string) =>
+    [...projectKeys.all, 'tasks', projectId] as const,
   templates: () => [...projectKeys.all, 'templates'] as const,
   users: () => [...projectKeys.all, 'users'] as const,
 }
@@ -93,7 +94,9 @@ export async function createProject(data: {
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error((body as { error?: string }).error ?? 'Failed to create project')
+    throw new Error(
+      (body as { error?: string }).error ?? 'Failed to create project',
+    )
   }
   const result = await res.json()
   return result.project
@@ -115,7 +118,9 @@ export async function updateProject(
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error((body as { error?: string }).error ?? 'Failed to update project')
+    throw new Error(
+      (body as { error?: string }).error ?? 'Failed to update project',
+    )
   }
   const result = await res.json()
   return result.project
@@ -125,13 +130,17 @@ export async function deleteProject(id: string): Promise<void> {
   const res = await apiFetch(`/api/projects/${id}`, { method: 'DELETE' })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error((body as { error?: string }).error ?? 'Failed to delete project')
+    throw new Error(
+      (body as { error?: string }).error ?? 'Failed to delete project',
+    )
   }
 }
 
 // ── Tasks CRUD ─────────────────────────────────────────────────────────────────
 
-export async function getProjectTasks(projectId: string): Promise<Array<ProjectTask>> {
+export async function getProjectTasks(
+  projectId: string,
+): Promise<Array<ProjectTask>> {
   const res = await apiFetch(`/api/projects/${projectId}/tasks`)
   if (!res.ok) throw new Error('Failed to fetch tasks')
   const data = await res.json()
@@ -158,7 +167,9 @@ export async function createProjectTask(
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error((body as { error?: string }).error ?? 'Failed to create task')
+    throw new Error(
+      (body as { error?: string }).error ?? 'Failed to create task',
+    )
   }
   const result = await res.json()
   return result.task
@@ -185,19 +196,26 @@ export async function updateProjectTask(
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error((body as { error?: string }).error ?? 'Failed to update task')
+    throw new Error(
+      (body as { error?: string }).error ?? 'Failed to update task',
+    )
   }
   const result = await res.json()
   return result.task
 }
 
-export async function deleteProjectTask(projectId: string, taskId: string): Promise<void> {
+export async function deleteProjectTask(
+  projectId: string,
+  taskId: string,
+): Promise<void> {
   const res = await apiFetch(`/api/projects/${projectId}/tasks/${taskId}`, {
     method: 'DELETE',
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error((body as { error?: string }).error ?? 'Failed to delete task')
+    throw new Error(
+      (body as { error?: string }).error ?? 'Failed to delete task',
+    )
   }
 }
 

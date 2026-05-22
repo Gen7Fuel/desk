@@ -9,7 +9,10 @@ function getExternalToken(): string {
   return payload?.externalToken ?? ''
 }
 
-async function hubFetch(path: string, init: RequestInit = {}): Promise<Response> {
+async function hubFetch(
+  path: string,
+  init: RequestInit = {},
+): Promise<Response> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${getExternalToken()}`,
@@ -44,7 +47,9 @@ export async function getArCustomer(id: string): Promise<ArCustomer> {
   const res = await hubFetch(`/api/ar-customers/${id}`)
   const body = await res.json()
   if (!res.ok)
-    throw new Error((body as { error?: string }).error ?? 'Failed to fetch AR customer')
+    throw new Error(
+      (body as { error?: string }).error ?? 'Failed to fetch AR customer',
+    )
   return body
 }
 
@@ -81,18 +86,25 @@ export async function syncArCustomers(
   const trMatches = html.match(/<tr[\s\S]*?<\/tr>/gi) ?? []
   const customers: Array<{ customerId: string; name: string }> = []
   for (const tr of trMatches) {
-    const cells = (tr.match(/<(?:td|th)[\s\S]*?<\/(?:td|th)>/gi) ?? [])
-      .map((td) => td.replace(/<[^>]+>/g, '').replace(/&nbsp;/gi, '').trim())
+    const cells = (tr.match(/<(?:td|th)[\s\S]*?<\/(?:td|th)>/gi) ?? []).map(
+      (td) =>
+        td
+          .replace(/<[^>]+>/g, '')
+          .replace(/&nbsp;/gi, '')
+          .trim(),
+    )
     if (cells.length >= 2 && /^\d+$/.test(cells[0])) {
       customers.push({ customerId: cells[0], name: cells[1] })
     }
   }
-  if (customers.length === 0) throw new Error('No valid customer rows found in file')
+  if (customers.length === 0)
+    throw new Error('No valid customer rows found in file')
   const res = await hubFetch('/api/ar-customers/sync', {
     method: 'POST',
     body: JSON.stringify({ customers }),
   })
   const body = await res.json()
-  if (!res.ok) throw new Error((body as { error?: string }).error ?? 'Sync failed')
+  if (!res.ok)
+    throw new Error((body as { error?: string }).error ?? 'Sync failed')
   return body as { created: number; updated: number; deleted: number }
 }

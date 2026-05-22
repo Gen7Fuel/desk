@@ -114,7 +114,10 @@ function SyncZone({ onSynced }: { onSynced: () => void }) {
           if ((e.key === 'Enter' || e.key === ' ') && !isPending)
             fileRef.current?.click()
         }}
-        onDragOver={(e) => { e.preventDefault(); if (!isPending) setDragOver(true) }}
+        onDragOver={(e) => {
+          e.preventDefault()
+          if (!isPending) setDragOver(true)
+        }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         className={[
@@ -139,7 +142,9 @@ function SyncZone({ onSynced }: { onSynced: () => void }) {
         ) : (
           <>
             <Upload className="h-4 w-4" />
-            <span className="text-center text-xs">Upload CSO export of house accounts</span>
+            <span className="text-center text-xs">
+              Upload CSO export of house accounts
+            </span>
           </>
         )}
       </div>
@@ -154,7 +159,8 @@ function SyncZone({ onSynced }: { onSynced: () => void }) {
 
       {syncResult && (
         <p className="mt-2 text-sm text-green-700">
-          Sync complete — {syncResult.created} created, {syncResult.updated} updated, {syncResult.deleted} deleted
+          Sync complete — {syncResult.created} created, {syncResult.updated}{' '}
+          updated, {syncResult.deleted} deleted
         </p>
       )}
       {syncError && (
@@ -184,7 +190,8 @@ function EditDialog({
 }) {
   const queryClient = useQueryClient()
   const [form, setForm] = useState<EditForm>({
-    creditLimit: customer.creditLimit !== null ? String(customer.creditLimit) : '',
+    creditLimit:
+      customer.creditLimit !== null ? String(customer.creditLimit) : '',
     phone: customer.phone,
     email: customer.email,
     notes: customer.notes,
@@ -208,8 +215,7 @@ function EditDialog({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const creditRaw = form.creditLimit.trim()
-    const creditLimit =
-      creditRaw === '' ? null : Number(creditRaw)
+    const creditLimit = creditRaw === '' ? null : Number(creditRaw)
     if (creditRaw !== '' && isNaN(creditLimit as number)) return
     updateMutation.mutate({
       creditLimit,
@@ -306,7 +312,11 @@ function RouteComponent() {
   const [deleteCustomer, setDeleteCustomer] = useState<ArCustomer | null>(null)
   const [nameFilter, setNameFilter] = useState('')
 
-  const { data: customers = [], isLoading, error } = useQuery({
+  const {
+    data: customers = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['ar-customers'],
     queryFn: getArCustomers,
   })
@@ -324,7 +334,8 @@ function RouteComponent() {
 
   const cardCountByCustomerName = fleetCards.reduce<Record<string, number>>(
     (acc, card) => {
-      if (card.customerName) acc[card.customerName] = (acc[card.customerName] ?? 0) + 1
+      if (card.customerName)
+        acc[card.customerName] = (acc[card.customerName] ?? 0) + 1
       return acc
     },
     {},
@@ -347,7 +358,9 @@ function RouteComponent() {
           <div>
             <h1 className="text-lg font-semibold">AR Customers</h1>
             <p className="text-sm text-muted-foreground">
-              {filteredCustomers.length}{nameFilter.trim() ? ` of ${customers.length}` : ''} customer{customers.length !== 1 ? 's' : ''}
+              {filteredCustomers.length}
+              {nameFilter.trim() ? ` of ${customers.length}` : ''} customer
+              {customers.length !== 1 ? 's' : ''}
             </p>
           </div>
           <div className="flex flex-1 justify-center">
@@ -368,9 +381,7 @@ function RouteComponent() {
         </div>
       </div>
 
-      {isLoading && (
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      )}
+      {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
       {error && (
         <p className="text-sm text-destructive">Failed to load AR customers.</p>
       )}
@@ -464,7 +475,9 @@ function RouteComponent() {
       {/* Edit dialog */}
       <Dialog
         open={!!editCustomer}
-        onOpenChange={(open) => { if (!open) setEditCustomer(null) }}
+        onOpenChange={(open) => {
+          if (!open) setEditCustomer(null)
+        }}
       >
         <DialogPortal>
           <DialogOverlay className="fixed inset-0 z-50 bg-black/50" />
@@ -482,7 +495,9 @@ function RouteComponent() {
       {/* Delete confirm dialog */}
       <Dialog
         open={!!deleteCustomer}
-        onOpenChange={(open) => { if (!open) setDeleteCustomer(null) }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteCustomer(null)
+        }}
       >
         <DialogPortal>
           <DialogOverlay className="fixed inset-0 z-50 bg-black/50" />

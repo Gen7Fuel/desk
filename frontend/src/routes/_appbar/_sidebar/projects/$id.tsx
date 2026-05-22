@@ -4,7 +4,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Gantt, ViewMode, type Task as GanttTask } from 'gantt-task-react'
 import 'gantt-task-react/dist/index.css'
 import { format } from 'date-fns'
-import { ArrowLeft, LayoutList, GanttChartSquare, Plus, Trash2 } from 'lucide-react'
+import {
+  ArrowLeft,
+  LayoutList,
+  GanttChartSquare,
+  Plus,
+  Trash2,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { can } from '@/lib/permissions'
 import {
@@ -124,8 +130,10 @@ function TaskDialog({
   )
 
   // Reset form when editTask changes
-  const setField = <K extends keyof typeof form>(key: K, val: (typeof form)[K]) =>
-    setForm((prev) => ({ ...prev, [key]: val }))
+  const setField = <K extends keyof typeof form>(
+    key: K,
+    val: (typeof form)[K],
+  ) => setForm((prev) => ({ ...prev, [key]: val }))
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -212,7 +220,10 @@ function TaskDialog({
                 max={100}
                 value={form.progress}
                 onChange={(e) =>
-                  setField('progress', Math.min(100, Math.max(0, Number(e.target.value))))
+                  setField(
+                    'progress',
+                    Math.min(100, Math.max(0, Number(e.target.value))),
+                  )
                 }
               />
             </div>
@@ -353,13 +364,8 @@ function TasksTable({ projectId, tasks, users }: TasksTableProps) {
   })
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({
-      taskId,
-      status,
-    }: {
-      taskId: string
-      status: TaskStatus
-    }) => updateProjectTask(projectId, taskId, { status }),
+    mutationFn: ({ taskId, status }: { taskId: string; status: TaskStatus }) =>
+      updateProjectTask(projectId, taskId, { status }),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) }),
     onError: () => toast.error('Failed to update status'),
@@ -400,7 +406,9 @@ function TasksTable({ projectId, tasks, users }: TasksTableProps) {
                 {task.name}
               </TableCell>
               <TableCell className="text-muted-foreground">
-                {task.assignee ? `${task.assignee.firstName} ${task.assignee.lastName}` : '—'}
+                {task.assignee
+                  ? `${task.assignee.firstName} ${task.assignee.lastName}`
+                  : '—'}
               </TableCell>
               <TableCell>
                 <Select

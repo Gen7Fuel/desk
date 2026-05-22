@@ -694,7 +694,8 @@ function RouteComponent() {
                                   ),
                                 )
                                 if (payable.paymentMethod === 'safe') {
-                                  const stationName = payable.location.stationName
+                                  const stationName =
+                                    payable.location.stationName
                                   const oldDateStr = toLocalDate(
                                     payable.createdAt,
                                   )

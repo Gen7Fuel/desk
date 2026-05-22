@@ -489,8 +489,12 @@ function RouteComponent() {
       const d_canadianCashCollected = rn(
         dayEntry?.cashSummary?.totals.canadian_cash_collected,
       )
-      const d_couponsAccepted = rn(dayEntry?.cashSummary?.totals.couponsAccepted)
-      const d_giftCertificates = rn(dayEntry?.cashSummary?.totals.giftCertificates)
+      const d_couponsAccepted = rn(
+        dayEntry?.cashSummary?.totals.couponsAccepted,
+      )
+      const d_giftCertificates = rn(
+        dayEntry?.cashSummary?.totals.giftCertificates,
+      )
 
       const d_bankCrBal =
         d_miscCreditsTotal +

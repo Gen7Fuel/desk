@@ -17394,15 +17394,13 @@ class Qr {
   getMetadata() {
     const t = 'GetMetadata'
     return this.#e.getOrInsertComputed(t, () =>
-      this.messageHandler
-        .sendWithPromise(t, null)
-        .then((e) => ({
-          info: e[0],
-          metadata: e[1] ? new Gr(e[1]) : null,
-          contentDispositionFilename: this.#t?.filename ?? null,
-          contentLength: this.#t?.contentLength ?? null,
-          hasStructTree: e[2],
-        })),
+      this.messageHandler.sendWithPromise(t, null).then((e) => ({
+        info: e[0],
+        metadata: e[1] ? new Gr(e[1]) : null,
+        contentDispositionFilename: this.#t?.filename ?? null,
+        contentLength: this.#t?.contentLength ?? null,
+        hasStructTree: e[2],
+      })),
     )
   }
   getMarkInfo() {

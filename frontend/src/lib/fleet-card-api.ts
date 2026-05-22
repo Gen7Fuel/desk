@@ -9,10 +9,15 @@ function getExternalToken(): string {
   return payload?.externalToken ?? ''
 }
 
-async function hubFetch(path: string, init: RequestInit = {}): Promise<Response> {
+async function hubFetch(
+  path: string,
+  init: RequestInit = {},
+): Promise<Response> {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${getExternalToken()}`,
-    ...(init.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+    ...(init.body instanceof FormData
+      ? {}
+      : { 'Content-Type': 'application/json' }),
     ...(init.headers as Record<string, string> | undefined),
   }
   return fetch(HUB + path, { ...init, headers })
@@ -60,7 +65,10 @@ export async function createFleetCard(
     body: JSON.stringify(data),
   })
   const body = await res.json()
-  if (!res.ok) throw new Error((body as { message?: string }).message ?? 'Failed to create fleet card')
+  if (!res.ok)
+    throw new Error(
+      (body as { message?: string }).message ?? 'Failed to create fleet card',
+    )
   return body
 }
 
@@ -73,11 +81,16 @@ export async function updateFleetCard(
     body: JSON.stringify(data),
   })
   const body = await res.json()
-  if (!res.ok) throw new Error((body as { message?: string }).message ?? 'Failed to update fleet card')
+  if (!res.ok)
+    throw new Error(
+      (body as { message?: string }).message ?? 'Failed to update fleet card',
+    )
   return body
 }
 
-export async function getHubLocations(): Promise<Array<{ stationName: string }>> {
+export async function getHubLocations(): Promise<
+  Array<{ stationName: string }>
+> {
   const res = await hubFetch('/api/locations')
   if (!res.ok) throw new Error('Failed to fetch locations')
   return res.json()
@@ -87,6 +100,8 @@ export async function deleteFleetCard(id: string): Promise<void> {
   const res = await hubFetch(`/api/fleet/${id}`, { method: 'DELETE' })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error((body as { message?: string }).message ?? 'Failed to delete fleet card')
+    throw new Error(
+      (body as { message?: string }).message ?? 'Failed to delete fleet card',
+    )
   }
 }

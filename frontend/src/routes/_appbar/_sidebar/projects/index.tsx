@@ -80,9 +80,7 @@ function NewProjectDialog({ onCreated }: NewProjectDialogProps) {
   const [description, setDescription] = useState('')
   const [site, setSite] = useState('')
   const [status, setStatus] = useState<ProjectStatus>('planning')
-  const [startDate, setStartDate] = useState(
-    format(new Date(), 'yyyy-MM-dd'),
-  )
+  const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [templateId, setTemplateId] = useState<string>('')
 
   const { data: templates = [] } = useQuery({
@@ -188,13 +186,13 @@ function NewProjectDialog({ onCreated }: NewProjectDialogProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(
-                    Object.keys(STATUS_LABELS) as Array<ProjectStatus>
-                  ).map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {STATUS_LABELS[s]}
-                    </SelectItem>
-                  ))}
+                  {(Object.keys(STATUS_LABELS) as Array<ProjectStatus>).map(
+                    (s) => (
+                      <SelectItem key={s} value={s}>
+                        {STATUS_LABELS[s]}
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
             </div>
