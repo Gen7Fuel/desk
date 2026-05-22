@@ -3,16 +3,19 @@ import { getTokenPayload } from './permissions'
 const HUB = 'https://app.gen7fuel.com'
 
 function getExternalToken(): string {
-  const payload = getTokenPayload() as
-    | (ReturnType<typeof getTokenPayload> & { externalToken?: string })
-    | null
+  const payload = getTokenPayload() as { externalToken?: string } | null
   return payload?.externalToken ?? ''
 }
 
-async function hubFetch(path: string, init: RequestInit = {}): Promise<Response> {
+async function hubFetch(
+  path: string,
+  init: RequestInit = {},
+): Promise<Response> {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${getExternalToken()}`,
-    ...(init.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+    ...(init.body instanceof FormData
+      ? {}
+      : { 'Content-Type': 'application/json' }),
     ...(init.headers as Record<string, string> | undefined),
   }
   return fetch(HUB + path, { ...init, headers })
@@ -27,6 +30,7 @@ export interface FleetCard {
   numberPlate: string
   status: 'active' | 'inactive' | 'lost' | 'stolen' | 'cancelled'
   notes: string
+  site: string
   customerId?: string
   customerEmail?: string
 }
@@ -59,7 +63,10 @@ export async function createFleetCard(
     body: JSON.stringify(data),
   })
   const body = await res.json()
-  if (!res.ok) throw new Error((body as { message?: string }).message ?? 'Failed to create fleet card')
+  if (!res.ok)
+    throw new Error(
+      (body as { message?: string }).message ?? 'Failed to create fleet card',
+    )
   return body
 }
 
@@ -72,14 +79,27 @@ export async function updateFleetCard(
     body: JSON.stringify(data),
   })
   const body = await res.json()
-  if (!res.ok) throw new Error((body as { message?: string }).message ?? 'Failed to update fleet card')
+  if (!res.ok)
+    throw new Error(
+      (body as { message?: string }).message ?? 'Failed to update fleet card',
+    )
   return body
+}
+
+export async function getHubLocations(): Promise<
+  Array<{ stationName: string }>
+> {
+  const res = await hubFetch('/api/locations')
+  if (!res.ok) throw new Error('Failed to fetch locations')
+  return res.json()
 }
 
 export async function deleteFleetCard(id: string): Promise<void> {
   const res = await hubFetch(`/api/fleet/${id}`, { method: 'DELETE' })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error((body as { message?: string }).message ?? 'Failed to delete fleet card')
+    throw new Error(
+      (body as { message?: string }).message ?? 'Failed to delete fleet card',
+    )
   }
 }

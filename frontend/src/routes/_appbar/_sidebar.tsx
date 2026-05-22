@@ -72,6 +72,13 @@ const sidebarLinks: Record<
       permission: 'reports.narrative',
     },
   ],
+  projects: [
+    {
+      label: 'All Projects',
+      path: '/projects/',
+      permission: 'projects',
+    },
+  ],
 }
 
 export const Route = createFileRoute('/_appbar/_sidebar')({

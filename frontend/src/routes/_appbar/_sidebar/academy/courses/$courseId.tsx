@@ -506,7 +506,12 @@ function RouteComponent() {
           ...s,
           items: s.items.map((i) =>
             i.localId === editingItem.localId
-              ? { ...i, title: saved.title, type: saved.type, content: saved.content }
+              ? {
+                  ...i,
+                  title: saved.title,
+                  type: saved.type,
+                  content: saved.content,
+                }
               : i,
           ),
         }

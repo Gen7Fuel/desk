@@ -158,9 +158,7 @@ function RouteComponent() {
     setSubmitError('')
     setSubmitSuccess(false)
     try {
-      const payload = getTokenPayload() as
-        | (ReturnType<typeof getTokenPayload> & { externalToken?: string })
-        | null
+      const payload = getTokenPayload() as { externalToken?: string } | null
       const externalToken = payload?.externalToken
       if (!externalToken) throw new Error('No external token available.')
 

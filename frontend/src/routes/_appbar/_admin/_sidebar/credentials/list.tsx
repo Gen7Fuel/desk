@@ -148,7 +148,7 @@ function RouteComponent() {
       if (formMode === 'edit' && editingId) {
         return updateCredential(editingId, payload)
       }
-      return createCredential(payload as Parameters<typeof createCredential>[0])
+      return createCredential(payload)
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['credentials'] })

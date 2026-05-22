@@ -9,6 +9,7 @@ import {
   deleteFleetCard,
   formatCardNumber,
   getFleetCards,
+  getHubLocations,
   updateFleetCard,
 } from '@/lib/fleet-card-api'
 import { getArCustomers } from '@/lib/ar-customer-api'
@@ -26,11 +27,7 @@ import {
   DialogPortal,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Popover,
-  PopoverAnchor,
-  PopoverContent,
-} from '@/components/ui/popover'
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -54,6 +51,7 @@ export const Route = createFileRoute('/_appbar/_sidebar/hub/fleet-cards')({
   component: RouteComponent,
   validateSearch: (search: Record<string, unknown>) => ({
     account: typeof search.account === 'string' ? search.account : undefined,
+    site: typeof search.site === 'string' ? search.site : undefined,
   }),
   beforeLoad: () => {
     if (typeof window !== 'undefined' && !can('hub.fleetCards', 'read')) {
@@ -73,6 +71,7 @@ const STATUS_BADGE: Record<FleetCardStatus, string> = {
 const EMPTY_FORM = {
   fleetCardNumber: '',
   customerName: '',
+  site: '',
   driverName: '',
   numberPlate: '',
   vehicleMakeModel: '',
@@ -110,6 +109,11 @@ function CardForm({
     queryFn: getArCustomers,
   })
 
+  const { data: locations = [] } = useQuery({
+    queryKey: ['hub-locations'],
+    queryFn: getHubLocations,
+  })
+
   const suggestions = form.customerName.trim()
     ? arCustomers
         .filter((c) =>
@@ -128,7 +132,10 @@ function CardForm({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    onSubmit({ ...form, fleetCardNumber: form.fleetCardNumber.replace(/\s/g, '') })
+    onSubmit({
+      ...form,
+      fleetCardNumber: form.fleetCardNumber.replace(/\s/g, ''),
+    })
   }
 
   const digits = form.fleetCardNumber.replace(/\s/g, '')
@@ -138,9 +145,7 @@ function CardForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <DialogHeader>
         <DialogTitle>{title}</DialogTitle>
-        {description && (
-          <DialogDescription>{description}</DialogDescription>
-        )}
+        {description && <DialogDescription>{description}</DialogDescription>}
       </DialogHeader>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -155,7 +160,9 @@ function CardForm({
             required
           />
           {form.fleetCardNumber && !cardValid && (
-            <p className="text-xs text-destructive">Must be exactly 16 digits</p>
+            <p className="text-xs text-destructive">
+              Must be exactly 16 digits
+            </p>
           )}
         </div>
 
@@ -202,6 +209,26 @@ function CardForm({
         </div>
 
         <div className="space-y-1.5">
+          <Label htmlFor="site">Site</Label>
+          <Select
+            value={form.site || '__none__'}
+            onValueChange={(v) => set('site', v === '__none__' ? '' : v)}
+          >
+            <SelectTrigger id="site">
+              <SelectValue placeholder="— None —" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">— None —</SelectItem>
+              {locations.map((l) => (
+                <SelectItem key={l.stationName} value={l.stationName}>
+                  {l.stationName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
           <Label htmlFor="driverName">Driver Name</Label>
           <Input
             id="driverName"
@@ -230,10 +257,7 @@ function CardForm({
 
         <div className="space-y-1.5">
           <Label htmlFor="status">Status</Label>
-          <Select
-            value={form.status}
-            onValueChange={(v) => set('status', v)}
-          >
+          <Select value={form.status} onValueChange={(v) => set('status', v)}>
             <SelectTrigger id="status">
               <SelectValue />
             </SelectTrigger>
@@ -263,7 +287,11 @@ function CardForm({
         <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" size="sm" disabled={isPending || !cardValid || !form.customerName.trim()}>
+        <Button
+          type="submit"
+          size="sm"
+          disabled={isPending || !cardValid || !form.customerName.trim()}
+        >
           {isPending ? 'Saving…' : 'Save'}
         </Button>
       </DialogFooter>
@@ -274,45 +302,75 @@ function CardForm({
 function RouteComponent() {
   const queryClient = useQueryClient()
   const navigate = useNavigate({ from: '/hub/fleet-cards' })
-  const { account: accountFilter } = Route.useSearch()
+  const { account: accountFilter, site: siteFilter } = Route.useSearch()
   const [createOpen, setCreateOpen] = useState(false)
   const [editCard, setEditCard] = useState<FleetCard | null>(null)
   const [deleteCard, setDeleteCard] = useState<FleetCard | null>(null)
 
   function setAccountFilter(name: string | null) {
-    navigate({ search: (prev) => ({ ...prev, account: name ?? undefined }), replace: true })
+    navigate({
+      search: (prev) => ({ ...prev, account: name ?? undefined }),
+      replace: true,
+    })
   }
 
-  const { data: cards = [], isLoading, error } = useQuery({
+  function setSiteFilter(name: string | null) {
+    navigate({
+      search: (prev) => ({ ...prev, site: name ?? undefined }),
+      replace: true,
+    })
+  }
+
+  const {
+    data: cards = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['fleet-cards'],
     queryFn: getFleetCards,
   })
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['fleet-cards'] })
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ['fleet-cards'] })
 
-  const filteredCards = accountFilter
-    ? cards.filter((c) => c.customerName === accountFilter)
-    : cards
-
-
+  const filteredCards = cards
+    .filter((c) => !accountFilter || c.customerName === accountFilter)
+    .filter((c) => !siteFilter || c.site === siteFilter)
 
   const createMutation = useMutation({
     mutationFn: createFleetCard,
-    onSuccess: () => { invalidate(); setCreateOpen(false) },
-    onError: (err) => alert(err instanceof Error ? err.message : 'Failed to create'),
+    onSuccess: () => {
+      invalidate()
+      setCreateOpen(false)
+    },
+    onError: (err) =>
+      alert(err instanceof Error ? err.message : 'Failed to create'),
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Omit<FleetCard, '_id' | 'customerId' | 'customerEmail'>> }) =>
-      updateFleetCard(id, data),
-    onSuccess: () => { invalidate(); setEditCard(null) },
-    onError: (err) => alert(err instanceof Error ? err.message : 'Failed to update'),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string
+      data: Partial<Omit<FleetCard, '_id' | 'customerId' | 'customerEmail'>>
+    }) => updateFleetCard(id, data),
+    onSuccess: () => {
+      invalidate()
+      setEditCard(null)
+    },
+    onError: (err) =>
+      alert(err instanceof Error ? err.message : 'Failed to update'),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteFleetCard(id),
-    onSuccess: () => { invalidate(); setDeleteCard(null) },
-    onError: (err) => alert(err instanceof Error ? err.message : 'Failed to delete'),
+    onSuccess: () => {
+      invalidate()
+      setDeleteCard(null)
+    },
+    onError: (err) =>
+      alert(err instanceof Error ? err.message : 'Failed to delete'),
   })
 
   return (
@@ -321,14 +379,36 @@ function RouteComponent() {
         <div>
           <h1 className="text-lg font-semibold">Fleet Cards</h1>
           <p className="text-sm text-muted-foreground">
-            {filteredCards.length}{accountFilter ? ` of ${cards.length}` : ''} card{cards.length !== 1 ? 's' : ''}
+            {filteredCards.length}
+            {accountFilter || siteFilter ? ` of ${cards.length}` : ''} card
+            {cards.length !== 1 ? 's' : ''}
             {accountFilter && (
               <>
-                {' '}— <span className="font-medium text-foreground">{accountFilter}</span>
+                {' '}
+                —{' '}
+                <span className="font-medium text-foreground">
+                  {accountFilter}
+                </span>
                 <button
                   className="ml-1 text-muted-foreground hover:text-foreground"
                   onClick={() => setAccountFilter(null)}
-                  aria-label="Clear filter"
+                  aria-label="Clear account filter"
+                >
+                  ×
+                </button>
+              </>
+            )}
+            {siteFilter && (
+              <>
+                {' '}
+                —{' '}
+                <span className="font-medium text-foreground">
+                  {siteFilter}
+                </span>
+                <button
+                  className="ml-1 text-muted-foreground hover:text-foreground"
+                  onClick={() => setSiteFilter(null)}
+                  aria-label="Clear site filter"
                 >
                   ×
                 </button>
@@ -344,9 +424,7 @@ function RouteComponent() {
         )}
       </div>
 
-      {isLoading && (
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      )}
+      {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
       {error && (
         <p className="text-sm text-destructive">Failed to load fleet cards.</p>
       )}
@@ -357,6 +435,7 @@ function RouteComponent() {
             <TableRow>
               <TableHead>Card Number</TableHead>
               <TableHead>Account</TableHead>
+              <TableHead>Site</TableHead>
               <TableHead>Driver</TableHead>
               <TableHead>Plate</TableHead>
               <TableHead>Make &amp; Model</TableHead>
@@ -369,10 +448,12 @@ function RouteComponent() {
             {filteredCards.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={9}
                   className="text-center text-sm text-muted-foreground"
                 >
-                  {cards.length === 0 ? 'No fleet cards found.' : 'No cards for this account.'}
+                  {cards.length === 0
+                    ? 'No fleet cards found.'
+                    : 'No cards for this account.'}
                 </TableCell>
               </TableRow>
             )}
@@ -384,10 +465,32 @@ function RouteComponent() {
                 <TableCell>
                   <button
                     className="hover:underline text-left"
-                    onClick={() => setAccountFilter(accountFilter === card.customerName ? null : card.customerName)}
+                    onClick={() =>
+                      setAccountFilter(
+                        accountFilter === card.customerName
+                          ? null
+                          : card.customerName,
+                      )
+                    }
                   >
                     {card.customerName}
                   </button>
+                </TableCell>
+                <TableCell>
+                  {card.site ? (
+                    <button
+                      className="hover:underline text-left"
+                      onClick={() =>
+                        setSiteFilter(
+                          siteFilter === card.site ? null : card.site,
+                        )
+                      }
+                    >
+                      {card.site}
+                    </button>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell>{card.driverName}</TableCell>
                 <TableCell>{card.numberPlate}</TableCell>
@@ -450,7 +553,9 @@ function RouteComponent() {
       {/* Edit dialog */}
       <Dialog
         open={!!editCard}
-        onOpenChange={(open) => { if (!open) setEditCard(null) }}
+        onOpenChange={(open) => {
+          if (!open) setEditCard(null)
+        }}
       >
         <DialogPortal>
           <DialogOverlay className="fixed inset-0 z-50 bg-black/50" />
@@ -461,6 +566,7 @@ function RouteComponent() {
                 initial={{
                   fleetCardNumber: formatCardNumber(editCard.fleetCardNumber),
                   customerName: editCard.customerName,
+                  site: editCard.site,
                   driverName: editCard.driverName,
                   numberPlate: editCard.numberPlate,
                   vehicleMakeModel: editCard.vehicleMakeModel,
@@ -481,7 +587,9 @@ function RouteComponent() {
       {/* Delete confirm dialog */}
       <Dialog
         open={!!deleteCard}
-        onOpenChange={(open) => { if (!open) setDeleteCard(null) }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteCard(null)
+        }}
       >
         <DialogPortal>
           <DialogOverlay className="fixed inset-0 z-50 bg-black/50" />
@@ -491,7 +599,9 @@ function RouteComponent() {
               <DialogDescription>
                 This will permanently delete the card{' '}
                 <strong className="font-mono">
-                  {deleteCard ? formatCardNumber(deleteCard.fleetCardNumber) : ''}
+                  {deleteCard
+                    ? formatCardNumber(deleteCard.fleetCardNumber)
+                    : ''}
                 </strong>{' '}
                 assigned to <strong>{deleteCard?.driverName}</strong>. This
                 action cannot be undone.
