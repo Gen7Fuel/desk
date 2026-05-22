@@ -13,6 +13,7 @@ import {
   BriefcaseBusiness,
   ClipboardList,
   FileText,
+  FolderKanban,
   Fuel,
   GraduationCap,
   Headset,
@@ -91,6 +92,7 @@ function RouteComponent() {
   const isIssuesActive = location.pathname.startsWith('/issues')
   const isAcademyActive = location.pathname.startsWith('/academy')
   const isReportsActive = location.pathname.startsWith('/reports')
+  const isProjectsActive = location.pathname.startsWith('/projects')
 
   const adminTo =
     [
@@ -258,6 +260,22 @@ function RouteComponent() {
                 </Link>
               </TooltipTrigger>
               <TooltipContent side="right">Reports</TooltipContent>
+            </Tooltip>
+          )}
+          {can('projects', 'read') && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/projects"
+                  className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                    isProjectsActive && 'bg-accent/80 text-accent-foreground',
+                  )}
+                >
+                  <FolderKanban className="h-5 w-5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Projects</TooltipContent>
             </Tooltip>
           )}
           <div className="mt-auto flex flex-col items-center gap-2">

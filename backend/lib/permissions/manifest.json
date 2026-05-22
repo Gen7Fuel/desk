@@ -90,6 +90,9 @@
       "submodules": {
         "narrative": { "actions": ["create", "read"] }
       }
+    },
+    "projects": {
+      "actions": ["create", "read", "update", "delete"]
     }
   }
 }

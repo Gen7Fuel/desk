@@ -27,6 +27,7 @@ export interface FleetCard {
   numberPlate: string
   status: 'active' | 'inactive' | 'lost' | 'stolen' | 'cancelled'
   notes: string
+  site: string
   customerId?: string
   customerEmail?: string
 }
@@ -74,6 +75,12 @@ export async function updateFleetCard(
   const body = await res.json()
   if (!res.ok) throw new Error((body as { message?: string }).message ?? 'Failed to update fleet card')
   return body
+}
+
+export async function getHubLocations(): Promise<Array<{ stationName: string }>> {
+  const res = await hubFetch('/api/locations')
+  if (!res.ok) throw new Error('Failed to fetch locations')
+  return res.json()
 }
 
 export async function deleteFleetCard(id: string): Promise<void> {

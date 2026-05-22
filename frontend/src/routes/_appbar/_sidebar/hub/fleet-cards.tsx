@@ -9,6 +9,7 @@ import {
   deleteFleetCard,
   formatCardNumber,
   getFleetCards,
+  getHubLocations,
   updateFleetCard,
 } from '@/lib/fleet-card-api'
 import { getArCustomers } from '@/lib/ar-customer-api'
@@ -54,6 +55,7 @@ export const Route = createFileRoute('/_appbar/_sidebar/hub/fleet-cards')({
   component: RouteComponent,
   validateSearch: (search: Record<string, unknown>) => ({
     account: typeof search.account === 'string' ? search.account : undefined,
+    site: typeof search.site === 'string' ? search.site : undefined,
   }),
   beforeLoad: () => {
     if (typeof window !== 'undefined' && !can('hub.fleetCards', 'read')) {
@@ -73,6 +75,7 @@ const STATUS_BADGE: Record<FleetCardStatus, string> = {
 const EMPTY_FORM = {
   fleetCardNumber: '',
   customerName: '',
+  site: '',
   driverName: '',
   numberPlate: '',
   vehicleMakeModel: '',
@@ -108,6 +111,11 @@ function CardForm({
   const { data: arCustomers = [] } = useQuery({
     queryKey: ['ar-customers'],
     queryFn: getArCustomers,
+  })
+
+  const { data: locations = [] } = useQuery({
+    queryKey: ['hub-locations'],
+    queryFn: getHubLocations,
   })
 
   const suggestions = form.customerName.trim()
@@ -202,6 +210,26 @@ function CardForm({
         </div>
 
         <div className="space-y-1.5">
+          <Label htmlFor="site">Site</Label>
+          <Select
+            value={form.site || '__none__'}
+            onValueChange={(v) => set('site', v === '__none__' ? '' : v)}
+          >
+            <SelectTrigger id="site">
+              <SelectValue placeholder="— None —" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">— None —</SelectItem>
+              {locations.map((l) => (
+                <SelectItem key={l.stationName} value={l.stationName}>
+                  {l.stationName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
           <Label htmlFor="driverName">Driver Name</Label>
           <Input
             id="driverName"
@@ -274,13 +302,17 @@ function CardForm({
 function RouteComponent() {
   const queryClient = useQueryClient()
   const navigate = useNavigate({ from: '/hub/fleet-cards' })
-  const { account: accountFilter } = Route.useSearch()
+  const { account: accountFilter, site: siteFilter } = Route.useSearch()
   const [createOpen, setCreateOpen] = useState(false)
   const [editCard, setEditCard] = useState<FleetCard | null>(null)
   const [deleteCard, setDeleteCard] = useState<FleetCard | null>(null)
 
   function setAccountFilter(name: string | null) {
     navigate({ search: (prev) => ({ ...prev, account: name ?? undefined }), replace: true })
+  }
+
+  function setSiteFilter(name: string | null) {
+    navigate({ search: (prev) => ({ ...prev, site: name ?? undefined }), replace: true })
   }
 
   const { data: cards = [], isLoading, error } = useQuery({
@@ -290,9 +322,9 @@ function RouteComponent() {
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['fleet-cards'] })
 
-  const filteredCards = accountFilter
-    ? cards.filter((c) => c.customerName === accountFilter)
-    : cards
+  const filteredCards = cards
+    .filter((c) => !accountFilter || c.customerName === accountFilter)
+    .filter((c) => !siteFilter || c.site === siteFilter)
 
 
 
@@ -321,14 +353,26 @@ function RouteComponent() {
         <div>
           <h1 className="text-lg font-semibold">Fleet Cards</h1>
           <p className="text-sm text-muted-foreground">
-            {filteredCards.length}{accountFilter ? ` of ${cards.length}` : ''} card{cards.length !== 1 ? 's' : ''}
+            {filteredCards.length}{(accountFilter || siteFilter) ? ` of ${cards.length}` : ''} card{cards.length !== 1 ? 's' : ''}
             {accountFilter && (
               <>
                 {' '}— <span className="font-medium text-foreground">{accountFilter}</span>
                 <button
                   className="ml-1 text-muted-foreground hover:text-foreground"
                   onClick={() => setAccountFilter(null)}
-                  aria-label="Clear filter"
+                  aria-label="Clear account filter"
+                >
+                  ×
+                </button>
+              </>
+            )}
+            {siteFilter && (
+              <>
+                {' '}— <span className="font-medium text-foreground">{siteFilter}</span>
+                <button
+                  className="ml-1 text-muted-foreground hover:text-foreground"
+                  onClick={() => setSiteFilter(null)}
+                  aria-label="Clear site filter"
                 >
                   ×
                 </button>
@@ -357,6 +401,7 @@ function RouteComponent() {
             <TableRow>
               <TableHead>Card Number</TableHead>
               <TableHead>Account</TableHead>
+              <TableHead>Site</TableHead>
               <TableHead>Driver</TableHead>
               <TableHead>Plate</TableHead>
               <TableHead>Make &amp; Model</TableHead>
@@ -369,7 +414,7 @@ function RouteComponent() {
             {filteredCards.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={9}
                   className="text-center text-sm text-muted-foreground"
                 >
                   {cards.length === 0 ? 'No fleet cards found.' : 'No cards for this account.'}
@@ -388,6 +433,18 @@ function RouteComponent() {
                   >
                     {card.customerName}
                   </button>
+                </TableCell>
+                <TableCell>
+                  {card.site ? (
+                    <button
+                      className="hover:underline text-left"
+                      onClick={() => setSiteFilter(siteFilter === card.site ? null : card.site)}
+                    >
+                      {card.site}
+                    </button>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell>{card.driverName}</TableCell>
                 <TableCell>{card.numberPlate}</TableCell>
@@ -461,6 +518,7 @@ function RouteComponent() {
                 initial={{
                   fleetCardNumber: formatCardNumber(editCard.fleetCardNumber),
                   customerName: editCard.customerName,
+                  site: editCard.site,
                   driverName: editCard.driverName,
                   numberPlate: editCard.numberPlate,
                   vehicleMakeModel: editCard.vehicleMakeModel,

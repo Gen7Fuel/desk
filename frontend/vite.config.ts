@@ -21,6 +21,9 @@ const config = defineConfig({
     tailwindcss(),
     viteReact(),
   ],
+  optimizeDeps: {
+    include: ['gantt-task-react'],
+  },
   server: {
     proxy: {
       '/api': {

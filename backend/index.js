@@ -25,6 +25,7 @@ const completionRoutes = require('./apps/academy/completion.routes')
 const academyMediaRoutes = require('./apps/academy/media.routes')
 const narrativeRoutes = require('./apps/narrative/narrative.routes')
 const fleetCardRoutes = require('./apps/fleet-cards/fleet-card.routes')
+const projectRoutes = require('./apps/projects/projects.routes')
 
 const app = express()
 const port = 5000
@@ -64,6 +65,7 @@ apiRouter.use('/academy', completionRoutes)
 apiRouter.use('/academy', academyMediaRoutes)
 apiRouter.use(narrativeRoutes)
 apiRouter.use(fleetCardRoutes)
+apiRouter.use(projectRoutes)
 
 app.use('/api', apiRouter)
 
