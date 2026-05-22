@@ -267,7 +267,7 @@ function UserDetail({
 
   const initialResolved = useMemo(() => {
     if (!manifest) return {}
-    const base = rolePerms ?? buildAllFalse(manifest as Manifest)
+    const base = rolePerms ?? buildAllFalse(manifest)
     // Linter expects permissionOverrides to always be defined
     return deepMergePerms(base, user.permissionOverrides)
   }, [rolePerms, user.permissionOverrides, manifest])
@@ -374,7 +374,7 @@ function UserDetail({
       {/* Permissions */}
       {manifest && (
         <OverridesEditor
-          manifest={manifest as Manifest}
+          manifest={manifest}
           resolved={resolved}
           rolePerms={rolePerms}
           roleName={editRole || user.role}

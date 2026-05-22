@@ -296,7 +296,7 @@ function ModuleCard({
 }) {
   return (
     <Link
-      to={to as any}
+      to={to}
       className="group flex flex-col gap-3 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50"
     >
       <div className="flex h-9 w-9 items-center justify-center rounded-md bg-accent text-accent-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
@@ -409,7 +409,7 @@ function CdnRecentWidget({
         <h3 className="text-sm font-semibold">Recent CDN Uploads</h3>
         {}
         <Link
-          to={'/hub/cdn' as any}
+          to={'/hub/cdn'}
           className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
         >
           View all
