@@ -1,7 +1,7 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Trash2, Upload } from 'lucide-react'
 import type { FleetCard, FleetCardStatus } from '@/lib/fleet-card-api'
 import {
   FLEET_CARD_STATUSES,
@@ -46,6 +46,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
+import { Workbook } from 'exceljs'
 
 export const Route = createFileRoute('/_appbar/_sidebar/hub/fleet-cards')({
   component: RouteComponent,
@@ -80,6 +81,10 @@ const EMPTY_FORM = {
 }
 
 type FormState = typeof EMPTY_FORM
+
+type ParsedRow = Omit<FleetCard, '_id' | 'customerId' | 'customerEmail'>
+type ImportPreview = { rows: ParsedRow[]; creates: number; updates: number }
+type ImportResult = { created: number; updated: number; errors: string[] }
 
 function formatCardInput(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 16)
@@ -299,6 +304,79 @@ function CardForm({
   )
 }
 
+function cellText(val: unknown): string {
+  if (val === null || val === undefined) return ''
+  if (typeof val === 'object' && 'result' in (val as object)) {
+    return String((val as { result?: unknown }).result ?? '').trim()
+  }
+  return String(val).trim()
+}
+
+async function parseFleetCardXlsx(file: File): Promise<ParsedRow[]> {
+  const buffer = await file.arrayBuffer()
+  const wb = new Workbook()
+  await wb.xlsx.load(buffer)
+  const ws = wb.worksheets[0]
+  if (!ws) return []
+
+  const headers: Record<string, number> = {}
+  ws.getRow(1).eachCell((cell, colNum) => {
+    const h = cellText(cell.value).toLowerCase()
+    headers[h] = colNum
+  })
+
+  const rows: ParsedRow[] = []
+  ws.eachRow((row, rowNum) => {
+    if (rowNum === 1) return
+    const get = (col: string) => {
+      const idx = headers[col]
+      return idx ? cellText(row.getCell(idx).value) : ''
+    }
+    const cardRaw = get('card').replace(/\D/g, '')
+    const customerName = get('cx')
+    if (cardRaw.length !== 16 || !customerName) return
+    rows.push({
+      fleetCardNumber: cardRaw,
+      customerName,
+      site: get('site'),
+      driverName: get('driver'),
+      numberPlate: get('plate'),
+      vehicleMakeModel: get('make_model'),
+      notes: get('notes'),
+      status: 'active',
+    })
+  })
+  return rows
+}
+
+async function runImport(
+  rows: ParsedRow[],
+  cards: FleetCard[],
+): Promise<ImportResult> {
+  const existing = new Map(cards.map((c) => [c.fleetCardNumber, c._id]))
+  let created = 0
+  let updated = 0
+  const errors: string[] = []
+
+  for (const row of rows) {
+    const id = existing.get(row.fleetCardNumber)
+    try {
+      if (id) {
+        await updateFleetCard(id, row)
+        updated++
+      } else {
+        await createFleetCard(row)
+        created++
+      }
+    } catch (err) {
+      errors.push(
+        `${formatCardNumber(row.fleetCardNumber)}: ${err instanceof Error ? err.message : 'Error'}`,
+      )
+    }
+  }
+  return { created, updated, errors }
+}
+
 function RouteComponent() {
   const queryClient = useQueryClient()
   const navigate = useNavigate({ from: '/hub/fleet-cards' })
@@ -306,6 +384,10 @@ function RouteComponent() {
   const [createOpen, setCreateOpen] = useState(false)
   const [editCard, setEditCard] = useState<FleetCard | null>(null)
   const [deleteCard, setDeleteCard] = useState<FleetCard | null>(null)
+  const [importPreview, setImportPreview] = useState<ImportPreview | null>(null)
+  const [importResult, setImportResult] = useState<ImportResult | null>(null)
+  const [importPending, setImportPending] = useState(false)
+  const importInputRef = useRef<HTMLInputElement>(null)
 
   function setAccountFilter(name: string | null) {
     navigate({
@@ -332,6 +414,34 @@ function RouteComponent() {
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ['fleet-cards'] })
+
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (importInputRef.current) importInputRef.current.value = ''
+    if (!file) return
+    try {
+      const rows = await parseFleetCardXlsx(file)
+      const existing = new Map(cards.map((c) => [c.fleetCardNumber, c._id]))
+      const creates = rows.filter((r) => !existing.has(r.fleetCardNumber)).length
+      const updates = rows.length - creates
+      setImportPreview({ rows, creates, updates })
+    } catch {
+      alert('Failed to parse Excel file. Make sure it is a valid .xlsx file.')
+    }
+  }
+
+  async function handleConfirmImport() {
+    if (!importPreview) return
+    setImportPending(true)
+    try {
+      const result = await runImport(importPreview.rows, cards)
+      setImportPreview(null)
+      setImportResult(result)
+      invalidate()
+    } finally {
+      setImportPending(false)
+    }
+  }
 
   const filteredCards = cards
     .filter((c) => !accountFilter || c.customerName === accountFilter)
@@ -417,10 +527,27 @@ function RouteComponent() {
           </p>
         </div>
         {can('hub.fleetCards', 'create') && (
-          <Button size="sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4" />
-            Add Card
-          </Button>
+          <div className="flex items-center gap-2">
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".xlsx"
+              className="hidden"
+              onChange={handleImportFile}
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => importInputRef.current?.click()}
+            >
+              <Upload className="h-4 w-4" />
+              Import
+            </Button>
+            <Button size="sm" onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Add Card
+            </Button>
+          </div>
         )}
       </div>
 
@@ -533,6 +660,154 @@ function RouteComponent() {
           </TableBody>
         </Table>
       )}
+
+      {/* Import preview dialog */}
+      <Dialog
+        open={!!importPreview}
+        onOpenChange={(open) => {
+          if (!open && !importPending) setImportPreview(null)
+        }}
+      >
+        <DialogPortal>
+          <DialogOverlay className="fixed inset-0 z-50 bg-black/50" />
+          <DialogContent className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 max-w-lg w-full rounded-lg border bg-background p-6 shadow-lg">
+            <DialogHeader>
+              <DialogTitle>Import Fleet Cards</DialogTitle>
+              <DialogDescription>
+                {importPreview && (
+                  <>
+                    {importPreview.rows.length} row
+                    {importPreview.rows.length !== 1 ? 's' : ''} found —{' '}
+                    <span className="text-green-700 font-medium">
+                      {importPreview.creates} new
+                    </span>
+                    {importPreview.updates > 0 && (
+                      <>
+                        ,{' '}
+                        <span className="text-amber-700 font-medium">
+                          {importPreview.updates} update
+                          {importPreview.updates !== 1 ? 's' : ''}
+                        </span>
+                      </>
+                    )}
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+
+            {importPreview && importPreview.rows.length > 0 && (
+              <div className="overflow-x-auto rounded border text-xs">
+                <table className="w-full">
+                  <thead className="bg-muted text-muted-foreground">
+                    <tr>
+                      <th className="px-2 py-1.5 text-left font-medium">Card</th>
+                      <th className="px-2 py-1.5 text-left font-medium">Customer</th>
+                      <th className="px-2 py-1.5 text-left font-medium">Site</th>
+                      <th className="px-2 py-1.5 text-left font-medium">Driver</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {importPreview.rows.slice(0, 5).map((r, i) => (
+                      <tr key={i} className="border-t">
+                        <td className="px-2 py-1.5 font-mono tracking-widest">
+                          {formatCardNumber(r.fleetCardNumber)}
+                        </td>
+                        <td className="px-2 py-1.5">{r.customerName}</td>
+                        <td className="px-2 py-1.5">{r.site || '—'}</td>
+                        <td className="px-2 py-1.5">{r.driverName || '—'}</td>
+                      </tr>
+                    ))}
+                    {importPreview.rows.length > 5 && (
+                      <tr className="border-t">
+                        <td
+                          colSpan={4}
+                          className="px-2 py-1.5 text-center text-muted-foreground"
+                        >
+                          …and {importPreview.rows.length - 5} more
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={importPending}
+                onClick={() => setImportPreview(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                disabled={importPending || !importPreview?.rows.length}
+                onClick={handleConfirmImport}
+              >
+                {importPending
+                  ? 'Importing…'
+                  : `Import ${importPreview?.rows.length ?? 0} card${(importPreview?.rows.length ?? 0) !== 1 ? 's' : ''}`}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </DialogPortal>
+      </Dialog>
+
+      {/* Import result dialog */}
+      <Dialog
+        open={!!importResult}
+        onOpenChange={(open) => {
+          if (!open) setImportResult(null)
+        }}
+      >
+        <DialogPortal>
+          <DialogOverlay className="fixed inset-0 z-50 bg-black/50" />
+          <DialogContent className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 max-w-sm w-full rounded-lg border bg-background p-6 shadow-lg space-y-4">
+            <DialogHeader>
+              <DialogTitle>Import Complete</DialogTitle>
+              <DialogDescription>
+                {importResult && (
+                  <>
+                    {importResult.created > 0 && (
+                      <span className="block text-green-700">
+                        {importResult.created} card
+                        {importResult.created !== 1 ? 's' : ''} created
+                      </span>
+                    )}
+                    {importResult.updated > 0 && (
+                      <span className="block text-amber-700">
+                        {importResult.updated} card
+                        {importResult.updated !== 1 ? 's' : ''} updated
+                      </span>
+                    )}
+                    {importResult.errors.length > 0 && (
+                      <span className="block text-destructive">
+                        {importResult.errors.length} error
+                        {importResult.errors.length !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            {importResult && importResult.errors.length > 0 && (
+              <ul className="text-xs text-destructive space-y-1 max-h-40 overflow-y-auto rounded border p-2">
+                {importResult.errors.map((e, i) => (
+                  <li key={i}>{e}</li>
+                ))}
+              </ul>
+            )}
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button size="sm">Close</Button>
+              </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </DialogPortal>
+      </Dialog>
 
       {/* Create dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

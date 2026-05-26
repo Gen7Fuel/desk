@@ -33,6 +33,11 @@ const sidebarLinks: Record<
       permission: 'hub.cashManagement',
     },
     {
+      label: 'Cash Rec',
+      path: '/hub/cash-rec',
+      permission: 'hub.cashRec',
+    },
+    {
       label: 'Fleet Cards',
       path: '/hub/fleet-cards',
       permission: 'hub.fleetCards',
