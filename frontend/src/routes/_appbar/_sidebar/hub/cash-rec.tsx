@@ -128,7 +128,7 @@ function RouteComponent() {
   const [endDate, setEndDate] = useState(todayIso)
   const [rows, setRows] = useState<Map<string, KardpollData | null>>(new Map())
   const [loading, setLoading] = useState(false)
-  const [dates, setDates] = useState<string[]>([])
+  const [dates, setDates] = useState<Array<string>>([])
   const [editing, setEditing] = useState<EditCell | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveErrorDate, setSaveErrorDate] = useState<string | null>(null)
@@ -217,7 +217,7 @@ function RouteComponent() {
       const updated = (await res.json()) as { report: KardpollData }
       setRows((prev) => {
         const next = new Map(prev)
-        next.set(editing.date, updated.report ?? payload)
+        next.set(editing.date, updated.report)
         return next
       })
       setEditing(null)
@@ -313,7 +313,7 @@ function RouteComponent() {
                   >
                     <TableCell className="font-mono text-sm">{d}</TableCell>
 
-                    {(['sales', 'litresSold', 'ar'] as EditField[]).map(
+                    {(['sales', 'litresSold', 'ar'] as Array<EditField>).map(
                       (field) => {
                         const isEditing =
                           editing?.date === d && editing.field === field

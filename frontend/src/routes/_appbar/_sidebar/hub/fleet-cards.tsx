@@ -1,4 +1,5 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
+import { Workbook } from 'exceljs'
 import { useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Plus, Trash2, Upload } from 'lucide-react'
@@ -46,7 +47,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
-import { Workbook } from 'exceljs'
 
 export const Route = createFileRoute('/_appbar/_sidebar/hub/fleet-cards')({
   component: RouteComponent,
@@ -83,8 +83,8 @@ const EMPTY_FORM = {
 type FormState = typeof EMPTY_FORM
 
 type ParsedRow = Omit<FleetCard, '_id' | 'customerId' | 'customerEmail'>
-type ImportPreview = { rows: ParsedRow[]; creates: number; updates: number }
-type ImportResult = { created: number; updated: number; errors: string[] }
+type ImportPreview = { rows: Array<ParsedRow>; creates: number; updates: number }
+type ImportResult = { created: number; updated: number; errors: Array<string> }
 
 function formatCardInput(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 16)
@@ -306,18 +306,17 @@ function CardForm({
 
 function cellText(val: unknown): string {
   if (val === null || val === undefined) return ''
-  if (typeof val === 'object' && 'result' in (val as object)) {
+  if (typeof val === 'object' && 'result' in val) {
     return String((val as { result?: unknown }).result ?? '').trim()
   }
   return String(val).trim()
 }
 
-async function parseFleetCardXlsx(file: File): Promise<ParsedRow[]> {
+async function parseFleetCardXlsx(file: File): Promise<Array<ParsedRow>> {
   const buffer = await file.arrayBuffer()
   const wb = new Workbook()
   await wb.xlsx.load(buffer)
   const ws = wb.worksheets[0]
-  if (!ws) return []
 
   const headers: Record<string, number> = {}
   ws.getRow(1).eachCell((cell, colNum) => {
@@ -325,7 +324,7 @@ async function parseFleetCardXlsx(file: File): Promise<ParsedRow[]> {
     headers[h] = colNum
   })
 
-  const rows: ParsedRow[] = []
+  const rows: Array<ParsedRow> = []
   ws.eachRow((row, rowNum) => {
     if (rowNum === 1) return
     const get = (col: string) => {
@@ -350,13 +349,13 @@ async function parseFleetCardXlsx(file: File): Promise<ParsedRow[]> {
 }
 
 async function runImport(
-  rows: ParsedRow[],
-  cards: FleetCard[],
+  rows: Array<ParsedRow>,
+  cards: Array<FleetCard>,
 ): Promise<ImportResult> {
   const existing = new Map(cards.map((c) => [c.fleetCardNumber, c._id]))
   let created = 0
   let updated = 0
-  const errors: string[] = []
+  const errors: Array<string> = []
 
   for (const row of rows) {
     const id = existing.get(row.fleetCardNumber)
