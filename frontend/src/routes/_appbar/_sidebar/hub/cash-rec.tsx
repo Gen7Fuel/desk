@@ -136,7 +136,7 @@ function RouteComponent() {
 
   useEffect(() => {
     if (editing) inputRef.current?.select()
-  }, [editing])
+  }, [editing?.date, editing?.field])
 
   useEffect(() => {
     if (!site || !startDate || !endDate) return

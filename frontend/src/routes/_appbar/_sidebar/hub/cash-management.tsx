@@ -25,6 +25,15 @@ export const Route = createFileRoute('/_appbar/_sidebar/hub/cash-management')({
 
 const HUB = 'https://app.gen7fuel.com'
 
+const SITE_BANK_ACCOUNTS: Record<string, string> = {
+  Rankin: 'Rankin Gen7 LP SB',
+  Couchiching: '72',
+  Walpole: '75',
+  Sarnia: '74',
+  'Jocko Point': '77',
+  'Silver Grizzly': '79',
+}
+
 function todayIso(): string {
   return new Date().toISOString().split('T')[0]
 }
@@ -73,6 +82,15 @@ interface ArRow {
   customerName?: string
   customer?: string
   amount?: number
+}
+
+interface ReceiptEntry {
+  key: string
+  id?: string
+  description?: string
+  txnDate?: string
+  txnTotalEntered?: number
+  totalEntered?: number
 }
 
 // ── Formatting ────────────────────────────────────────────────────────────────
@@ -286,6 +304,15 @@ function RouteComponent() {
   const [sageError, setSageError] = useState('')
   const [sageSuccess, setSageSuccess] = useState(false)
 
+  const [depositLoading, setDepositLoading] = useState(false)
+  const [depositError, setDepositError] = useState('')
+  const [depositSuccess, setDepositSuccess] = useState(false)
+
+  const [entries, setEntries] = useState<Array<ReceiptEntry>>([])
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
+  const [entriesLoading, setEntriesLoading] = useState(false)
+  const [entriesError, setEntriesError] = useState('')
+
   useEffect(() => {
     if (!site || !date) return
     const ac = new AbortController()
@@ -293,6 +320,10 @@ function RouteComponent() {
     setError('')
     setData(null)
     setSageSuccess(false)
+    setDepositSuccess(false)
+    setEntries([])
+    setSelectedKeys(new Set())
+    setEntriesError('')
 
     resolveAggregateDates(site, date)
       .then(async (dates) => {
@@ -650,6 +681,162 @@ function RouteComponent() {
     }
   }
 
+  // ── Load undeposited entries ────────────────────────────────────────────────
+
+  async function handleLoadEntries() {
+    setEntriesLoading(true)
+    setEntriesError('')
+    setEntries([])
+    setSelectedKeys(new Set())
+
+    try {
+      const tokenRes = await apiFetch('/api/sage/connect', { method: 'POST' })
+      if (!tokenRes.ok) throw new Error('Failed to get Sage token')
+      const { access_token: sageToken } = (await tokenRes.json()) as {
+        access_token: string
+      }
+
+      const locRes = await fetch(`${HUB}/api/locations`, {
+        headers: { Authorization: `Bearer ${getExternalToken()}` },
+      })
+      if (!locRes.ok) throw new Error('Failed to fetch Hub locations')
+      const locations = (await locRes.json()) as Array<{
+        stationName: string
+        sageEntityKey?: string
+      }>
+      const loc = locations.find((l) => l.stationName === site)
+      if (!loc?.sageEntityKey)
+        throw new Error(`No Sage entity key configured for "${site}"`)
+
+      const entityRes = await apiFetch(
+        `/api/sage/entity/${loc.sageEntityKey}`,
+        { headers: { 'X-Sage-Token': sageToken } },
+      )
+      if (!entityRes.ok) throw new Error('Failed to fetch Sage entity')
+      const entityData = (await entityRes.json()) as {
+        'ia::result': { id: string }
+      }
+      const locationId = entityData['ia::result'].id
+      if (!locationId) throw new Error('Could not resolve Sage location ID')
+
+      const receiptsRes = await apiFetch(
+        '/api/sage/other-receipts?fields=key,id,description,txnDate,txnTotalEntered&size=100',
+        { headers: { 'X-Sage-Token': sageToken, 'X-Sage-Entity': locationId } },
+      )
+      if (!receiptsRes.ok) throw new Error('Failed to fetch undeposited entries')
+      const receiptsData = (await receiptsRes.json()) as {
+        'ia::result': Array<ReceiptEntry>
+      }
+      setEntries(receiptsData['ia::result'] ?? [])
+    } catch (err: unknown) {
+      setEntriesError(
+        err instanceof Error ? err.message : 'Failed to load entries',
+      )
+    } finally {
+      setEntriesLoading(false)
+    }
+  }
+
+  function handleToggleEntry(key: string) {
+    setSelectedKeys((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  function handleToggleAll() {
+    setSelectedKeys((prev) =>
+      prev.size === entries.length
+        ? new Set()
+        : new Set(entries.map((e) => e.key)),
+    )
+  }
+
+  // ── Sage Deposit handler ────────────────────────────────────────────────────
+
+  async function handleCreateSageDeposit() {
+    if (!data) return
+    setDepositLoading(true)
+    setDepositError('')
+    setDepositSuccess(false)
+
+    try {
+      const tokenRes = await apiFetch('/api/sage/connect', { method: 'POST' })
+      if (!tokenRes.ok) throw new Error('Failed to get Sage token')
+      const { access_token: sageToken } = (await tokenRes.json()) as {
+        access_token: string
+      }
+
+      const locRes = await fetch(`${HUB}/api/locations`, {
+        headers: { Authorization: `Bearer ${getExternalToken()}` },
+      })
+      if (!locRes.ok) throw new Error('Failed to fetch Hub locations')
+      const locations = (await locRes.json()) as Array<{
+        stationName: string
+        sageEntityKey?: string
+      }>
+      const loc = locations.find((l) => l.stationName === site)
+      if (!loc?.sageEntityKey)
+        throw new Error(`No Sage entity key configured for "${site}"`)
+
+      const entityRes = await apiFetch(
+        `/api/sage/entity/${loc.sageEntityKey}`,
+        { headers: { 'X-Sage-Token': sageToken } },
+      )
+      if (!entityRes.ok) throw new Error('Failed to fetch Sage entity')
+      const entityData = (await entityRes.json()) as {
+        'ia::result': { id: string }
+      }
+      const locationId = entityData['ia::result'].id
+      if (!locationId) throw new Error('Could not resolve Sage location ID')
+
+      const bankAccountId = SITE_BANK_ACCOUNTS[site]
+      if (!bankAccountId)
+        throw new Error(`No bank account configured for "${site}"`)
+
+      const payload = {
+        bankAccount: { id: bankAccountId },
+        txnDate: date,
+        details: Array.from(selectedKeys).map((key) => ({ key })),
+      }
+
+      const depositRes = await apiFetch('/api/sage/deposit', {
+        method: 'POST',
+        headers: {
+          'X-Sage-Token': sageToken,
+          'X-Sage-Entity': locationId,
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!depositRes.ok) {
+        const body = (await depositRes.json().catch(() => ({}))) as Record<
+          string,
+          unknown
+        >
+        console.error(
+          '[deposit] Sage error body:',
+          JSON.stringify(body, null, 2),
+        )
+        const detail =
+          (body['ia::error'] as { message?: string } | undefined)?.message ??
+          (body.message as string | undefined) ??
+          JSON.stringify(body)
+        throw new Error(`Sage ${depositRes.status}: ${detail}`)
+      }
+
+      setDepositSuccess(true)
+    } catch (err: unknown) {
+      setDepositError(
+        err instanceof Error ? err.message : 'Failed to create Sage deposit',
+      )
+    } finally {
+      setDepositLoading(false)
+    }
+  }
+
   // ── Row definitions ─────────────────────────────────────────────────────────
 
   const kardpollRows: Array<Row> = [
@@ -784,6 +971,99 @@ function RouteComponent() {
           </p>
         )}
         {sageError && <p className="text-sm text-destructive">{sageError}</p>}
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            onClick={() => void handleLoadEntries()}
+            disabled={entriesLoading}
+          >
+            {entriesLoading ? 'Loading…' : 'Load Undeposited Entries'}
+          </Button>
+          {entriesError && (
+            <p className="text-sm text-destructive">{entriesError}</p>
+          )}
+        </div>
+
+        {entries.length > 0 && (
+          <div className="overflow-hidden rounded-md border">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="bg-muted">
+                  <th className="border-b-2 px-3 py-2 text-left">
+                    <input
+                      type="checkbox"
+                      checked={
+                        entries.length > 0 &&
+                        selectedKeys.size === entries.length
+                      }
+                      onChange={handleToggleAll}
+                    />
+                  </th>
+                  <th className="border-b-2 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="border-b-2 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th className="border-b-2 px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider">
+                    Amount
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((entry) => {
+                  const amount =
+                    entry.txnTotalEntered ?? entry.totalEntered ?? null
+                  return (
+                    <tr
+                      key={entry.key}
+                      className="cursor-pointer hover:bg-muted/10"
+                      onClick={() => handleToggleEntry(entry.key)}
+                    >
+                      <td className="border-b px-3 py-1.5">
+                        <input
+                          type="checkbox"
+                          checked={selectedKeys.has(entry.key)}
+                          onChange={() => handleToggleEntry(entry.key)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </td>
+                      <td className="border-b px-3 py-1.5 text-muted-foreground">
+                        {entry.txnDate ?? '—'}
+                      </td>
+                      <td className="border-b px-3 py-1.5">
+                        {entry.description ?? entry.id ?? entry.key}
+                      </td>
+                      <td className="border-b px-3 py-1.5 text-right font-mono tabular-nums">
+                        {amount != null ? fmtVal(amount) : '—'}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="flex items-center gap-4">
+          <Button
+            onClick={() => void handleCreateSageDeposit()}
+            disabled={selectedKeys.size === 0 || depositLoading}
+          >
+            {depositLoading ? 'Creating…' : `Create Deposit in Sage${selectedKeys.size > 0 ? ` (${selectedKeys.size})` : ''}`}
+          </Button>
+          {depositSuccess && (
+            <p className="text-sm text-green-600">
+              Deposit created as draft in Sage.
+            </p>
+          )}
+          {depositError && (
+            <p className="text-sm text-destructive">{depositError}</p>
+          )}
+        </div>
       </div>
     </div>
   )
