@@ -727,7 +727,7 @@ function RouteComponent() {
       const receiptsData = (await receiptsRes.json()) as {
         'ia::result': Array<ReceiptEntry>
       }
-      setEntries(receiptsData['ia::result'] ?? [])
+      setEntries(receiptsData['ia::result'])
     } catch (err: unknown) {
       setEntriesError(
         err instanceof Error ? err.message : 'Failed to load entries',
