@@ -249,6 +249,87 @@ router.get('/department/:key', authenticate, async (req, res) => {
 })
 
 /**
+ * GET /sage/other-receipts
+ * Lists other-receipts from the Sage Intacct cash-management API for an entity.
+ * Passes through any query parameters (fields, start, size, etc.).
+ */
+router.get('/other-receipts', authenticate, async (req, res) => {
+  try {
+    const sageToken = req.headers['x-sage-token']
+    if (!sageToken) {
+      return res.status(400).json({ message: 'Missing X-Sage-Token header.' })
+    }
+
+    const entityId = req.headers['x-sage-entity'] || LOCATION_ID
+    const qs = new URLSearchParams(req.query).toString()
+    const url = `${SAGE_BASE}objects/cash-management/other-receipt${qs ? `?${qs}` : ''}`
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${sageToken}`,
+        'X-IA-API-Param-Entity': entityId,
+      },
+    })
+
+    const data = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      console.error('[sage/other-receipts] Sage error:', response.status, JSON.stringify(data, null, 2))
+      return res.status(response.status).json(
+        data ?? { message: `Sage returned ${response.status}` }
+      )
+    }
+
+    return res.status(response.status).json(data)
+  } catch (err) {
+    console.error('[sage/other-receipts] error:', err)
+    return res.status(500).json({ message: 'Sage other-receipts request failed.' })
+  }
+})
+
+/**
+ * POST /sage/deposit
+ * Proxies a create-deposit request to the Sage Intacct cash-management API.
+ * Expects the Sage access token in the X-Sage-Token request header.
+ * Optionally reads X-Sage-Entity for the entity ID; falls back to LOCATION_ID.
+ */
+router.post('/deposit', authenticate, async (req, res) => {
+  try {
+    const sageToken = req.headers['x-sage-token']
+    if (!sageToken) {
+      return res.status(400).json({ message: 'Missing X-Sage-Token header.' })
+    }
+
+    const entityId = req.headers['x-sage-entity'] || LOCATION_ID
+    const url = SAGE_BASE + 'objects/cash-management/deposit'
+    console.log('[sage/deposit] payload:', JSON.stringify(req.body, null, 2))
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${sageToken}`,
+        'Content-Type': 'application/json',
+        'X-IA-API-Param-Entity': entityId,
+      },
+      body: JSON.stringify(req.body),
+    })
+
+    const data = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      console.error('[sage/deposit] Sage error:', response.status, JSON.stringify(data, null, 2))
+      return res.status(response.status).json(
+        data ?? { message: `Sage returned ${response.status}` }
+      )
+    }
+
+    return res.status(response.status).json(data)
+  } catch (err) {
+    console.error('[sage/deposit] error:', err)
+    return res.status(500).json({ message: 'Sage deposit request failed.' })
+  }
+})
+
+/**
  * POST /sage/other-receipt
  * Proxies a create-other-receipt request to the Sage Intacct cash-management API.
  * Expects the Sage access token in the X-Sage-Token request header.
