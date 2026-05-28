@@ -730,7 +730,7 @@ function RouteComponent() {
       })
       if (!receiptsRes.ok) throw new Error('Failed to fetch undeposited entries')
       const receiptsData = (await receiptsRes.json()) as {
-        'ia::result': Array<{ key: string; id: string; href: string }>
+        'ia::result': Array<{ key: string; id: string; href: string }> | null | undefined
       }
       const refs = receiptsData['ia::result'] ?? []
 
