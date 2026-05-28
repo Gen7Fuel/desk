@@ -63,6 +63,19 @@ export async function getCdnExportMonths(): Promise<Array<CdnExportMonth>> {
   return data.months
 }
 
+export async function deleteCdnMonth(
+  month: string,
+): Promise<{ message: string; deleted: number; total: number }> {
+  const { apiFetch } = await import('@/lib/api')
+  const res = await apiFetch(
+    `/api/cdn/delete-month?month=${encodeURIComponent(month)}`,
+    { method: 'DELETE' },
+  )
+  const data = await res.json()
+  if (!res.ok) throw new Error(data?.message ?? `Delete failed (${res.status})`)
+  return data
+}
+
 export async function backupCdnMonth(month: string): Promise<string> {
   const { apiFetch } = await import('@/lib/api')
   const res = await apiFetch(

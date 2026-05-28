@@ -86,11 +86,17 @@ interface ArRow {
 
 interface ReceiptEntry {
   key: string
-  id?: string
-  description?: string
+  id: string
+  href: string
   txnDate?: string
+  payer?: string
+  customer?: { id?: string; name?: string }
+  txnCurrency?: string
   txnTotalEntered?: number
   totalEntered?: number
+  paymentMethod?: string
+  referenceNumber?: string
+  description?: string
 }
 
 // ── Formatting ────────────────────────────────────────────────────────────────
@@ -719,15 +725,29 @@ function RouteComponent() {
       const locationId = entityData['ia::result'].id
       if (!locationId) throw new Error('Could not resolve Sage location ID')
 
-      const receiptsRes = await apiFetch(
-        '/api/sage/other-receipts?fields=key,id,description,txnDate,txnTotalEntered&size=100',
-        { headers: { 'X-Sage-Token': sageToken, 'X-Sage-Entity': locationId } },
-      )
+      const receiptsRes = await apiFetch('/api/sage/other-receipts', {
+        headers: { 'X-Sage-Token': sageToken, 'X-Sage-Entity': locationId },
+      })
       if (!receiptsRes.ok) throw new Error('Failed to fetch undeposited entries')
       const receiptsData = (await receiptsRes.json()) as {
-        'ia::result': Array<ReceiptEntry>
+        'ia::result': Array<{ key: string; id: string; href: string }>
       }
-      setEntries(receiptsData['ia::result'])
+      const refs = receiptsData['ia::result'] ?? []
+
+      const detailed = await Promise.all(
+        refs.map(async (ref) => {
+          const r = await apiFetch(`/api/sage/other-receipt/${ref.key}`, {
+            headers: {
+              'X-Sage-Token': sageToken,
+              'X-Sage-Entity': locationId,
+            },
+          })
+          if (!r.ok) return { key: ref.key, id: ref.id, href: ref.href }
+          const d = (await r.json()) as { 'ia::result': ReceiptEntry }
+          return { ...ref, ...d['ia::result'] }
+        }),
+      )
+      setEntries(detailed)
     } catch (err: unknown) {
       setEntriesError(
         err instanceof Error ? err.message : 'Failed to load entries',
@@ -1002,21 +1022,30 @@ function RouteComponent() {
                       onChange={handleToggleAll}
                     />
                   </th>
-                  <th className="border-b-2 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="border-b-2 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="border-b-2 px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider">
-                    Amount
-                  </th>
+                  {[
+                    'Date',
+                    'Payer',
+                    'Customer ID',
+                    'Customer Name',
+                    'Currency',
+                    'Txn Amount',
+                    'Base Amount',
+                    'Payment Method',
+                    'Txn Number',
+                    'Summary',
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="border-b-2 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider"
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {entries.map((entry) => {
-                  const amount =
-                    entry.txnTotalEntered ?? entry.totalEntered ?? null
+                  const amount = entry.txnTotalEntered ?? entry.totalEntered
                   return (
                     <tr
                       key={entry.key}
@@ -1035,10 +1064,31 @@ function RouteComponent() {
                         {entry.txnDate ?? '—'}
                       </td>
                       <td className="border-b px-3 py-1.5">
-                        {entry.description ?? entry.id ?? entry.key}
+                        {entry.payer ?? '—'}
+                      </td>
+                      <td className="border-b px-3 py-1.5 text-muted-foreground">
+                        {entry.customer?.id ?? '—'}
+                      </td>
+                      <td className="border-b px-3 py-1.5">
+                        {entry.customer?.name ?? '—'}
+                      </td>
+                      <td className="border-b px-3 py-1.5">
+                        {entry.txnCurrency ?? '—'}
                       </td>
                       <td className="border-b px-3 py-1.5 text-right font-mono tabular-nums">
                         {amount != null ? fmtVal(amount) : '—'}
+                      </td>
+                      <td className="border-b px-3 py-1.5 text-right font-mono tabular-nums">
+                        {amount != null ? fmtVal(amount) : '—'}
+                      </td>
+                      <td className="border-b px-3 py-1.5">
+                        {entry.paymentMethod ?? '—'}
+                      </td>
+                      <td className="border-b px-3 py-1.5 text-muted-foreground">
+                        {entry.referenceNumber ?? '—'}
+                      </td>
+                      <td className="border-b px-3 py-1.5">
+                        {entry.description ?? '—'}
                       </td>
                     </tr>
                   )

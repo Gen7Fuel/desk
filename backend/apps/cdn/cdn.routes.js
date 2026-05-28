@@ -201,4 +201,42 @@ router.post('/cdn/backup', authenticate, requirePermission('hub.cdn', 'read'), a
   }
 })
 
+/** DELETE /cdn/delete-month?month=YYYY-MM — delete all CDN files for a month */
+router.delete('/cdn/delete-month', authenticate, requirePermission('hub.cdn', 'delete'), async (req, res) => {
+  const CDN_BASE = process.env.CDN_BASE
+  const CDN_TOKEN = process.env.CDN_ADMIN_TOKEN
+  const { month } = req.query
+
+  if (!CDN_BASE || !CDN_TOKEN) {
+    return res.status(500).json({ message: 'CDN not configured on server.' })
+  }
+  if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+    return res.status(400).json({ message: 'month query param required (YYYY-MM)' })
+  }
+
+  try {
+    const allFiles = await fetchAllCdnFiles(CDN_BASE, CDN_TOKEN)
+    const monthFiles = allFiles.filter((f) => f.lastModified.startsWith(month))
+
+    if (monthFiles.length === 0) {
+      return res.status(404).json({ message: `No files found for ${month}` })
+    }
+
+    let deleted = 0
+    for (const file of monthFiles) {
+      const r = await fetch(
+        `${CDN_BASE}/cdn/delete/${encodeURIComponent(file.filename)}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${CDN_TOKEN}` } },
+      )
+      if (r.ok) deleted++
+    }
+
+    console.log(`[cdn/delete-month] Deleted ${deleted}/${monthFiles.length} files for ${month}`)
+    res.json({ message: `Deleted ${deleted} of ${monthFiles.length} files for ${month}`, deleted, total: monthFiles.length })
+  } catch (err) {
+    console.error('[cdn/delete-month] error:', err)
+    res.status(500).json({ message: 'Delete failed', error: err.message })
+  }
+})
+
 module.exports = router
