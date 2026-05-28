@@ -43,6 +43,11 @@ const sidebarLinks: Record<
       permission: 'hub.fleetCards',
     },
     {
+      label: 'Fleet Customers',
+      path: '/hub/fleet-customers',
+      permission: 'hub.fleetCustomers',
+    },
+    {
       label: 'AR Customers',
       path: '/hub/ar-customers',
       permission: 'hub.arCustomers',

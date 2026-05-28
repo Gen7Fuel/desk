@@ -585,7 +585,11 @@ function RouteComponent() {
             )}
             {filteredCards.map((card) => (
               <TableRow key={card._id}>
-                <TableCell className="font-mono tracking-widest text-sm">
+                <TableCell
+                  className="font-mono tracking-widest text-sm cursor-pointer select-none"
+                  title="Click to copy"
+                  onClick={() => void navigator.clipboard.writeText(card.fleetCardNumber)}
+                >
                   {formatCardNumber(card.fleetCardNumber)}
                 </TableCell>
                 <TableCell>

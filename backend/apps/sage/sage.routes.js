@@ -249,6 +249,42 @@ router.get('/department/:key', authenticate, async (req, res) => {
 })
 
 /**
+ * GET /sage/other-receipt/:key
+ * Fetches a single other-receipt by key from the Sage Intacct cash-management API.
+ */
+router.get('/other-receipt/:key', authenticate, async (req, res) => {
+  try {
+    const sageToken = req.headers['x-sage-token']
+    if (!sageToken) {
+      return res.status(400).json({ message: 'Missing X-Sage-Token header.' })
+    }
+
+    const entityId = req.headers['x-sage-entity'] || LOCATION_ID
+    const url = `${SAGE_BASE}objects/cash-management/other-receipt/${req.params.key}`
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${sageToken}`,
+        'X-IA-API-Param-Entity': entityId,
+      },
+    })
+
+    const data = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      console.error('[sage/other-receipt/:key] Sage error:', response.status, JSON.stringify(data, null, 2))
+      return res.status(response.status).json(
+        data ?? { message: `Sage returned ${response.status}` }
+      )
+    }
+
+    return res.status(response.status).json(data)
+  } catch (err) {
+    console.error('[sage/other-receipt/:key] error:', err)
+    return res.status(500).json({ message: 'Sage other-receipt request failed.' })
+  }
+})
+
+/**
  * GET /sage/other-receipts
  * Lists other-receipts from the Sage Intacct cash-management API for an entity.
  * Passes through any query parameters (fields, start, size, etc.).

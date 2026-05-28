@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ExternalLink, Search, Trash2, Upload, X } from 'lucide-react'
+import { ExternalLink, Loader2, Search, Trash2, Upload, X } from 'lucide-react'
 import type { CdnExportMonth, CdnFile } from '@/lib/cdn-api'
 import { can } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
@@ -26,6 +26,7 @@ import {
 import {
   backupCdnMonth,
   deleteCdnFile,
+  deleteCdnMonth,
   getCdnDownloadUrl,
   getCdnExportMonths,
   getCdnFiles,
@@ -67,6 +68,19 @@ function RouteComponent() {
   const [months, setMonths] = useState<Array<CdnExportMonth>>([])
   const [loadingMonths, setLoadingMonths] = useState(false)
   const [backingUpMonth, setBackingUpMonth] = useState<string | null>(null)
+
+  type DeleteMonthState =
+    | { phase: 'confirm'; month: string }
+    | { phase: 'deleting'; month: string }
+    | { phase: 'done'; month: string; deleted: number; total: number }
+  const [deleteMonthState, setDeleteMonthState] =
+    useState<DeleteMonthState | null>(null)
+
+  const deleteMonthCutoff = (() => {
+    const now = new Date()
+    const d = new Date(now.getFullYear(), now.getMonth() - 2, 1)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  })()
   const [previewFile, setPreviewFile] = useState<CdnFile | null>(null)
   const [searchInput, setSearchInput] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
@@ -111,6 +125,18 @@ function RouteComponent() {
       )
     } finally {
       setBackingUpMonth(null)
+    }
+  }
+
+  async function handleConfirmDeleteMonth(month: string) {
+    setDeleteMonthState({ phase: 'deleting', month })
+    try {
+      const result = await deleteCdnMonth(month)
+      setDeleteMonthState({ phase: 'done', month, deleted: result.deleted, total: result.total })
+      setMonths((prev) => prev.filter((m) => m.month !== month))
+    } catch (err) {
+      setDeleteMonthState(null)
+      alert(`Delete failed: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 
@@ -356,15 +382,30 @@ function RouteComponent() {
                         {formatSize(m.totalSize)}
                       </span>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={!!backingUpMonth}
-                      onClick={() => handleBackupMonth(m.month)}
-                    >
-                      <Upload className="h-3 w-3" />
-                      {backingUpMonth === m.month ? 'Backing up…' : 'Backup'}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!!backingUpMonth}
+                        onClick={() => handleBackupMonth(m.month)}
+                      >
+                        <Upload className="h-3 w-3" />
+                        {backingUpMonth === m.month ? 'Backing up…' : 'Backup'}
+                      </Button>
+                      {can('hub.cdn', 'delete') && m.month < deleteMonthCutoff && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={!!backingUpMonth}
+                          onClick={() =>
+                            setDeleteMonthState({ phase: 'confirm', month: m.month })
+                          }
+                        >
+                          <Trash2 className="h-3 w-3 text-red-500" />
+                          Delete
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -376,6 +417,82 @@ function RouteComponent() {
                 </Button>
               </DialogClose>
             </div>
+          </DialogContent>
+        </DialogPortal>
+      </Dialog>
+
+      <Dialog
+        open={!!deleteMonthState}
+        onOpenChange={(open) => {
+          if (!open && deleteMonthState?.phase !== 'deleting')
+            setDeleteMonthState(null)
+        }}
+      >
+        <DialogPortal>
+          <DialogOverlay className="fixed inset-0 z-50 bg-black/50" />
+          <DialogContent className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 max-w-sm w-full space-y-4 rounded-lg border bg-background p-6 shadow-lg">
+            {deleteMonthState?.phase === 'confirm' && (
+              <>
+                <DialogTitle className="text-base font-semibold">
+                  Delete {deleteMonthState.month} files?
+                </DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground">
+                  This will permanently delete all CDN files from{' '}
+                  <strong>{deleteMonthState.month}</strong>. This action cannot
+                  be undone.
+                </DialogDescription>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDeleteMonthState(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() =>
+                      void handleConfirmDeleteMonth(deleteMonthState.month)
+                    }
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {deleteMonthState?.phase === 'deleting' && (
+              <>
+                <DialogTitle className="text-base font-semibold">
+                  Deleting {deleteMonthState.month} files…
+                </DialogTitle>
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              </>
+            )}
+
+            {deleteMonthState?.phase === 'done' && (
+              <>
+                <DialogTitle className="text-base font-semibold">
+                  Deleted
+                </DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground">
+                  Successfully deleted {deleteMonthState.deleted} of{' '}
+                  {deleteMonthState.total} files from{' '}
+                  <strong>{deleteMonthState.month}</strong>.
+                </DialogDescription>
+                <div className="flex justify-end">
+                  <Button
+                    size="sm"
+                    onClick={() => setDeleteMonthState(null)}
+                  >
+                    Okay
+                  </Button>
+                </div>
+              </>
+            )}
           </DialogContent>
         </DialogPortal>
       </Dialog>
