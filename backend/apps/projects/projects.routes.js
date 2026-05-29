@@ -74,7 +74,7 @@ router.post('/projects', authenticate, async (req, res) => {
       description,
       status,
       startDate,
-      createdBy: req.user._id || req.user.id,
+      createdBy: req.user.userId,
     })
 
     if (templateId) {
