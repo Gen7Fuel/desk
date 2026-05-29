@@ -63,11 +63,12 @@ router.post('/connect', authenticate, async (_req, res) => {
  */
 router.post('/attachment', authenticate, async (req, res) => {
   try {
-    const sageToken = req.headers['x-sage-token']
+    const sageToken = req.headers['x-sage-token'] || req.body.sageToken
     if (!sageToken) {
-      return res.status(400).json({ message: 'Missing X-Sage-Token header.' })
+      return res.status(400).json({ message: 'Missing Sage token.' })
     }
 
+    const { sageToken: _t, ...forwardBody } = req.body
     const url = SAGE_BASE + 'objects/company-config/attachment'
     const response = await fetch(url, {
       method: 'POST',
@@ -75,7 +76,7 @@ router.post('/attachment', authenticate, async (req, res) => {
         Authorization: `Bearer ${sageToken}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(forwardBody),
     })
 
     const data = await response.json().catch(() => null)
@@ -101,13 +102,14 @@ router.post('/attachment', authenticate, async (req, res) => {
  */
 router.post('/bill', authenticate, async (req, res) => {
   try {
-    const sageToken = req.headers['x-sage-token']
+    const sageToken = req.headers['x-sage-token'] || req.body.sageToken
     if (!sageToken) {
-      return res.status(400).json({ message: 'Missing X-Sage-Token header.' })
+      return res.status(400).json({ message: 'Missing Sage token.' })
     }
 
+    const { sageToken: _t, ...forwardBody } = req.body
     const url = SAGE_BASE + 'objects/accounts-payable/bill'
-    console.log('[sage/bill] payload:', JSON.stringify(req.body, null, 2))
+    console.log('[sage/bill] payload:', JSON.stringify(forwardBody, null, 2))
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -115,7 +117,7 @@ router.post('/bill', authenticate, async (req, res) => {
         'Content-Type': 'application/json',
         'X-IA-API-Param-Entity': LOCATION_ID,
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(forwardBody),
     })
 
     const data = await response.json().catch(() => null)
@@ -141,13 +143,14 @@ router.post('/bill', authenticate, async (req, res) => {
  */
 router.post('/invoice', authenticate, async (req, res) => {
   try {
-    const sageToken = req.headers['x-sage-token']
+    const sageToken = req.headers['x-sage-token'] || req.body.sageToken
     if (!sageToken) {
-      return res.status(400).json({ message: 'Missing X-Sage-Token header.' })
+      return res.status(400).json({ message: 'Missing Sage token.' })
     }
 
+    const { sageToken: _t, ...forwardBody } = req.body
     const url = SAGE_BASE + 'objects/accounts-receivable/invoice'
-    console.log('[sage/invoice] payload:', JSON.stringify(req.body, null, 2))
+    console.log('[sage/invoice] payload:', JSON.stringify(forwardBody, null, 2))
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -155,7 +158,7 @@ router.post('/invoice', authenticate, async (req, res) => {
         'Content-Type': 'application/json',
         'X-IA-API-Param-Entity': LOCATION_ID,
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(forwardBody),
     })
 
     const data = await response.json().catch(() => null)

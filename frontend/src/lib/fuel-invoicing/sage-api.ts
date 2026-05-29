@@ -88,8 +88,7 @@ export async function createAttachment(
 
   const res = await apiFetch('/api/sage/attachment', {
     method: 'POST',
-    headers: { 'X-Sage-Token': sageToken },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ ...body, sageToken }),
   })
 
   const data: SageResult = await res.json().catch(() => null)
@@ -192,8 +191,7 @@ export async function createBill(
   console.log('[sage] AP bill request body:', body)
   const res = await apiFetch('/api/sage/bill', {
     method: 'POST',
-    headers: { 'X-Sage-Token': sageToken },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ ...body, sageToken }),
   })
 
   const data: SageResult = await res.json().catch(() => null)
@@ -317,8 +315,7 @@ export async function createInvoice(
   console.log('[sage] AR invoice request body:', body)
   const res = await apiFetch('/api/sage/invoice', {
     method: 'POST',
-    headers: { 'X-Sage-Token': sageToken },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ ...body, sageToken }),
   })
 
   const data: SageResult = await res.json().catch(() => null)
