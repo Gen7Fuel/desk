@@ -338,6 +338,50 @@ router.get('/other-receipts', authenticate, async (req, res) => {
 })
 
 /**
+ * GET /sage/deposit-lines
+ * Lists deposit lines from the Sage Intacct cash-management API.
+ * Accepts startDate and endDate query params (YYYY-MM-DD) to filter by depositDate.
+ */
+router.get('/deposit-lines', authenticate, async (req, res) => {
+  try {
+    const sageToken = req.headers['x-sage-token']
+    if (!sageToken) {
+      return res.status(400).json({ message: 'Missing X-Sage-Token header.' })
+    }
+
+    const entityId = req.headers['x-sage-entity'] || LOCATION_ID
+    const { startDate, endDate } = req.query
+
+    const filter = JSON.stringify({ between: { depositDate: [startDate, endDate] } })
+    const fields = 'key,id,href,depositDate,amount,description,currency,transactionType'
+    const url =
+      `${SAGE_BASE}objects/cash-management/deposit-line` +
+      `?filter=${encodeURIComponent(filter)}&fields=${encodeURIComponent(fields)}&size=200`
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${sageToken}`,
+        'X-IA-API-Param-Entity': entityId,
+      },
+    })
+
+    const data = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      console.error('[sage/deposit-lines] Sage error:', response.status, JSON.stringify(data, null, 2))
+      return res.status(response.status).json(
+        data ?? { message: `Sage returned ${response.status}` }
+      )
+    }
+
+    return res.status(response.status).json(data)
+  } catch (err) {
+    console.error('[sage/deposit-lines] error:', err)
+    return res.status(500).json({ message: 'Sage deposit-lines request failed.' })
+  }
+})
+
+/**
  * POST /sage/deposit
  * Proxies a create-deposit request to the Sage Intacct cash-management API.
  * Expects the Sage access token in the X-Sage-Token request header.
