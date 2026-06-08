@@ -46,7 +46,7 @@ router.post('/connect', authenticate, async (req, res) => {
     if (!response.ok) {
       const text = await response.text()
       console.error('[sage/connect] Sage token request failed:', response.status, text)
-      return res.status(response.status).json({
+      return res.status(502).json({
         message: 'Failed to obtain Sage access token.',
         detail: text,
       })
