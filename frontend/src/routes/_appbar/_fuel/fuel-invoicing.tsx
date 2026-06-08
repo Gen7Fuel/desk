@@ -19,7 +19,7 @@ export const Route = createFileRoute('/_appbar/_fuel/fuel-invoicing')({
     }
   },
   loader: async () => {
-    const res = await apiFetch('/api/sage/connect', { method: 'POST' })
+    const res = await apiFetch('/api/sage/connect?auth=body', { method: 'POST' })
     if (!res.ok) {
       const body = await res.json().catch(() => ({}))
       throw new Error(
