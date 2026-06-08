@@ -20,22 +20,14 @@ router.post('/connect', authenticate, async (req, res) => {
     }
 
     const tokenUrl = SAGE_BASE + 'oauth2/token'
-    const useBodyAuth = req.query.auth === 'body'
 
     const body = new URLSearchParams()
     body.append('grant_type', 'client_credentials')
+    body.append('client_id', clientId)
+    body.append('client_secret', clientSecret)
     body.append('username', 'skimWS@GPMC Management Services')
-    if (useBodyAuth) {
-      body.append('client_id', clientId)
-      body.append('client_secret', clientSecret)
-    }
 
-    const fetchHeaders = useBodyAuth
-      ? { 'Content-Type': 'application/x-www-form-urlencoded' }
-      : {
-          Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        }
+    const fetchHeaders = { 'Content-Type': 'application/x-www-form-urlencoded' }
 
     const response = await fetch(tokenUrl, {
       method: 'POST',
