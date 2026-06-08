@@ -10,7 +10,7 @@ const LOCATION_ID = 'A210'
  * Obtains an access token using the client_credentials grant.
  * No browser redirect or callback — returns { access_token } directly.
  */
-router.post('/connect', authenticate, async (_req, res) => {
+router.post('/connect', authenticate, async (req, res) => {
   try {
     const clientId = process.env.SAGE_CLIENT_ID
     const clientSecret = process.env.SAGE_CLIENT_SECRET
@@ -20,15 +20,26 @@ router.post('/connect', authenticate, async (_req, res) => {
     }
 
     const tokenUrl = SAGE_BASE + 'oauth2/token'
+    const useBodyAuth = req.query.auth === 'body'
 
     const body = new URLSearchParams()
     body.append('grant_type', 'client_credentials')
-    body.append('client_id', clientId)
-    body.append('client_secret', clientSecret)
     body.append('username', 'skimWS@GPMC Management Services')
+    if (useBodyAuth) {
+      body.append('client_id', clientId)
+      body.append('client_secret', clientSecret)
+    }
+
+    const fetchHeaders = useBodyAuth
+      ? { 'Content-Type': 'application/x-www-form-urlencoded' }
+      : {
+          Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        }
 
     const response = await fetch(tokenUrl, {
       method: 'POST',
+      headers: fetchHeaders,
       body,
     })
 
