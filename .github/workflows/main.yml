@@ -143,6 +143,7 @@ jobs:
             echo "ACADEMY_ADMIN_TOKEN=${{ secrets.ACADEMY_ADMIN_TOKEN }}" >> backend/.env
             echo "SQL_USER=${{ secrets.SQL_USER }}" >> backend/.env
             echo "SQL_PASSWORD=${{ secrets.SQL_PASSWORD }}" >> backend/.env
+            echo "NODE_OPTIONS=--max-http-header-size=32768" >> backend/.env
 
             # ---- Image references (built in CI or latest fallback) ----
             export FRONTEND_IMAGE=${{ needs.check-changes.outputs.frontend-image }}
@@ -151,25 +152,23 @@ jobs:
             BACKEND_CHANGED=${{ needs.check-changes.outputs.backend }}
             FRONTEND_CHANGED=${{ needs.check-changes.outputs.frontend }}
 
-            # ---- Deploy API (only if changed) ----
+            # ---- Deploy API (always run so env changes are picked up) ----
+            OLD_API=$(docker inspect --format='{{.Image}}' desk-api 2>/dev/null || echo "")
             if [ "$BACKEND_CHANGED" = "true" ]; then
-                echo "Deploying api (new image: $BACKEND_IMAGE)..."
-                OLD_API=$(docker inspect --format='{{.Image}}' desk-api 2>/dev/null || echo "")
+                echo "Pulling new api image: $BACKEND_IMAGE..."
                 docker pull $BACKEND_IMAGE
-                if docker compose up -d --no-deps --wait api; then
-                    echo "SUCCESS: API is healthy."
-                else
-                    echo "FATAL: API failed health check!"
-                    docker logs desk-api --tail 50
-                    if [ -n "$OLD_API" ]; then
-                        echo "Rolling back api to $OLD_API..."
-                        export BACKEND_IMAGE=$OLD_API
-                        docker compose up -d --no-deps api
-                    fi
-                    exit 1
-                fi
+            fi
+            if docker compose up -d --no-deps --wait api; then
+                echo "SUCCESS: API is healthy."
             else
-                echo "Skipping api deploy (no changes)."
+                echo "FATAL: API failed health check!"
+                docker logs desk-api --tail 50
+                if [ "$BACKEND_CHANGED" = "true" ] && [ -n "$OLD_API" ]; then
+                    echo "Rolling back api to $OLD_API..."
+                    export BACKEND_IMAGE=$OLD_API
+                    docker compose up -d --no-deps api
+                fi
+                exit 1
             fi
 
             # ---- Deploy Frontend/Caddy (only if changed) ----
