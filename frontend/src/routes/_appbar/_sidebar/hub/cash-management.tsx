@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { CalendarIcon } from 'lucide-react'
-import { format, getDay, parseISO, subDays } from 'date-fns'
+import { format, getDay, parseISO, subDays, subMonths } from 'date-fns'
 import { can, getTokenPayload } from '@/lib/permissions'
 import { apiFetch } from '@/lib/api'
 import { SitePicker } from '@/components/custom/SitePicker'
@@ -84,19 +84,15 @@ interface ArRow {
   amount?: number
 }
 
-interface ReceiptEntry {
+interface DepositLine {
   key: string
   id: string
   href: string
-  txnDate?: string
-  payer?: string
-  customer?: { id?: string; name?: string }
-  txnCurrency?: string
-  txnTotalEntered?: number
-  totalEntered?: number
-  paymentMethod?: string
-  referenceNumber?: string
+  depositDate?: string
+  amount?: number
   description?: string
+  currency?: string
+  transactionType?: string
 }
 
 // ── Formatting ────────────────────────────────────────────────────────────────
@@ -314,10 +310,10 @@ function RouteComponent() {
   const [depositError, setDepositError] = useState('')
   const [depositSuccess, setDepositSuccess] = useState(false)
 
-  const [entries, setEntries] = useState<Array<ReceiptEntry>>([])
+  const [depositLines, setDepositLines] = useState<Array<DepositLine>>([])
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
-  const [entriesLoading, setEntriesLoading] = useState(false)
-  const [entriesError, setEntriesError] = useState('')
+  const [depositLinesLoading, setDepositLinesLoading] = useState(false)
+  const [depositLinesError, setDepositLinesError] = useState('')
 
   useEffect(() => {
     if (!site || !date) return
@@ -327,9 +323,9 @@ function RouteComponent() {
     setData(null)
     setSageSuccess(false)
     setDepositSuccess(false)
-    setEntries([])
+    setDepositLines([])
     setSelectedKeys(new Set())
-    setEntriesError('')
+    setDepositLinesError('')
 
     resolveAggregateDates(site, date)
       .then(async (dates) => {
@@ -687,12 +683,12 @@ function RouteComponent() {
     }
   }
 
-  // ── Load undeposited entries ────────────────────────────────────────────────
+  // ── Load deposit lines ──────────────────────────────────────────────────────
 
-  async function handleLoadEntries() {
-    setEntriesLoading(true)
-    setEntriesError('')
-    setEntries([])
+  async function handleLoadDepositLines() {
+    setDepositLinesLoading(true)
+    setDepositLinesError('')
+    setDepositLines([])
     setSelectedKeys(new Set())
 
     try {
@@ -725,35 +721,24 @@ function RouteComponent() {
       const locationId = entityData['ia::result'].id
       if (!locationId) throw new Error('Could not resolve Sage location ID')
 
-      const receiptsRes = await apiFetch('/api/sage/other-receipts', {
-        headers: { 'X-Sage-Token': sageToken, 'X-Sage-Entity': locationId },
-      })
-      if (!receiptsRes.ok) throw new Error('Failed to fetch undeposited entries')
-      const receiptsData = (await receiptsRes.json()) as {
-        'ia::result': Array<{ key: string; id: string; href: string }> | null | undefined
-      }
-      const refs = receiptsData['ia::result'] ?? []
+      const endDate = date
+      const startDate = format(subMonths(parseISO(date), 1), 'yyyy-MM-dd')
 
-      const detailed = await Promise.all(
-        refs.map(async (ref) => {
-          const r = await apiFetch(`/api/sage/other-receipt/${ref.key}`, {
-            headers: {
-              'X-Sage-Token': sageToken,
-              'X-Sage-Entity': locationId,
-            },
-          })
-          if (!r.ok) return { key: ref.key, id: ref.id, href: ref.href }
-          const d = (await r.json()) as { 'ia::result': ReceiptEntry }
-          return { ...ref, ...d['ia::result'] }
-        }),
+      const linesRes = await apiFetch(
+        `/api/sage/deposit-lines?startDate=${startDate}&endDate=${endDate}`,
+        { headers: { 'X-Sage-Token': sageToken, 'X-Sage-Entity': locationId } },
       )
-      setEntries(detailed)
+      if (!linesRes.ok) throw new Error('Failed to fetch deposit lines')
+      const linesData = (await linesRes.json()) as {
+        'ia::result': Array<DepositLine> | null | undefined
+      }
+      setDepositLines(linesData['ia::result'] ?? [])
     } catch (err: unknown) {
-      setEntriesError(
-        err instanceof Error ? err.message : 'Failed to load entries',
+      setDepositLinesError(
+        err instanceof Error ? err.message : 'Failed to load deposit lines',
       )
     } finally {
-      setEntriesLoading(false)
+      setDepositLinesLoading(false)
     }
   }
 
@@ -768,9 +753,9 @@ function RouteComponent() {
 
   function handleToggleAll() {
     setSelectedKeys((prev) =>
-      prev.size === entries.length
+      prev.size === depositLines.length
         ? new Set()
-        : new Set(entries.map((e) => e.key)),
+        : new Set(depositLines.map((l) => l.key)),
     )
   }
 
@@ -997,17 +982,17 @@ function RouteComponent() {
         <div className="flex items-center gap-4">
           <Button
             variant="outline"
-            onClick={() => void handleLoadEntries()}
-            disabled={entriesLoading}
+            onClick={() => void handleLoadDepositLines()}
+            disabled={depositLinesLoading}
           >
-            {entriesLoading ? 'Loading…' : 'Load Undeposited Entries'}
+            {depositLinesLoading ? 'Loading…' : 'Load Deposit Lines'}
           </Button>
-          {entriesError && (
-            <p className="text-sm text-destructive">{entriesError}</p>
+          {depositLinesError && (
+            <p className="text-sm text-destructive">{depositLinesError}</p>
           )}
         </div>
 
-        {entries.length > 0 && (
+        {depositLines.length > 0 && (
           <div className="overflow-hidden rounded-md border">
             <table className="w-full border-collapse text-sm">
               <thead>
@@ -1016,83 +1001,56 @@ function RouteComponent() {
                     <input
                       type="checkbox"
                       checked={
-                        entries.length > 0 &&
-                        selectedKeys.size === entries.length
+                        depositLines.length > 0 &&
+                        selectedKeys.size === depositLines.length
                       }
                       onChange={handleToggleAll}
                     />
                   </th>
-                  {[
-                    'Date',
-                    'Payer',
-                    'Customer ID',
-                    'Customer Name',
-                    'Currency',
-                    'Txn Amount',
-                    'Base Amount',
-                    'Payment Method',
-                    'Txn Number',
-                    'Summary',
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="border-b-2 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider"
-                    >
-                      {h}
-                    </th>
-                  ))}
+                  {['Date', 'Amount', 'Currency', 'Type', 'Description'].map(
+                    (h) => (
+                      <th
+                        key={h}
+                        className="border-b-2 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider"
+                      >
+                        {h}
+                      </th>
+                    ),
+                  )}
                 </tr>
               </thead>
               <tbody>
-                {entries.map((entry) => {
-                  const amount = entry.txnTotalEntered ?? entry.totalEntered
-                  return (
-                    <tr
-                      key={entry.key}
-                      className="cursor-pointer hover:bg-muted/10"
-                      onClick={() => handleToggleEntry(entry.key)}
-                    >
-                      <td className="border-b px-3 py-1.5">
-                        <input
-                          type="checkbox"
-                          checked={selectedKeys.has(entry.key)}
-                          onChange={() => handleToggleEntry(entry.key)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </td>
-                      <td className="border-b px-3 py-1.5 text-muted-foreground">
-                        {entry.txnDate ?? '—'}
-                      </td>
-                      <td className="border-b px-3 py-1.5">
-                        {entry.payer ?? '—'}
-                      </td>
-                      <td className="border-b px-3 py-1.5 text-muted-foreground">
-                        {entry.customer?.id ?? '—'}
-                      </td>
-                      <td className="border-b px-3 py-1.5">
-                        {entry.customer?.name ?? '—'}
-                      </td>
-                      <td className="border-b px-3 py-1.5">
-                        {entry.txnCurrency ?? '—'}
-                      </td>
-                      <td className="border-b px-3 py-1.5 text-right font-mono tabular-nums">
-                        {amount != null ? fmtVal(amount) : '—'}
-                      </td>
-                      <td className="border-b px-3 py-1.5 text-right font-mono tabular-nums">
-                        {amount != null ? fmtVal(amount) : '—'}
-                      </td>
-                      <td className="border-b px-3 py-1.5">
-                        {entry.paymentMethod ?? '—'}
-                      </td>
-                      <td className="border-b px-3 py-1.5 text-muted-foreground">
-                        {entry.referenceNumber ?? '—'}
-                      </td>
-                      <td className="border-b px-3 py-1.5">
-                        {entry.description ?? '—'}
-                      </td>
-                    </tr>
-                  )
-                })}
+                {depositLines.map((line) => (
+                  <tr
+                    key={line.key}
+                    className="cursor-pointer hover:bg-muted/10"
+                    onClick={() => handleToggleEntry(line.key)}
+                  >
+                    <td className="border-b px-3 py-1.5">
+                      <input
+                        type="checkbox"
+                        checked={selectedKeys.has(line.key)}
+                        onChange={() => handleToggleEntry(line.key)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </td>
+                    <td className="border-b px-3 py-1.5 text-muted-foreground">
+                      {line.depositDate ?? '—'}
+                    </td>
+                    <td className="border-b px-3 py-1.5 text-right font-mono tabular-nums">
+                      {line.amount != null ? fmtVal(line.amount) : '—'}
+                    </td>
+                    <td className="border-b px-3 py-1.5">
+                      {line.currency ?? '—'}
+                    </td>
+                    <td className="border-b px-3 py-1.5 text-muted-foreground">
+                      {line.transactionType ?? '—'}
+                    </td>
+                    <td className="border-b px-3 py-1.5">
+                      {line.description ?? '—'}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
