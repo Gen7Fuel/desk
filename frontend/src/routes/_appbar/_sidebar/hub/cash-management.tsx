@@ -88,11 +88,6 @@ interface DepositLine {
   key: string
   id: string
   href: string
-  depositDate?: string
-  amount?: number
-  description?: string
-  currency?: string
-  transactionType?: string
 }
 
 // ── Formatting ────────────────────────────────────────────────────────────────
@@ -1007,16 +1002,9 @@ function RouteComponent() {
                       onChange={handleToggleAll}
                     />
                   </th>
-                  {['Date', 'Amount', 'Currency', 'Type', 'Description'].map(
-                    (h) => (
-                      <th
-                        key={h}
-                        className="border-b-2 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider"
-                      >
-                        {h}
-                      </th>
-                    ),
-                  )}
+                  <th className="border-b-2 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider">
+                    ID
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -1034,20 +1022,8 @@ function RouteComponent() {
                         onClick={(e) => e.stopPropagation()}
                       />
                     </td>
-                    <td className="border-b px-3 py-1.5 text-muted-foreground">
-                      {line.depositDate ?? '—'}
-                    </td>
-                    <td className="border-b px-3 py-1.5 text-right font-mono tabular-nums">
-                      {line.amount != null ? fmtVal(line.amount) : '—'}
-                    </td>
-                    <td className="border-b px-3 py-1.5">
-                      {line.currency ?? '—'}
-                    </td>
-                    <td className="border-b px-3 py-1.5 text-muted-foreground">
-                      {line.transactionType ?? '—'}
-                    </td>
-                    <td className="border-b px-3 py-1.5">
-                      {line.description ?? '—'}
+                    <td className="border-b px-3 py-1.5 font-mono text-sm">
+                      {line.id}
                     </td>
                   </tr>
                 ))}
