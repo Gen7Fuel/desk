@@ -376,6 +376,8 @@ router.get('/deposit-lines', authenticate, async (req, res) => {
       )
     }
 
+    const sample = Array.isArray(data?.['ia::result']) ? data['ia::result'][0] : null
+    console.log('[sage/deposit-lines] sample result:', JSON.stringify(sample, null, 2))
     return res.status(response.status).json(data)
   } catch (err) {
     console.error('[sage/deposit-lines] error:', err)
