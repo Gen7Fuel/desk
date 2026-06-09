@@ -354,7 +354,7 @@ router.get('/deposit-lines', authenticate, async (req, res) => {
       },
       body: JSON.stringify({
         object: 'cash-management/deposit-line',
-        fields: ['key', 'id', 'href'],
+        fields: ['key', 'id', 'amount', 'txnAmount', 'description', 'currency.name', 'dimensions.location.name', 'audit.createdDateTime'],
         filters: [
           { '$gte': { 'audit.createdDateTime': `${startDate}T00:00:00Z` } },
           { '$lte': { 'audit.createdDateTime': `${endDate}T23:59:59Z` } },
@@ -363,7 +363,7 @@ router.get('/deposit-lines', authenticate, async (req, res) => {
           caseSensitiveComparison: true,
           includePrivate: true,
         },
-        orderBy: [{ id: 'asc' }],
+        orderBy: [{ 'audit.createdDateTime': 'asc' }],
       }),
     })
 

@@ -87,7 +87,12 @@ interface ArRow {
 interface DepositLine {
   key: string
   id: string
-  href: string
+  amount?: string
+  txnAmount?: string
+  description?: string
+  currency?: { name?: string }
+  dimensions?: { location?: { name?: string } }
+  audit?: { createdDateTime?: string }
 }
 
 // ── Formatting ────────────────────────────────────────────────────────────────
@@ -1002,9 +1007,11 @@ function RouteComponent() {
                       onChange={handleToggleAll}
                     />
                   </th>
-                  <th className="border-b-2 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider">
-                    ID
-                  </th>
+                  {['Date', 'Txn Amount', 'Base Amount', 'Currency', 'Summary'].map((h) => (
+                    <th key={h} className="border-b-2 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -1022,8 +1029,22 @@ function RouteComponent() {
                         onClick={(e) => e.stopPropagation()}
                       />
                     </td>
-                    <td className="border-b px-3 py-1.5 font-mono text-sm">
-                      {line.id}
+                    <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
+                      {line.audit?.createdDateTime
+                        ? format(new Date(line.audit.createdDateTime), 'MMM d, yyyy')
+                        : '—'}
+                    </td>
+                    <td className="border-b px-3 py-1.5 text-right font-mono text-sm tabular-nums">
+                      {line.txnAmount != null ? fmtVal(Number(line.txnAmount)) : '—'}
+                    </td>
+                    <td className="border-b px-3 py-1.5 text-right font-mono text-sm tabular-nums">
+                      {line.amount != null ? fmtVal(Number(line.amount)) : '—'}
+                    </td>
+                    <td className="border-b px-3 py-1.5 text-sm">
+                      {line.currency?.name ?? '—'}
+                    </td>
+                    <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
+                      {line.description ?? '—'}
                     </td>
                   </tr>
                 ))}
