@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router()
 const { authenticate } = require('../../middleware/auth')
 
-const SAGE_BASE = 'https://api.intacct.com/ia/api/v1/'
+const SAGE_BASE = 'https://api.intacct.com/ia/api/v1/' // Sage Intacct REST API v1
 const LOCATION_ID = 'A210'
 
 /**
