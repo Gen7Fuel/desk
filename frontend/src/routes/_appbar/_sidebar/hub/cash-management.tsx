@@ -90,7 +90,6 @@ interface DepositLine {
   amount?: string
   txnAmount?: string
   description?: string
-  currency?: { name?: string }
   dimensions?: { location?: { name?: string } }
   audit?: { createdDateTime?: string }
 }
@@ -1007,7 +1006,7 @@ function RouteComponent() {
                       onChange={handleToggleAll}
                     />
                   </th>
-                  {['Date', 'Txn Amount', 'Base Amount', 'Currency', 'Summary'].map((h) => (
+                  {['Date', 'Txn Amount', 'Base Amount', 'Summary'].map((h) => (
                     <th key={h} className="border-b-2 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider">
                       {h}
                     </th>
@@ -1039,9 +1038,6 @@ function RouteComponent() {
                     </td>
                     <td className="border-b px-3 py-1.5 text-right font-mono text-sm tabular-nums">
                       {line.amount != null ? fmtVal(Number(line.amount)) : '—'}
-                    </td>
-                    <td className="border-b px-3 py-1.5 text-sm">
-                      {line.currency?.name ?? '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
                       {line.description ?? '—'}
