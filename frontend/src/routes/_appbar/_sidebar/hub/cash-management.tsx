@@ -89,9 +89,9 @@ interface DepositLine {
   id: string
   amount?: string
   txnAmount?: string
-  description?: string
-  dimensions?: { location?: { name?: string } }
-  audit?: { createdDateTime?: string }
+  description?: string | null
+  'dimensions.location.name'?: string
+  'audit.createdDateTime'?: string
 }
 
 // ── Formatting ────────────────────────────────────────────────────────────────
@@ -1006,7 +1006,7 @@ function RouteComponent() {
                       onChange={handleToggleAll}
                     />
                   </th>
-                  {['Date', 'Txn Amount', 'Base Amount', 'Summary'].map((h) => (
+                  {['Date', 'Location', 'Txn Amount', 'Base Amount', 'Summary'].map((h) => (
                     <th key={h} className="border-b-2 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider">
                       {h}
                     </th>
@@ -1029,9 +1029,12 @@ function RouteComponent() {
                       />
                     </td>
                     <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
-                      {line.audit?.createdDateTime
-                        ? format(new Date(line.audit.createdDateTime), 'MMM d, yyyy')
+                      {line['audit.createdDateTime']
+                        ? format(new Date(line['audit.createdDateTime']), 'MMM d, yyyy')
                         : '—'}
+                    </td>
+                    <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
+                      {line['dimensions.location.name'] ?? '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-right font-mono text-sm tabular-nums">
                       {line.txnAmount != null ? fmtVal(Number(line.txnAmount)) : '—'}
