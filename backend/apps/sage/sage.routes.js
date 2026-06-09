@@ -344,17 +344,27 @@ router.get('/deposit-lines', authenticate, async (req, res) => {
     const entityId = req.headers['x-sage-entity'] || LOCATION_ID
     const { startDate, endDate } = req.query
 
-    const filter = JSON.stringify({ between: { depositDate: [startDate, endDate] } })
-    const fields = 'key,id,href,depositDate,amount,description,currency,transactionType'
-    const url =
-      `${SAGE_BASE}objects/cash-management/deposit-line` +
-      `?filter=${encodeURIComponent(filter)}&fields=${encodeURIComponent(fields)}&size=200`
-
+    const url = `${SAGE_BASE}services/core/query`
     const response = await fetch(url, {
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${sageToken}`,
+        'Content-Type': 'application/json',
         'X-IA-API-Param-Entity': entityId,
       },
+      body: JSON.stringify({
+        object: 'cash-management/deposit-line',
+        fields: ['key', 'id', 'href', 'depositDate', 'amount', 'description', 'currency', 'transactionType'],
+        filters: [
+          { '$gte': { depositDate: startDate } },
+          { '$lte': { depositDate: endDate } },
+        ],
+        filterParameters: {
+          caseSensitiveComparison: true,
+          includePrivate: true,
+        },
+        orderBy: [{ depositDate: 'asc' }],
+      }),
     })
 
     const data = await response.json().catch(() => null)
