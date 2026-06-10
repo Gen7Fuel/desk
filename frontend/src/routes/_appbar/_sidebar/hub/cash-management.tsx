@@ -90,6 +90,12 @@ interface DepositLine {
   amount?: string
   txnAmount?: string
   description?: string | null
+  payer?: string | null
+  'customer.id'?: string | null
+  'customer.name'?: string | null
+  txnCurrency?: string | null
+  paymentMethod?: string | null
+  documentNumber?: string | null
   'dimensions.location.name'?: string
   'audit.createdDateTime'?: string
 }
@@ -1006,7 +1012,7 @@ function RouteComponent() {
                       onChange={handleToggleAll}
                     />
                   </th>
-                  {['Date', 'Location', 'Txn Amount', 'Base Amount', 'Summary'].map((h) => (
+                  {['Date', 'Payer', 'Customer ID', 'Customer Name', 'Location', 'Currency', 'Txn Amount', 'Base Amount', 'Payment Method', 'Txn Number', 'Summary'].map((h) => (
                     <th key={h} className="border-b-2 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider">
                       {h}
                     </th>
@@ -1034,13 +1040,31 @@ function RouteComponent() {
                         : '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
+                      {line.payer ?? '—'}
+                    </td>
+                    <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
+                      {line['customer.id'] ?? '—'}
+                    </td>
+                    <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
+                      {line['customer.name'] ?? '—'}
+                    </td>
+                    <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
                       {line['dimensions.location.name'] ?? '—'}
+                    </td>
+                    <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
+                      {line.txnCurrency ?? '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-right font-mono text-sm tabular-nums">
                       {line.txnAmount != null ? fmtVal(Number(line.txnAmount)) : '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-right font-mono text-sm tabular-nums">
                       {line.amount != null ? fmtVal(Number(line.amount)) : '—'}
+                    </td>
+                    <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
+                      {line.paymentMethod ?? '—'}
+                    </td>
+                    <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
+                      {line.documentNumber ?? '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
                       {line.description ?? '—'}
