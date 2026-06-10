@@ -90,12 +90,12 @@ interface DepositLine {
   amount?: string
   txnAmount?: string
   description?: string | null
-  payer?: string | null
-  'customer.id'?: string | null
-  'customer.name'?: string | null
-  txnCurrency?: string | null
-  paymentMethod?: string | null
-  documentNumber?: string | null
+  'currency.iso4217Code'?: string | null
+  'deposit.payer'?: string | null
+  'deposit.customer.id'?: string | null
+  'deposit.customer.name'?: string | null
+  'deposit.paymentMethod'?: string | null
+  'deposit.documentNumber'?: string | null
   'dimensions.location.name'?: string
   'audit.createdDateTime'?: string
 }
@@ -1040,19 +1040,19 @@ function RouteComponent() {
                         : '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
-                      {line.payer ?? '—'}
+                      {line['deposit.payer'] ?? '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
-                      {line['customer.id'] ?? '—'}
+                      {line['deposit.customer.id'] ?? '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
-                      {line['customer.name'] ?? '—'}
+                      {line['deposit.customer.name'] ?? '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
                       {line['dimensions.location.name'] ?? '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
-                      {line.txnCurrency ?? '—'}
+                      {line['currency.iso4217Code'] ?? '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-right font-mono text-sm tabular-nums">
                       {line.txnAmount != null ? fmtVal(Number(line.txnAmount)) : '—'}
@@ -1061,10 +1061,10 @@ function RouteComponent() {
                       {line.amount != null ? fmtVal(Number(line.amount)) : '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
-                      {line.paymentMethod ?? '—'}
+                      {line['deposit.paymentMethod'] ?? '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
-                      {line.documentNumber ?? '—'}
+                      {line['deposit.documentNumber'] ?? '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
                       {line.description ?? '—'}
