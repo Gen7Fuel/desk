@@ -40,7 +40,7 @@
     "react-day-picker": "^9.14.0",
     "react-dom": "^19.2.0",
     "react-leaflet": "^5.0.0",
-    "socket.io-client": "^4.8.3",
+    "socket.io-client": "^4.2.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.0.6",
@@ -48,7 +48,9 @@
     "vite-tsconfig-paths": "^6.0.2"
   },
   "overrides": {
-    "h3-v2": "npm:h3@2.0.1-rc.19"
+    "h3-v2": "npm:h3@2.0.1-rc.19",
+    "uuid": ">=11.1.1",
+    "ws": ">=8.20.2"
   },
   "devDependencies": {
     "@tanstack/devtools-vite": "^0.3.11",
