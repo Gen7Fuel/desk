@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Headset, RefreshCw, Send, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { getHubSupportSocket, disconnectHubSupportSocket } from '@/lib/hubSocket'
+import { disconnectHubSupportSocket, getHubSupportSocket } from '@/lib/hubSocket'
 import { getExternalToken } from '@/lib/permissions'
 
 const HUB = 'https://app.gen7fuel.com'
@@ -31,7 +31,7 @@ interface Ticket {
   site: string
   createdAt: string
   userId: TicketUser
-  messages: TicketMessage[]
+  messages: Array<TicketMessage>
 }
 
 type StatusFilter = 'open' | 'resolved' | 'closed' | 'all'
@@ -39,7 +39,7 @@ type StatusFilter = 'open' | 'resolved' | 'closed' | 'all'
 // ── Hook ───────────────────────────────────────────────────────────────────────
 
 export function useSupportTickets() {
-  const [tickets, setTickets] = useState<Ticket[]>([])
+  const [tickets, setTickets] = useState<Array<Ticket>>([])
   const [loading, setLoading] = useState(false)
   const initialized = useRef(false)
 
@@ -78,7 +78,7 @@ export function useSupportTickets() {
       }
       if ('Notification' in window && Notification.permission === 'granted') {
         const n = new Notification('New support ticket', {
-          body: `${ticket.userId?.name || ticket.userId?.email || 'Customer'} (${ticket.site}): ${ticket.text}`,
+          body: `${ticket.userId.name || ticket.userId.email || 'Customer'} (${ticket.site}): ${ticket.text}`,
           icon: '/favicon.ico',
           tag: `ticket-${ticket._id}`,
         })
@@ -116,7 +116,7 @@ export function useSupportTickets() {
 interface SupportPanelProps {
   open: boolean
   onClose: () => void
-  tickets: Ticket[]
+  tickets: Array<Ticket>
   loading: boolean
   onRefresh: () => void
   onAddMessage: (ticketId: string, msg: TicketMessage) => void
@@ -255,7 +255,7 @@ export function SupportPanel({
               </Button>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold truncate">
-                  {activeTicket.userId?.name || activeTicket.userId?.email || 'Unknown'}
+                  {activeTicket.userId.name || activeTicket.userId.email || 'Unknown'}
                 </div>
                 <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
                   {activeTicket.site}
@@ -284,7 +284,7 @@ export function SupportPanel({
 
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
               {activeTicket.messages.map((msg, idx) => {
-                const isSupport = !!msg.sender?.isSupport
+                const isSupport = !!msg.sender.isSupport
                 return (
                   <div
                     key={msg._id || idx}
@@ -298,7 +298,7 @@ export function SupportPanel({
                     >
                       {!isSupport && (
                         <div className="text-[10px] font-semibold mb-0.5 opacity-70">
-                          {msg.sender?.name || 'Customer'}
+                          {msg.sender.name || 'Customer'}
                         </div>
                       )}
                       <p className="whitespace-pre-wrap">{msg.text}</p>
@@ -364,7 +364,7 @@ export function SupportPanel({
             </div>
 
             <div className="flex gap-1 px-4 py-2 border-b">
-              {(['open', 'resolved', 'closed', 'all'] as StatusFilter[]).map((f) => (
+              {(['open', 'resolved', 'closed', 'all'] as Array<StatusFilter>).map((f) => (
                 <button
                   key={f}
                   onClick={() => setStatusFilter(f)}
@@ -398,7 +398,7 @@ export function SupportPanel({
                     >
                       <div className="flex items-center justify-between mb-0.5">
                         <span className="text-xs font-medium text-muted-foreground truncate">
-                          {ticket.userId?.name || ticket.userId?.email || 'Unknown'} · {ticket.site}
+                          {ticket.userId.name || ticket.userId.email || 'Unknown'} · {ticket.site}
                         </span>
                         <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
                           {fmtDate(ticket.createdAt)}
