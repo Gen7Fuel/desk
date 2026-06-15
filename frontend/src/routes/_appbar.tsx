@@ -283,11 +283,16 @@ function RouteComponent() {
               <TooltipTrigger asChild>
                 <button
                   onClick={() => setSupportOpen(true)}
-                  className="relative flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                  className={cn(
+                    'relative flex h-10 w-10 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-accent-foreground',
+                    pendingCount > 0
+                      ? 'bg-destructive text-white hover:bg-destructive/90 hover:text-white'
+                      : 'text-muted-foreground',
+                  )}
                 >
                   <Headset className="h-5 w-5" />
                   {pendingCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
+                    <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-black">
                       {pendingCount > 9 ? '9+' : pendingCount}
                     </span>
                   )}
