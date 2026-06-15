@@ -1,192 +1,89 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, Headset, Send, Ticket, X } from 'lucide-react'
+import { ArrowLeft, Headset, RefreshCw, Send, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import {
-  disconnectHubSupportSocket,
-  getHubSupportSocket,
-} from '@/lib/hubSocket'
+import { disconnectHubSupportSocket, getHubSupportSocket } from '@/lib/hubSocket'
 import { getExternalToken } from '@/lib/permissions'
+
+const HUB = 'https://app.gen7fuel.com'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-interface ChatMessage {
-  sender: string
-  senderName: string
-  senderType?: 'agent' | 'customer'
+interface TicketUser {
+  _id: string
+  name: string
+  email: string
+  isSupport?: boolean
+}
+
+interface TicketMessage {
+  _id: string
+  sender: TicketUser
   text: string
   createdAt: string
 }
 
-interface PendingChat {
-  chatId: string
-  customer: { name: string; email: string }
+interface Ticket {
+  _id: string
+  text: string
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  status: 'open' | 'resolved' | 'closed'
   site: string
-  initialMessage: string
   createdAt: string
+  userId: TicketUser
+  messages: Array<TicketMessage>
 }
 
-interface ChatSession extends PendingChat {
-  status: 'pending' | 'accepted' | 'expired' | 'closed'
-  acceptedBy?: { id: string; name: string }
-  messages: Array<ChatMessage>
-  ticketId?: string
-}
+type StatusFilter = 'open' | 'resolved' | 'closed' | 'all'
 
 // ── Hook ───────────────────────────────────────────────────────────────────────
 
-export function useSupportChats() {
-  const [chats, setChats] = useState<Map<string, ChatSession>>(new Map())
-  const [connected, setConnected] = useState(false)
+export function useSupportTickets() {
+  const [tickets, setTickets] = useState<Array<Ticket>>([])
+  const [loading, setLoading] = useState(false)
   const initialized = useRef(false)
+
+  const fetchTickets = async () => {
+    setLoading(true)
+    try {
+      const token = getExternalToken()
+      const res = await fetch(`${HUB}/api/support/tickets`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const body = await res.json()
+        setTickets(body.data?.tickets ?? [])
+      }
+    } catch (err) {
+      console.error('[SupportTickets] Failed to fetch:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (initialized.current) return
     initialized.current = true
 
-    const token = getExternalToken()
-    if (!token) return
-
-    // Fetch existing pending/active chats via REST
-    fetch('https://app.gen7fuel.com/api/support/chat', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => (r.ok ? r.json() : Promise.reject(r)))
-      .then((body: { data: Array<any> }) => {
-        setChats((prev) => {
-          const next = new Map(prev)
-          for (const c of body.data) {
-            const chatId = String(c._id)
-            if (!next.has(chatId)) {
-              const acceptedById = String(c.acceptedBy?.id || '')
-              next.set(chatId, {
-                chatId,
-                customer: c.customer || { name: '', email: '' },
-                site: c.site || '',
-                initialMessage: c.initialMessage || '',
-                createdAt: c.createdAt,
-                status: c.status,
-                acceptedBy: c.acceptedBy,
-                messages: (c.messages || []).map((m: any) => ({
-                  ...m,
-                  sender: String(m.sender || ''),
-                  senderType:
-                    acceptedById && String(m.sender) === acceptedById
-                      ? 'agent'
-                      : 'customer',
-                })),
-              })
-            }
-          }
-          return next
-        })
-      })
-      .catch((err) =>
-        console.error('[SupportChats] Failed to fetch chats:', err),
-      )
-
-    // Request notification permission once
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission()
-    }
+    fetchTickets()
 
     const socket = getHubSupportSocket()
 
-    socket.on('connect', () => setConnected(true))
-    socket.on('disconnect', () => setConnected(false))
+    socket.on('connect', fetchTickets)
 
-    // New pending chat from a customer
-    socket.on('support-chat:pending', (data: PendingChat) => {
-      setChats((prev) => {
-        const next = new Map(prev)
-        next.set(data.chatId, {
-          ...data,
-          status: 'pending',
-          messages: [],
-        })
-        return next
-      })
-
-      // Desktop notification
-      if ('Notification' in window && Notification.permission === 'granted') {
-        const n = new Notification('New support chat', {
-          body: `${data.customer.name || data.customer.email} (${data.site}): ${data.initialMessage}`,
-          icon: '/favicon.ico',
-          tag: `support-chat-${data.chatId}`,
-        })
-        n.onclick = () => {
-          window.focus()
-          n.close()
-        }
+    socket.on('ticket:new', (ticket: Ticket) => {
+      setTickets((prev) => [ticket, ...prev])
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission()
       }
-    })
-
-    // Chat was accepted (by this agent or another)
-    socket.on(
-      'support-chat:accepted',
-      (data: { chatId: string; acceptedBy: { id: string; name: string } }) => {
-        setChats((prev) => {
-          const next = new Map(prev)
-          const existing = next.get(data.chatId)
-          if (existing) {
-            next.set(data.chatId, {
-              ...existing,
-              status: 'accepted',
-              acceptedBy: data.acceptedBy,
-            })
-          }
-          return next
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const n = new Notification('New support ticket', {
+          body: `${ticket.userId.name || ticket.userId.email || 'Customer'} (${ticket.site}): ${ticket.text}`,
+          icon: '/favicon.ico',
+          tag: `ticket-${ticket._id}`,
         })
-      },
-    )
-
-    // New message in an active chat
-    socket.on(
-      'support-chat:new-message',
-      (data: { chatId: string; message: ChatMessage }) => {
-        setChats((prev) => {
-          const next = new Map(prev)
-          const existing = next.get(data.chatId)
-          if (existing) {
-            next.set(data.chatId, {
-              ...existing,
-              messages: [...existing.messages, data.message],
-            })
-          }
-          return next
-        })
-      },
-    )
-
-    // Chat expired (ticket created)
-    socket.on(
-      'support-chat:expired',
-      (data: { chatId: string; ticketId: string }) => {
-        setChats((prev) => {
-          const next = new Map(prev)
-          const existing = next.get(data.chatId)
-          if (existing) {
-            next.set(data.chatId, {
-              ...existing,
-              status: 'expired',
-              ticketId: data.ticketId,
-            })
-          }
-          return next
-        })
-      },
-    )
-
-    // Chat closed
-    socket.on('support-chat:closed', (data: { chatId: string }) => {
-      setChats((prev) => {
-        const next = new Map(prev)
-        const existing = next.get(data.chatId)
-        if (existing) {
-          next.set(data.chatId, { ...existing, status: 'closed' })
-        }
-        return next
-      })
+        n.onclick = () => { window.focus(); n.close() }
+      }
     })
 
     return () => {
@@ -195,368 +92,223 @@ export function useSupportChats() {
     }
   }, [])
 
-  // Sorted newest first
-  const chatList = Array.from(chats.values()).sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  )
-
-  const pendingCount = chatList.filter((c) => c.status === 'pending').length
-
-  const updateChatStatus = (chatId: string, updates: Partial<ChatSession>) => {
-    setChats((prev) => {
-      const next = new Map(prev)
-      const existing = next.get(chatId)
-      if (existing) {
-        next.set(chatId, { ...existing, ...updates })
-      }
-      return next
-    })
+  const addMessage = (ticketId: string, msg: TicketMessage) => {
+    setTickets((prev) =>
+      prev.map((t) =>
+        t._id === ticketId ? { ...t, messages: [...t.messages, msg] } : t,
+      ),
+    )
   }
 
-  return { chats, chatList, pendingCount, connected, updateChatStatus }
+  const updateTicket = (ticketId: string, updates: Partial<Ticket>) => {
+    setTickets((prev) =>
+      prev.map((t) => (t._id === ticketId ? { ...t, ...updates } : t)),
+    )
+  }
+
+  const openCount = tickets.filter((t) => t.status === 'open').length
+
+  return { tickets, openCount, loading, refresh: fetchTickets, addMessage, updateTicket }
 }
 
 // ── Panel Component ────────────────────────────────────────────────────────────
 
-interface TicketDraft {
-  chatId: string
-  text: string
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-}
-
 interface SupportPanelProps {
   open: boolean
   onClose: () => void
-  chatList: Array<ChatSession>
-  updateChatStatus: (chatId: string, updates: Partial<ChatSession>) => void
+  tickets: Array<Ticket>
+  loading: boolean
+  onRefresh: () => void
+  onAddMessage: (ticketId: string, msg: TicketMessage) => void
+  onUpdateTicket: (ticketId: string, updates: Partial<Ticket>) => void
+}
+
+const PRIORITY_STYLE: Record<string, string> = {
+  low: 'bg-gray-100 text-gray-500',
+  medium: 'bg-yellow-100 text-yellow-700',
+  high: 'bg-orange-100 text-orange-600',
+  urgent: 'bg-red-100 text-red-600',
+}
+
+const STATUS_STYLE: Record<string, string> = {
+  open: 'bg-blue-100 text-blue-700',
+  resolved: 'bg-green-100 text-green-700',
+  closed: 'bg-gray-100 text-gray-500',
+}
+
+function Badge({ label, style }: { label: string; style: string }) {
+  return (
+    <span className={cn('inline-block text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded', style)}>
+      {label}
+    </span>
+  )
 }
 
 export function SupportPanel({
   open,
   onClose,
-  chatList,
-  updateChatStatus,
+  tickets,
+  loading,
+  onRefresh,
+  onAddMessage,
+  onUpdateTicket,
 }: SupportPanelProps) {
-  const [activeChat, setActiveChat] = useState<string | null>(null)
+  const [activeTicketId, setActiveTicketId] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('open')
   const [messageText, setMessageText] = useState('')
+  const [updatingStatus, setUpdatingStatus] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const [accepting, setAccepting] = useState(false)
-  const [ticketDraft, setTicketDraft] = useState<TicketDraft | null>(null)
-  const [submittingTicket, setSubmittingTicket] = useState(false)
 
-  const active = activeChat
-    ? chatList.find((c) => c.chatId === activeChat)
+  const activeTicket = activeTicketId
+    ? tickets.find((t) => t._id === activeTicketId) ?? null
     : null
 
-  // Reset active chat when panel closes
   useEffect(() => {
-    if (!open) {
-      setActiveChat(null)
-      setTicketDraft(null)
-    }
+    if (!open) setActiveTicketId(null)
   }, [open])
 
-  // Auto-scroll messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [active?.messages.length])
+  }, [activeTicket?.messages.length])
 
-  const openTicketForm = (chatId: string, initialMessage: string) => {
-    setTicketDraft({ chatId, text: initialMessage, priority: 'medium' })
-  }
+  // Join ticket socket room and listen for new messages
+  useEffect(() => {
+    if (!activeTicketId) return
+    const socket = getHubSupportSocket()
+    socket.emit('join-room', activeTicketId)
 
-  const submitTicket = async () => {
-    if (!ticketDraft || !ticketDraft.text.trim()) return
-    setSubmittingTicket(true)
-    try {
-      const token = getExternalToken()
-      const res = await fetch(
-        `https://app.gen7fuel.com/api/support/chat/${ticketDraft.chatId}/convert-to-ticket`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            text: ticketDraft.text.trim(),
-            priority: ticketDraft.priority,
-          }),
-        },
-      )
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        console.error('[SupportPanel] Create ticket failed:', body.message)
-        return
-      }
-      const body = await res.json()
-      updateChatStatus(ticketDraft.chatId, {
-        status: 'expired',
-        ticketId: String(body.data?.ticket?._id || ''),
-      })
-      setTicketDraft(null)
-      setActiveChat(null)
-    } catch (err) {
-      console.error('[SupportPanel] Create ticket error:', err)
-    } finally {
-      setSubmittingTicket(false)
+    const onNewMessage = (msg: TicketMessage) => {
+      onAddMessage(activeTicketId, msg)
     }
-  }
+    socket.on('new-message', onNewMessage)
 
-  const acceptChat = async (chatId: string) => {
-    setAccepting(true)
-    try {
-      const token = getExternalToken()
-      const res = await fetch(
-        `https://app.gen7fuel.com/api/support/chat/${chatId}/accept`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      )
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        console.error('[SupportPanel] Accept failed:', body.message)
-        setAccepting(false)
-        return
-      }
-      const body = await res.json()
-      updateChatStatus(chatId, {
-        status: 'accepted',
-        acceptedBy: body.data?.acceptedBy,
-      })
-      const socket = getHubSupportSocket()
-      socket.emit('support-chat:join', { chatId })
-      setActiveChat(chatId)
-    } catch (err) {
-      console.error('[SupportPanel] Accept error:', err)
-    } finally {
-      setAccepting(false)
+    return () => {
+      socket.off('new-message', onNewMessage)
     }
-  }
+  }, [activeTicketId])
 
   const sendMessage = () => {
-    if (!messageText.trim() || !activeChat) return
+    if (!messageText.trim() || !activeTicketId) return
     const socket = getHubSupportSocket()
-    socket.emit('support-chat:message', {
-      chatId: activeChat,
+    socket.emit('send-message', {
+      conversationId: activeTicketId,
       text: messageText.trim(),
     })
     setMessageText('')
   }
 
-  const closeChat = (chatId: string) => {
-    const socket = getHubSupportSocket()
-    socket.emit('support-chat:close', { chatId })
+  const updateStatus = async (ticketId: string, status: Ticket['status']) => {
+    setUpdatingStatus(true)
+    try {
+      const token = getExternalToken()
+      const res = await fetch(`${HUB}/api/support/tickets/${ticketId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status }),
+      })
+      if (res.ok) onUpdateTicket(ticketId, { status })
+    } catch (err) {
+      console.error('[SupportPanel] Update status error:', err)
+    } finally {
+      setUpdatingStatus(false)
+    }
   }
 
-  const fmtTime = (iso: string) => {
+  const fmtDate = (iso: string) => {
     const d = new Date(iso)
     if (isNaN(d.getTime())) return ''
     const now = new Date()
     const diffMs = now.getTime() - d.getTime()
     if (diffMs < 60_000) return 'Just now'
     if (diffMs < 3_600_000) return `${Math.floor(diffMs / 60_000)}m ago`
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    if (diffMs < 86_400_000) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
   }
 
-  const statusLabel = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return (
-          <span className="text-[10px] font-semibold uppercase text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">
-            Pending
-          </span>
-        )
-      case 'accepted':
-        return (
-          <span className="text-[10px] font-semibold uppercase text-green-700 bg-green-100 px-1.5 py-0.5 rounded">
-            Active
-          </span>
-        )
-      case 'expired':
-        return (
-          <span className="text-[10px] font-semibold uppercase text-red-600 bg-red-100 px-1.5 py-0.5 rounded">
-            Ticket
-          </span>
-        )
-      case 'closed':
-        return (
-          <span className="text-[10px] font-semibold uppercase text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-            Closed
-          </span>
-        )
-      default:
-        return null
-    }
-  }
+  const filteredTickets =
+    statusFilter === 'all' ? tickets : tickets.filter((t) => t.status === statusFilter)
 
   return (
     <>
-      {/* Backdrop */}
-      {open && (
-        <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
-      )}
+      {open && <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />}
 
-      {/* Panel */}
       <div
         className={cn(
-          'fixed right-0 top-0 z-50 h-full w-[380px] max-w-[calc(100vw-64px)] bg-background border-l shadow-xl transition-transform duration-200',
+          'fixed right-0 top-0 z-50 h-full w-[400px] max-w-[calc(100vw-64px)] bg-background border-l shadow-xl transition-transform duration-200',
           open ? 'translate-x-0' : 'translate-x-full',
         )}
       >
-        {/* ── Ticket creation form ── */}
-        {ticketDraft !== null ? (
+        {activeTicket ? (
+          /* ── Ticket detail ── */
           <div className="flex flex-col h-full">
             <div className="flex items-center gap-2 border-b px-4 py-3">
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 shrink-0"
-                onClick={() => setTicketDraft(null)}
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <div className="flex items-center gap-2">
-                <Ticket className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-semibold">Create Ticket</h2>
-              </div>
-            </div>
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground block mb-1.5">
-                  Ticket Description
-                </label>
-                <textarea
-                  value={ticketDraft.text}
-                  onChange={(e) =>
-                    setTicketDraft((d) => d && { ...d, text: e.target.value })
-                  }
-                  rows={6}
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground block mb-1.5">
-                  Priority
-                </label>
-                <select
-                  value={ticketDraft.priority}
-                  onChange={(e) =>
-                    setTicketDraft(
-                      (d) =>
-                        d && {
-                          ...d,
-                          priority: e.target.value as TicketDraft['priority'],
-                        },
-                    )
-                  }
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-              </div>
-            </div>
-            <div className="border-t px-4 py-3 flex gap-2 justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTicketDraft(null)}
-                disabled={submittingTicket}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                onClick={submitTicket}
-                disabled={submittingTicket || !ticketDraft.text.trim()}
-              >
-                {submittingTicket ? 'Creating…' : 'Create Ticket'}
-              </Button>
-            </div>
-          </div>
-        ) : active && active.status === 'accepted' ? (
-          /* ── Active chat view ── */
-          <div className="flex flex-col h-full">
-            <div className="flex items-center gap-2 border-b px-4 py-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 shrink-0"
-                onClick={() => setActiveChat(null)}
+                onClick={() => setActiveTicketId(null)}
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold truncate">
-                  {active.customer.name || active.customer.email}
+                  {activeTicket.userId.name || activeTicket.userId.email || 'Unknown'}
                 </div>
-                <div className="text-[11px] text-muted-foreground">
-                  {active.site}
+                <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                  {activeTicket.site}
+                  <span className="text-muted-foreground/40">·</span>
+                  <Badge
+                    label={activeTicket.priority}
+                    style={PRIORITY_STYLE[activeTicket.priority] ?? ''}
+                  />
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs shrink-0"
-                onClick={() =>
-                  openTicketForm(active.chatId, active.initialMessage)
-                }
-              >
-                <Ticket className="h-3.5 w-3.5 mr-1" />
-                Ticket
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-destructive hover:text-destructive text-xs shrink-0"
-                onClick={() => closeChat(active.chatId)}
-              >
-                End
-              </Button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Badge label={activeTicket.status} style={STATUS_STYLE[activeTicket.status] ?? ''} />
+                {activeTicket.status === 'open' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    disabled={updatingStatus}
+                    onClick={() => updateStatus(activeTicket._id, 'resolved')}
+                  >
+                    Resolve
+                  </Button>
+                )}
+              </div>
             </div>
 
-            {/* Initial message */}
-            <div className="mx-4 mt-3 mb-1 p-2 rounded bg-muted/40 text-xs text-muted-foreground italic border">
-              Initial message: "{active.initialMessage}"
-            </div>
-
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
-              {active.messages.map((msg, idx) => {
-                const isAgent = msg.senderType === 'agent'
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+              {activeTicket.messages.map((msg, idx) => {
+                const isSupport = !!msg.sender.isSupport
                 return (
                   <div
-                    key={idx}
-                    className={`flex ${isAgent ? 'justify-end' : 'justify-start'}`}
+                    key={msg._id || idx}
+                    className={`flex ${isSupport ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
                       className={cn(
                         'max-w-[80%] rounded-lg px-3 py-2 text-sm',
-                        isAgent
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted',
+                        isSupport ? 'bg-primary text-primary-foreground' : 'bg-muted',
                       )}
                     >
-                      {!isAgent && (
+                      {!isSupport && (
                         <div className="text-[10px] font-semibold mb-0.5 opacity-70">
-                          {msg.senderName || 'Customer'}
+                          {msg.sender.name || 'Customer'}
                         </div>
                       )}
                       <p className="whitespace-pre-wrap">{msg.text}</p>
                       <div
                         className={cn(
                           'text-[10px] mt-1',
-                          isAgent ? 'opacity-70' : 'text-muted-foreground',
+                          isSupport ? 'opacity-70' : 'text-muted-foreground',
                         )}
                       >
-                        {fmtTime(msg.createdAt)}
+                        {fmtDate(msg.createdAt)}
                       </div>
                     </div>
                   </div>
@@ -565,160 +317,105 @@ export function SupportPanel({
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input */}
-            <form
-              className="flex gap-2 border-t px-4 py-3"
-              onSubmit={(e) => {
-                e.preventDefault()
-                sendMessage()
-              }}
-            >
-              <input
-                type="text"
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                placeholder="Type a message…"
-                className="flex-1 rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <Button type="submit" size="icon" disabled={!messageText.trim()}>
-                <Send className="h-4 w-4" />
-              </Button>
-            </form>
-          </div>
-        ) : active && active.status === 'expired' ? (
-          /* ── Expired / ticket view ── */
-          <div className="flex flex-col h-full">
-            <div className="flex items-center gap-2 border-b px-4 py-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 shrink-0"
-                onClick={() => setActiveChat(null)}
+            {activeTicket.status === 'open' ? (
+              <form
+                className="flex gap-2 border-t px-4 py-3"
+                onSubmit={(e) => { e.preventDefault(); sendMessage() }}
               >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold truncate">
-                  {active.customer.name || active.customer.email}
-                </div>
-                <div className="text-[11px] text-muted-foreground">
-                  {active.site}
-                </div>
+                <input
+                  type="text"
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  placeholder="Type a reply…"
+                  className="flex-1 rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <Button type="submit" size="icon" disabled={!messageText.trim()}>
+                  <Send className="h-4 w-4" />
+                </Button>
+              </form>
+            ) : (
+              <div className="border-t px-4 py-3 text-center text-xs text-muted-foreground">
+                This ticket is {activeTicket.status}.
               </div>
-              {statusLabel('expired')}
-            </div>
-            <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
-              <Ticket className="h-10 w-10 text-muted-foreground" />
-              <h3 className="text-sm font-semibold">Ticket Created</h3>
-              <p className="text-xs text-muted-foreground">
-                A support ticket was created and the customer has been notified.
-              </p>
-              <div className="rounded-md bg-muted/40 border p-4 w-full text-left">
-                <p className="text-xs text-muted-foreground mb-1 font-medium">
-                  Initial message
-                </p>
-                <p className="text-sm whitespace-pre-wrap">
-                  {active.initialMessage}
-                </p>
-              </div>
-              {active.ticketId && (
-                <p className="text-xs text-muted-foreground">
-                  Ticket ID:{' '}
-                  <span className="font-mono font-semibold">
-                    {active.ticketId}
-                  </span>
-                </p>
-              )}
-            </div>
+            )}
           </div>
         ) : (
-          /* ── Chat list view ── */
+          /* ── Ticket list ── */
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between border-b px-4 py-3">
               <div className="flex items-center gap-2">
                 <Headset className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-semibold">Support Chats</h2>
+                <h2 className="text-sm font-semibold">Support Tickets</h2>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={onClose}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={onRefresh}
+                  disabled={loading}
+                >
+                  <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
+
+            <div className="flex gap-1 px-4 py-2 border-b">
+              {(['open', 'resolved', 'closed', 'all'] as Array<StatusFilter>).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setStatusFilter(f)}
+                  className={cn(
+                    'px-2.5 py-1 rounded text-xs font-medium capitalize transition-colors',
+                    statusFilter === f
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted',
+                  )}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+
             <div className="flex-1 overflow-y-auto">
-              {chatList.length === 0 ? (
+              {filteredTickets.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center px-6">
                   <Headset className="h-8 w-8 text-muted-foreground mb-3" />
                   <p className="text-sm text-muted-foreground">
-                    No support requests yet.
-                    <br />
-                    They'll show up here in real time.
+                    No {statusFilter === 'all' ? '' : statusFilter} tickets.
                   </p>
                 </div>
               ) : (
                 <div className="divide-y">
-                  {chatList.map((chat) => (
+                  {filteredTickets.map((ticket) => (
                     <div
-                      key={chat.chatId}
+                      key={ticket._id}
                       className="px-4 py-3 hover:bg-muted/40 transition cursor-pointer"
-                      onClick={() => {
-                        if (
-                          chat.status === 'accepted' ||
-                          chat.status === 'expired'
-                        ) {
-                          setActiveChat(chat.chatId)
-                        }
-                      }}
+                      onClick={() => setActiveTicketId(ticket._id)}
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium truncate">
-                          {chat.customer.name || chat.customer.email}
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs font-medium text-muted-foreground truncate">
+                          {ticket.userId.name || ticket.userId.email || 'Unknown'} · {ticket.site}
                         </span>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {statusLabel(chat.status)}
-                          <span className="text-[10px] text-muted-foreground">
-                            {fmtTime(chat.createdAt)}
-                          </span>
-                        </div>
+                        <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
+                          {fmtDate(ticket.createdAt)}
+                        </span>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate mb-2">
-                        {chat.site} — {chat.initialMessage}
+                      <p className="text-sm font-medium leading-snug line-clamp-2 mb-1.5">
+                        {ticket.text}
                       </p>
-                      {chat.status === 'pending' && (
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            className="flex-1 h-7 text-xs"
-                            disabled={accepting}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              acceptChat(chat.chatId)
-                            }}
-                          >
-                            {accepting ? 'Accepting…' : 'Accept'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="flex-1 h-7 text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              openTicketForm(chat.chatId, chat.initialMessage)
-                            }}
-                          >
-                            <Ticket className="h-3 w-3 mr-1" />
-                            Create Ticket
-                          </Button>
-                        </div>
-                      )}
-                      {chat.status === 'accepted' && (
-                        <div className="text-[10px] text-green-700">
-                          Chatting with {chat.acceptedBy?.name || 'agent'}
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        <Badge label={ticket.status} style={STATUS_STYLE[ticket.status] ?? ''} />
+                        <Badge label={ticket.priority} style={PRIORITY_STYLE[ticket.priority] ?? ''} />
+                        {ticket.messages.length > 1 && (
+                          <span className="text-[10px] text-muted-foreground ml-auto">
+                            {ticket.messages.length} messages
+                          </span>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

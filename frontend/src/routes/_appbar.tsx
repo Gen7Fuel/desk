@@ -31,7 +31,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { SupportPanel, useSupportChats } from '@/components/support-panel'
+import { SupportPanel, useSupportTickets } from '@/components/support-panel'
 
 export const Route = createFileRoute('/_appbar')({
   beforeLoad: () => {
@@ -53,7 +53,7 @@ function RouteComponent() {
   const navigate = useNavigate()
   const matchRoute = useMatchRoute()
   const { can } = usePermissions()
-  const { chatList, pendingCount, updateChatStatus } = useSupportChats()
+  const { tickets, openCount, loading: ticketsLoading, refresh: refreshTickets, addMessage, updateTicket } = useSupportTickets()
   const [supportOpen, setSupportOpen] = useState(false)
 
   const handleLogout = () => {
@@ -285,15 +285,15 @@ function RouteComponent() {
                   onClick={() => setSupportOpen(true)}
                   className={cn(
                     'relative flex h-10 w-10 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-accent-foreground',
-                    pendingCount > 0
+                    openCount > 0
                       ? 'bg-destructive text-white hover:bg-destructive/90 hover:text-white'
                       : 'text-muted-foreground',
                   )}
                 >
                   <Headset className="h-5 w-5" />
-                  {pendingCount > 0 && (
+                  {openCount > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-black">
-                      {pendingCount > 9 ? '9+' : pendingCount}
+                      {openCount > 9 ? '9+' : openCount}
                     </span>
                   )}
                 </button>
@@ -364,8 +364,11 @@ function RouteComponent() {
       <SupportPanel
         open={supportOpen}
         onClose={() => setSupportOpen(false)}
-        chatList={chatList}
-        updateChatStatus={updateChatStatus}
+        tickets={tickets}
+        loading={ticketsLoading}
+        onRefresh={refreshTickets}
+        onAddMessage={addMessage}
+        onUpdateTicket={updateTicket}
       />
     </div>
   )
