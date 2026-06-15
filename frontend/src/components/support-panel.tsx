@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, Headset, RefreshCw, Send, X } from 'lucide-react'
+import { ArrowLeft, Headset, Plus, RefreshCw, Send, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { disconnectHubSupportSocket, getHubSupportSocket } from '@/lib/hubSocket'
@@ -106,9 +106,13 @@ export function useSupportTickets() {
     )
   }
 
+  const addTicket = (ticket: Ticket) => {
+    setTickets((prev) => [ticket, ...prev])
+  }
+
   const openCount = tickets.filter((t) => t.status === 'open').length
 
-  return { tickets, openCount, loading, refresh: fetchTickets, addMessage, updateTicket }
+  return { tickets, openCount, loading, refresh: fetchTickets, addMessage, updateTicket, addTicket }
 }
 
 // ── Panel Component ────────────────────────────────────────────────────────────
@@ -121,6 +125,7 @@ interface SupportPanelProps {
   onRefresh: () => void
   onAddMessage: (ticketId: string, msg: TicketMessage) => void
   onUpdateTicket: (ticketId: string, updates: Partial<Ticket>) => void
+  onAddTicket: (ticket: Ticket) => void
 }
 
 const PRIORITY_STYLE: Record<string, string> = {
@@ -152,11 +157,18 @@ export function SupportPanel({
   onRefresh,
   onAddMessage,
   onUpdateTicket,
+  onAddTicket,
 }: SupportPanelProps) {
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null)
+  const [isCreating, setIsCreating] = useState(false)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('open')
   const [messageText, setMessageText] = useState('')
   const [updatingStatus, setUpdatingStatus] = useState(false)
+  const [newText, setNewText] = useState('')
+  const [newPriority, setNewPriority] = useState<Ticket['priority']>('medium')
+  const [newSite, setNewSite] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const activeTicket = activeTicketId
@@ -164,8 +176,47 @@ export function SupportPanel({
     : null
 
   useEffect(() => {
-    if (!open) setActiveTicketId(null)
+    if (!open) {
+      setActiveTicketId(null)
+      setIsCreating(false)
+    }
   }, [open])
+
+  const resetCreateForm = () => {
+    setNewText('')
+    setNewPriority('medium')
+    setNewSite('')
+    setCreateError(null)
+  }
+
+  const submitCreateTicket = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newText.trim()) { setCreateError('Description is required.'); return }
+    if (!newSite.trim()) { setCreateError('Site is required.'); return }
+    setCreating(true)
+    setCreateError(null)
+    try {
+      const token = getExternalToken()
+      const res = await fetch(`${HUB}/api/support/tickets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ text: newText.trim(), priority: newPriority, site: newSite.trim() }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body?.message || 'Failed to create ticket.')
+      onAddTicket(body.data as Ticket)
+      setIsCreating(false)
+      resetCreateForm()
+      setActiveTicketId((body.data as Ticket)._id)
+    } catch (err: unknown) {
+      setCreateError(err instanceof Error ? err.message : 'Failed to create ticket.')
+    } finally {
+      setCreating(false)
+    }
+  }
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -241,7 +292,70 @@ export function SupportPanel({
           open ? 'translate-x-0' : 'translate-x-full',
         )}
       >
-        {activeTicket ? (
+        {isCreating ? (
+          /* ── Create ticket ── */
+          <div className="flex flex-col h-full">
+            <div className="flex items-center gap-2 border-b px-4 py-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={() => { setIsCreating(false); resetCreateForm() }}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <h2 className="text-sm font-semibold">New Ticket</h2>
+            </div>
+
+            <form onSubmit={submitCreateTicket} className="flex flex-col gap-4 px-4 py-4 flex-1 overflow-y-auto">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium">Site</label>
+                <input
+                  type="text"
+                  value={newSite}
+                  onChange={(e) => setNewSite(e.target.value)}
+                  placeholder="e.g. Store 12"
+                  disabled={creating}
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium">Priority</label>
+                <select
+                  value={newPriority}
+                  onChange={(e) => setNewPriority(e.target.value as Ticket['priority'])}
+                  disabled={creating}
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5 flex-1 flex flex-col">
+                <label className="text-xs font-medium">Description</label>
+                <textarea
+                  value={newText}
+                  onChange={(e) => setNewText(e.target.value)}
+                  placeholder="Describe the issue…"
+                  maxLength={2000}
+                  disabled={creating}
+                  rows={6}
+                  className="w-full flex-1 rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                />
+              </div>
+
+              {createError && <p className="text-xs text-destructive">{createError}</p>}
+
+              <Button type="submit" className="w-full" disabled={creating}>
+                {creating ? 'Submitting…' : 'Submit Ticket'}
+              </Button>
+            </form>
+          </div>
+        ) : activeTicket ? (
           /* ── Ticket detail ── */
           <div className="flex flex-col h-full">
             <div className="flex items-center gap-2 border-b px-4 py-3">
@@ -348,6 +462,15 @@ export function SupportPanel({
                 <h2 className="text-sm font-semibold">Support Tickets</h2>
               </div>
               <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => { resetCreateForm(); setIsCreating(true) }}
+                  title="New ticket"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
