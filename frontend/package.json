@@ -48,7 +48,9 @@
     "vite-tsconfig-paths": "^6.0.2"
   },
   "overrides": {
-    "h3-v2": "npm:h3@2.0.1-rc.19"
+    "h3-v2": "npm:h3@2.0.1-rc.19",
+    "uuid": ">=11.1.1",
+    "ws": ">=8.20.2"
   },
   "devDependencies": {
     "@tanstack/devtools-vite": "^0.3.11",
