@@ -4,6 +4,7 @@ import { FileVideo, Upload } from 'lucide-react'
 import {
   getAcademyMedia,
   getAcademyMediaSasUrl,
+  getVideoStatus,
   uploadAcademyMedia,
 } from '@/lib/academy-api'
 import { Button } from '@/components/ui/button'
@@ -28,7 +29,7 @@ interface Props {
   onChange: (content: VideoContent) => void
 }
 
-const VIDEO_EXTS = new Set(['mp4', 'webm', 'ogg', 'mov'])
+const VIDEO_EXTS = new Set(['mp4', 'webm', 'ogg', 'mov', 'm3u8'])
 
 function getExt(name: string): string {
   return name.split('.').pop()?.toLowerCase() ?? ''
@@ -47,6 +48,7 @@ function MediaPicker({
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const [selecting, setSelecting] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [processing, setProcessing] = useState(false)
   const [uploadError, setUploadError] = useState('')
 
   const { data, isLoading } = useQuery({
@@ -55,7 +57,9 @@ function MediaPicker({
     enabled: open,
   })
 
-  const videoFiles = (data ?? []).filter((f) => VIDEO_EXTS.has(getExt(f.name)))
+  const videoFiles = (data ?? []).filter(
+    (f) => f.isHls === true || VIDEO_EXTS.has(getExt(f.name)),
+  )
 
   async function handleSelect(fullPath: string) {
     setSelecting(fullPath)
@@ -73,17 +77,50 @@ function MediaPicker({
     setUploading(true)
     setUploadError('')
     try {
-      const uploaded = await uploadAcademyMedia(file)
-      await queryClient.invalidateQueries({ queryKey: ['academy-media'] })
-      await handleSelect(uploaded.fullPath)
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Upload failed')
-    } finally {
+      const result = await uploadAcademyMedia(file)
+
+      if (result.type === 'immediate') {
+        await queryClient.invalidateQueries({ queryKey: ['academy-media'] })
+        await handleSelect(result.file.fullPath)
+        setUploading(false)
+        return
+      }
+
+      // Video is being transcoded — poll until ready then auto-select
       setUploading(false)
+      setProcessing(true)
+      const { videoId } = result
+
+      const poll = setInterval(async () => {
+        try {
+          const status = await getVideoStatus(videoId)
+          if (status.status === 'ready' && status.file) {
+            clearInterval(poll)
+            setProcessing(false)
+            await queryClient.invalidateQueries({ queryKey: ['academy-media'] })
+            await handleSelect(status.file.fullPath)
+          } else if (status.status === 'error') {
+            clearInterval(poll)
+            setProcessing(false)
+            setUploadError(status.message ?? 'Video processing failed')
+          }
+        } catch {
+          // network blip — keep polling
+        }
+      }, 3000)
+    } catch (err) {
+      setUploading(false)
+      setProcessing(false)
+      setUploadError(err instanceof Error ? err.message : 'Upload failed')
     }
   }
 
-  const busy = uploading || !!selecting
+  const busy = uploading || processing || !!selecting
+  const uploadLabel = uploading
+    ? 'Uploading…'
+    : processing
+      ? 'Processing…'
+      : 'Upload Video'
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -95,6 +132,11 @@ function MediaPicker({
         <div className="flex items-center justify-between">
           {uploadError && (
             <p className="text-sm text-destructive">{uploadError}</p>
+          )}
+          {processing && !uploadError && (
+            <p className="text-sm text-muted-foreground">
+              Transcoding for adaptive streaming…
+            </p>
           )}
           <div className="ml-auto">
             <input
@@ -111,7 +153,7 @@ function MediaPicker({
               onClick={() => uploadInputRef.current?.click()}
             >
               <Upload className="h-4 w-4" />
-              {uploading ? 'Uploading…' : 'Upload Video'}
+              {uploadLabel}
             </Button>
           </div>
         </div>
@@ -136,6 +178,11 @@ function MediaPicker({
             >
               <FileVideo className="h-4 w-4 shrink-0 text-blue-500" />
               <span className="flex-1 truncate font-mono">{file.name}</span>
+              {file.isHls && (
+                <span className="rounded bg-blue-100 px-1 py-0.5 text-xs text-blue-700">
+                  HLS
+                </span>
+              )}
               {selecting === file.fullPath && (
                 <span className="text-xs text-muted-foreground">Loading…</span>
               )}
@@ -147,18 +194,24 @@ function MediaPicker({
   )
 }
 
+function deriveDisplayName(url: string): string {
+  const withoutQuery = decodeURIComponent(url).split('?')[0]
+  const parts = withoutQuery.split('/')
+  const filename = parts[parts.length - 1] ?? ''
+  // For HLS: path ends in .../videos/{videoId}/master.m3u8
+  if (filename === 'master.m3u8') {
+    return parts[parts.length - 2] ?? filename
+  }
+  return filename
+}
+
 export function VideoEditor({ content, onChange }: Props) {
   const [pickerOpen, setPickerOpen] = useState(false)
 
   const update = (patch: Partial<VideoContent>) =>
     onChange({ ...content, ...patch })
 
-  // Derive a display name from the stored URL
-  const selectedName = content.url
-    ? decodeURIComponent(
-        content.url.split('/').pop()?.split('?')[0] ?? content.url,
-      )
-    : null
+  const selectedName = content.url ? deriveDisplayName(content.url) : null
 
   async function handleSelect(fullPath: string) {
     const url = await getAcademyMediaSasUrl(fullPath)

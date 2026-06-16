@@ -148,7 +148,18 @@ export interface AcademyMediaFile {
   lastModified: string | null
   contentType: string
   url: string
+  isHls?: boolean
 }
+
+export interface VideoJobStatus {
+  status: 'processing' | 'ready' | 'error'
+  file?: AcademyMediaFile
+  message?: string
+}
+
+export type AcademyUploadResult =
+  | { type: 'immediate'; file: AcademyMediaFile }
+  | { type: 'processing'; videoId: string }
 
 export async function getAcademyMedia(): Promise<Array<AcademyMediaFile>> {
   const res = await apiFetch('/api/academy/media')
@@ -166,9 +177,15 @@ export async function getAcademyMediaSasUrl(path: string): Promise<string> {
   return (data as { url: string }).url
 }
 
+export async function getVideoStatus(videoId: string): Promise<VideoJobStatus> {
+  const res = await apiFetch(`/api/academy/videos/${videoId}/status`)
+  if (!res.ok) throw new Error('Failed to get video status')
+  return res.json()
+}
+
 export async function uploadAcademyMedia(
   file: File,
-): Promise<AcademyMediaFile> {
+): Promise<AcademyUploadResult> {
   const form = new FormData()
   form.append('file', file)
   const res = await apiFetch('/api/academy/media/upload', {
@@ -179,7 +196,11 @@ export async function uploadAcademyMedia(
     const body = await res.json().catch(() => ({}))
     throw new Error((body as { message?: string }).message ?? 'Upload failed')
   }
-  return res.json()
+  const data = await res.json()
+  if ((data as { status?: string }).status === 'processing') {
+    return { type: 'processing', videoId: (data as { videoId: string }).videoId }
+  }
+  return { type: 'immediate', file: data as AcademyMediaFile }
 }
 
 export async function uploadAcademyAsset(file: File): Promise<{ url: string }> {

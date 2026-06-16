@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import Hls from 'hls.js'
 import {
   FileVideo,
   Image,
@@ -12,7 +13,11 @@ import {
   X,
 } from 'lucide-react'
 import type { AcademyMediaFile } from '@/lib/academy-api'
-import { getAcademyMedia, uploadAcademyMedia } from '@/lib/academy-api'
+import {
+  getAcademyMedia,
+  getVideoStatus,
+  uploadAcademyMedia,
+} from '@/lib/academy-api'
 import { can } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -44,7 +49,7 @@ const IMAGE_EXTS = new Set([
   'bmp',
   'avif',
 ])
-const VIDEO_EXTS = new Set(['mp4', 'webm', 'ogg', 'mov'])
+const VIDEO_EXTS = new Set(['mp4', 'webm', 'ogg', 'mov', 'm3u8'])
 
 function getExt(name: string): string {
   return name.split('.').pop()?.toLowerCase() ?? ''
@@ -63,9 +68,15 @@ function fmtTime(s: number): string {
   return `${m}:${String(sec).padStart(2, '0')}`
 }
 
-function FileTypeIcon({ name }: { name: string }) {
+function FileTypeIcon({
+  name,
+  isHls,
+}: {
+  name: string
+  isHls?: boolean
+}) {
   const ext = getExt(name)
-  if (VIDEO_EXTS.has(ext))
+  if (isHls || VIDEO_EXTS.has(ext))
     return <FileVideo className="h-4 w-4 text-blue-500" />
   if (IMAGE_EXTS.has(ext)) return <Image className="h-4 w-4 text-green-500" />
   return <Image className="h-4 w-4 text-muted-foreground" />
@@ -73,15 +84,37 @@ function FileTypeIcon({ name }: { name: string }) {
 
 function VideoPlayer({ src }: { src: string }) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const hlsRef = useRef<Hls | null>(null)
   const [playing, setPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
 
-  // Reset when src changes
   useEffect(() => {
     setPlaying(false)
     setCurrentTime(0)
     setDuration(0)
+
+    const video = videoRef.current
+    if (!video) return
+
+    const isHlsSrc = src.includes('.m3u8')
+
+    if (isHlsSrc && Hls.isSupported()) {
+      const hls = new Hls()
+      hlsRef.current = hls
+      hls.loadSource(src)
+      hls.attachMedia(video)
+      return () => {
+        hls.destroy()
+        hlsRef.current = null
+      }
+    }
+
+    // Safari native HLS or regular video
+    video.src = src
+    return () => {
+      video.src = ''
+    }
   }, [src])
 
   function togglePlay() {
@@ -117,7 +150,6 @@ function VideoPlayer({ src }: { src: string }) {
     <div className="flex flex-col gap-3">
       <video
         ref={videoRef}
-        src={src}
         className="w-full rounded-md bg-black"
         onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime ?? 0)}
         onDurationChange={() => setDuration(videoRef.current?.duration ?? 0)}
@@ -128,7 +160,6 @@ function VideoPlayer({ src }: { src: string }) {
         }}
       />
 
-      {/* Seek bar */}
       <input
         type="range"
         min={0}
@@ -139,7 +170,6 @@ function VideoPlayer({ src }: { src: string }) {
         className="w-full cursor-pointer accent-primary"
       />
 
-      {/* Controls row */}
       <div className="flex items-center justify-between">
         <span className="font-mono text-xs text-muted-foreground">
           {fmtTime(currentTime)} / {fmtTime(duration)}
@@ -171,18 +201,22 @@ function PreviewPanel({
   onClose: () => void
 }) {
   const ext = getExt(file.name)
-  const isVideo = VIDEO_EXTS.has(ext)
+  const isVideo = file.isHls || VIDEO_EXTS.has(ext)
   const isImage = IMAGE_EXTS.has(ext)
 
   return (
     <div className="flex h-full flex-col border-l bg-background">
-      {/* Panel header */}
       <div className="flex items-center justify-between border-b px-4 py-3">
         <span
           className="truncate font-mono text-sm font-medium"
           title={file.name}
         >
           {file.name}
+          {file.isHls && (
+            <span className="ml-2 rounded bg-blue-100 px-1 py-0.5 text-xs text-blue-700">
+              HLS
+            </span>
+          )}
         </span>
         <button
           onClick={onClose}
@@ -192,7 +226,6 @@ function PreviewPanel({
         </button>
       </div>
 
-      {/* Panel body */}
       <div className="flex-1 overflow-y-auto p-4">
         {isVideo && <VideoPlayer key={file.url} src={file.url} />}
 
@@ -210,7 +243,6 @@ function PreviewPanel({
           </div>
         )}
 
-        {/* Metadata */}
         <dl className="mt-4 space-y-2 text-sm">
           <div className="flex justify-between">
             <dt className="text-muted-foreground">Size</dt>
@@ -242,6 +274,7 @@ function RouteComponent() {
   )
   const [search, setSearch] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [processing, setProcessing] = useState(false)
   const [uploadError, setUploadError] = useState('')
 
   const { data, isLoading, error } = useQuery({
@@ -260,14 +293,42 @@ function RouteComponent() {
     setUploading(true)
     setUploadError('')
     try {
-      await uploadAcademyMedia(file)
-      await queryClient.invalidateQueries({ queryKey: ['academy-media'] })
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Upload failed')
-    } finally {
+      const result = await uploadAcademyMedia(file)
+      if (result.type === 'immediate') {
+        await queryClient.invalidateQueries({ queryKey: ['academy-media'] })
+        setUploading(false)
+        return
+      }
+
+      // Async video transcoding — poll until ready
       setUploading(false)
+      setProcessing(true)
+      const { videoId } = result
+
+      const poll = setInterval(async () => {
+        try {
+          const status = await getVideoStatus(videoId)
+          if (status.status === 'ready') {
+            clearInterval(poll)
+            setProcessing(false)
+            await queryClient.invalidateQueries({ queryKey: ['academy-media'] })
+          } else if (status.status === 'error') {
+            clearInterval(poll)
+            setProcessing(false)
+            setUploadError(status.message ?? 'Video processing failed')
+          }
+        } catch {
+          // network blip — keep polling
+        }
+      }, 3000)
+    } catch (err) {
+      setUploading(false)
+      setUploadError(err instanceof Error ? err.message : 'Upload failed')
     }
   }
+
+  const busy = uploading || processing
+  const uploadLabel = uploading ? 'Uploading…' : processing ? 'Processing…' : 'Upload'
 
   return (
     <div className="flex h-full overflow-hidden">
@@ -289,17 +350,24 @@ function RouteComponent() {
             <Button
               size="sm"
               variant="outline"
-              disabled={uploading}
+              disabled={busy}
               onClick={() => fileInputRef.current?.click()}
             >
               <Upload className="h-4 w-4" />
-              {uploading ? 'Uploading…' : 'Upload'}
+              {uploadLabel}
             </Button>
           </div>
         </div>
 
         {uploadError && (
           <p className="mx-6 mb-2 text-sm text-destructive">{uploadError}</p>
+        )}
+
+        {processing && (
+          <p className="mx-6 mb-2 text-sm text-muted-foreground">
+            Video is being transcoded for adaptive streaming. This may take a
+            few minutes…
+          </p>
         )}
 
         {/* Search */}
@@ -358,10 +426,15 @@ function RouteComponent() {
                     onClick={() => setSelectedFile(file)}
                   >
                     <TableCell>
-                      <FileTypeIcon name={file.name} />
+                      <FileTypeIcon name={file.name} isHls={file.isHls} />
                     </TableCell>
                     <TableCell className="font-mono text-sm">
                       {file.name}
+                      {file.isHls && (
+                        <span className="ml-2 rounded bg-blue-100 px-1 py-0.5 text-xs text-blue-700">
+                          HLS
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm">
                       {formatSize(file.size)}

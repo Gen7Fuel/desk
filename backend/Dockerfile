@@ -11,7 +11,7 @@ RUN --mount=type=cache,target=/root/.npm \
 FROM node:25-alpine
 
 # ca-certificates ensures TLS connections to external services work on Alpine
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates ffmpeg
 
 RUN adduser -D -u 1001 app
 USER app
