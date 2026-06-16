@@ -11,9 +11,28 @@ const HUB = 'https://app.gen7fuel.com'
 
 interface TicketUser {
   _id: string
-  name: string
-  email: string
+  firstName?: string
+  lastName?: string
+  email?: string
   isSupport?: boolean
+}
+
+function getExternalUserId(): string | null {
+  const token = getExternalToken()
+  if (!token) return null
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    const payload = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
+    const decoded = JSON.parse(payload)
+    return decoded.id || decoded._id || decoded.sub || null
+  } catch {
+    return null
+  }
+}
+
+function senderDisplayName(user: TicketUser): string {
+  return [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || 'Unknown'
 }
 
 interface TicketMessage {
@@ -78,7 +97,7 @@ export function useSupportTickets() {
       }
       if ('Notification' in window && Notification.permission === 'granted') {
         const n = new Notification('New support ticket', {
-          body: `${ticket.userId.name || ticket.userId.email || 'Customer'} (${ticket.site}): ${ticket.text}`,
+          body: `${senderDisplayName(ticket.userId)} (${ticket.site}): ${ticket.text}`,
           icon: '/favicon.ico',
           tag: `ticket-${ticket._id}`,
         })
@@ -372,7 +391,7 @@ export function SupportPanel({
               </Button>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold truncate">
-                  {activeTicket.userId.name || activeTicket.userId.email || 'Unknown'}
+                  {senderDisplayName(activeTicket.userId)}
                 </div>
                 <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
                   {activeTicket.site}
@@ -400,29 +419,31 @@ export function SupportPanel({
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-              {activeTicket.messages.map((msg, idx) => {
-                const isSupport = !!msg.sender.isSupport
+              {(() => {
+                const currentHubUserId = getExternalUserId()
+                return activeTicket.messages.map((msg, idx) => {
+                const isSupportMsg = !!msg.sender.isSupport || (currentHubUserId ? msg.sender._id === currentHubUserId : false)
                 return (
                   <div
                     key={msg._id || idx}
-                    className={`flex ${isSupport ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${isSupportMsg ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
                       className={cn(
                         'max-w-[80%] rounded-lg px-3 py-2 text-sm',
-                        isSupport ? 'bg-primary text-primary-foreground' : 'bg-muted',
+                        isSupportMsg ? 'bg-primary text-primary-foreground' : 'bg-muted',
                       )}
                     >
-                      {!isSupport && (
+                      {!isSupportMsg && (
                         <div className="text-[10px] font-semibold mb-0.5 opacity-70">
-                          {msg.sender.name || 'Customer'}
+                          {senderDisplayName(msg.sender) || 'Customer'}
                         </div>
                       )}
                       <p className="whitespace-pre-wrap">{msg.text}</p>
                       <div
                         className={cn(
                           'text-[10px] mt-1',
-                          isSupport ? 'opacity-70' : 'text-muted-foreground',
+                          isSupportMsg ? 'opacity-70' : 'text-muted-foreground',
                         )}
                       >
                         {fmtDate(msg.createdAt)}
@@ -430,7 +451,8 @@ export function SupportPanel({
                     </div>
                   </div>
                 )
-              })}
+              })
+              })()}
               <div ref={messagesEndRef} />
             </div>
 
@@ -524,7 +546,7 @@ export function SupportPanel({
                     >
                       <div className="flex items-center justify-between mb-0.5">
                         <span className="text-xs font-medium text-muted-foreground truncate">
-                          {ticket.userId.name || ticket.userId.email || 'Unknown'} · {ticket.site}
+                          {senderDisplayName(ticket.userId)} · {ticket.site}
                         </span>
                         <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
                           {fmtDate(ticket.createdAt)}
