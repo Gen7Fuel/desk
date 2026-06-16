@@ -19,22 +19,27 @@ import { Route as AppbarAdminRouteImport } from './routes/_appbar/_admin'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
 import { Route as AppbarSidebarSettingsRouteImport } from './routes/_appbar/_sidebar/settings'
 import { Route as AppbarSidebarReportsRouteImport } from './routes/_appbar/_sidebar/reports'
-import { Route as AppbarSidebarInventoryRouteImport } from './routes/_appbar/_sidebar/inventory'
+import { Route as AppbarSidebarProjectsRouteImport } from './routes/_appbar/_sidebar/projects'
 import { Route as AppbarSidebarHubRouteImport } from './routes/_appbar/_sidebar/hub'
 import { Route as AppbarSidebarCipherRouteImport } from './routes/_appbar/_sidebar/cipher'
 import { Route as AppbarFuelKardpollRouteImport } from './routes/_appbar/_fuel/kardpoll'
 import { Route as AppbarFuelFuelRecRouteImport } from './routes/_appbar/_fuel/fuel-rec'
 import { Route as AppbarFuelFuelInvoicingRouteImport } from './routes/_appbar/_fuel/fuel-invoicing'
 import { Route as AppbarAdminSidebarRouteImport } from './routes/_appbar/_admin/_sidebar'
+import { Route as AppbarSidebarProjectsIndexRouteImport } from './routes/_appbar/_sidebar/projects/index'
 import { Route as AppbarSidebarSettingsUsersRouteImport } from './routes/_appbar/_sidebar/settings/users'
 import { Route as AppbarSidebarSettingsRolesRouteImport } from './routes/_appbar/_sidebar/settings/roles'
 import { Route as AppbarSidebarSettingsLogsRouteImport } from './routes/_appbar/_sidebar/settings/logs'
 import { Route as AppbarSidebarReportsNarrativeRouteImport } from './routes/_appbar/_sidebar/reports/narrative'
-import { Route as AppbarSidebarInventoryCoremarkInitialOrderRouteImport } from './routes/_appbar/_sidebar/inventory/coremark-initial-order'
+import { Route as AppbarSidebarProjectsIdRouteImport } from './routes/_appbar/_sidebar/projects/$id'
 import { Route as AppbarSidebarHubReceivablesRouteImport } from './routes/_appbar/_sidebar/hub/receivables'
 import { Route as AppbarSidebarHubPayablesRouteImport } from './routes/_appbar/_sidebar/hub/payables'
+import { Route as AppbarSidebarHubFleetCustomersRouteImport } from './routes/_appbar/_sidebar/hub/fleet-customers'
+import { Route as AppbarSidebarHubFleetCardsRouteImport } from './routes/_appbar/_sidebar/hub/fleet-cards'
 import { Route as AppbarSidebarHubCdnRouteImport } from './routes/_appbar/_sidebar/hub/cdn'
+import { Route as AppbarSidebarHubCashRecRouteImport } from './routes/_appbar/_sidebar/hub/cash-rec'
 import { Route as AppbarSidebarHubCashManagementRouteImport } from './routes/_appbar/_sidebar/hub/cash-management'
+import { Route as AppbarSidebarHubArCustomersRouteImport } from './routes/_appbar/_sidebar/hub/ar-customers'
 import { Route as AppbarSidebarCipherUnlockRouteImport } from './routes/_appbar/_sidebar/cipher/unlock'
 import { Route as AppbarSidebarCipherLockRouteImport } from './routes/_appbar/_sidebar/cipher/lock'
 import { Route as AppbarSidebarAcademyMediaRouteImport } from './routes/_appbar/_sidebar/academy/media'
@@ -109,9 +114,9 @@ const AppbarSidebarReportsRoute = AppbarSidebarReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => AppbarSidebarRoute,
 } as any)
-const AppbarSidebarInventoryRoute = AppbarSidebarInventoryRouteImport.update({
-  id: '/inventory',
-  path: '/inventory',
+const AppbarSidebarProjectsRoute = AppbarSidebarProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
   getParentRoute: () => AppbarSidebarRoute,
 } as any)
 const AppbarSidebarHubRoute = AppbarSidebarHubRouteImport.update({
@@ -143,6 +148,12 @@ const AppbarAdminSidebarRoute = AppbarAdminSidebarRouteImport.update({
   id: '/_sidebar',
   getParentRoute: () => AppbarAdminRoute,
 } as any)
+const AppbarSidebarProjectsIndexRoute =
+  AppbarSidebarProjectsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AppbarSidebarProjectsRoute,
+  } as any)
 const AppbarSidebarSettingsUsersRoute =
   AppbarSidebarSettingsUsersRouteImport.update({
     id: '/users',
@@ -167,12 +178,11 @@ const AppbarSidebarReportsNarrativeRoute =
     path: '/narrative',
     getParentRoute: () => AppbarSidebarReportsRoute,
   } as any)
-const AppbarSidebarInventoryCoremarkInitialOrderRoute =
-  AppbarSidebarInventoryCoremarkInitialOrderRouteImport.update({
-    id: '/coremark-initial-order',
-    path: '/coremark-initial-order',
-    getParentRoute: () => AppbarSidebarInventoryRoute,
-  } as any)
+const AppbarSidebarProjectsIdRoute = AppbarSidebarProjectsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppbarSidebarProjectsRoute,
+} as any)
 const AppbarSidebarHubReceivablesRoute =
   AppbarSidebarHubReceivablesRouteImport.update({
     id: '/receivables',
@@ -185,15 +195,38 @@ const AppbarSidebarHubPayablesRoute =
     path: '/payables',
     getParentRoute: () => AppbarSidebarHubRoute,
   } as any)
+const AppbarSidebarHubFleetCustomersRoute =
+  AppbarSidebarHubFleetCustomersRouteImport.update({
+    id: '/fleet-customers',
+    path: '/fleet-customers',
+    getParentRoute: () => AppbarSidebarHubRoute,
+  } as any)
+const AppbarSidebarHubFleetCardsRoute =
+  AppbarSidebarHubFleetCardsRouteImport.update({
+    id: '/fleet-cards',
+    path: '/fleet-cards',
+    getParentRoute: () => AppbarSidebarHubRoute,
+  } as any)
 const AppbarSidebarHubCdnRoute = AppbarSidebarHubCdnRouteImport.update({
   id: '/cdn',
   path: '/cdn',
+  getParentRoute: () => AppbarSidebarHubRoute,
+} as any)
+const AppbarSidebarHubCashRecRoute = AppbarSidebarHubCashRecRouteImport.update({
+  id: '/cash-rec',
+  path: '/cash-rec',
   getParentRoute: () => AppbarSidebarHubRoute,
 } as any)
 const AppbarSidebarHubCashManagementRoute =
   AppbarSidebarHubCashManagementRouteImport.update({
     id: '/cash-management',
     path: '/cash-management',
+    getParentRoute: () => AppbarSidebarHubRoute,
+  } as any)
+const AppbarSidebarHubArCustomersRoute =
+  AppbarSidebarHubArCustomersRouteImport.update({
+    id: '/ar-customers',
+    path: '/ar-customers',
     getParentRoute: () => AppbarSidebarHubRoute,
   } as any)
 const AppbarSidebarCipherUnlockRoute =
@@ -367,7 +400,7 @@ export interface FileRoutesByFullPath {
   '/fuel-rec': typeof AppbarFuelFuelRecRoute
   '/kardpoll': typeof AppbarFuelKardpollRoute
   '/cipher': typeof AppbarSidebarCipherRouteWithChildren
-  '/inventory': typeof AppbarSidebarInventoryRouteWithChildren
+  '/projects': typeof AppbarSidebarProjectsRouteWithChildren
   '/reports': typeof AppbarSidebarReportsRouteWithChildren
   '/settings': typeof AppbarSidebarSettingsRouteWithChildren
   '/access': typeof AppbarAdminSidebarAccessRouteWithChildren
@@ -382,15 +415,20 @@ export interface FileRoutesByFullPath {
   '/academy/media': typeof AppbarSidebarAcademyMediaRoute
   '/cipher/lock': typeof AppbarSidebarCipherLockRoute
   '/cipher/unlock': typeof AppbarSidebarCipherUnlockRoute
+  '/hub/ar-customers': typeof AppbarSidebarHubArCustomersRoute
   '/hub/cash-management': typeof AppbarSidebarHubCashManagementRoute
+  '/hub/cash-rec': typeof AppbarSidebarHubCashRecRoute
   '/hub/cdn': typeof AppbarSidebarHubCdnRoute
+  '/hub/fleet-cards': typeof AppbarSidebarHubFleetCardsRoute
+  '/hub/fleet-customers': typeof AppbarSidebarHubFleetCustomersRoute
   '/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
-  '/inventory/coremark-initial-order': typeof AppbarSidebarInventoryCoremarkInitialOrderRoute
+  '/projects/$id': typeof AppbarSidebarProjectsIdRoute
   '/reports/narrative': typeof AppbarSidebarReportsNarrativeRoute
   '/settings/logs': typeof AppbarSidebarSettingsLogsRoute
   '/settings/roles': typeof AppbarSidebarSettingsRolesRoute
   '/settings/users': typeof AppbarSidebarSettingsUsersRoute
+  '/projects/': typeof AppbarSidebarProjectsIndexRoute
   '/access/personnel': typeof AppbarAdminSidebarAccessPersonnelRoute
   '/access/resources': typeof AppbarAdminSidebarAccessResourcesRoute
   '/assets/devices': typeof AppbarAdminSidebarAssetsDevicesRoute
@@ -416,7 +454,6 @@ export interface FileRoutesByTo {
   '/fuel-rec': typeof AppbarFuelFuelRecRoute
   '/kardpoll': typeof AppbarFuelKardpollRoute
   '/cipher': typeof AppbarSidebarCipherRouteWithChildren
-  '/inventory': typeof AppbarSidebarInventoryRouteWithChildren
   '/reports': typeof AppbarSidebarReportsRouteWithChildren
   '/settings': typeof AppbarSidebarSettingsRouteWithChildren
   '/access': typeof AppbarAdminSidebarAccessRouteWithChildren
@@ -428,15 +465,20 @@ export interface FileRoutesByTo {
   '/academy/media': typeof AppbarSidebarAcademyMediaRoute
   '/cipher/lock': typeof AppbarSidebarCipherLockRoute
   '/cipher/unlock': typeof AppbarSidebarCipherUnlockRoute
+  '/hub/ar-customers': typeof AppbarSidebarHubArCustomersRoute
   '/hub/cash-management': typeof AppbarSidebarHubCashManagementRoute
+  '/hub/cash-rec': typeof AppbarSidebarHubCashRecRoute
   '/hub/cdn': typeof AppbarSidebarHubCdnRoute
+  '/hub/fleet-cards': typeof AppbarSidebarHubFleetCardsRoute
+  '/hub/fleet-customers': typeof AppbarSidebarHubFleetCustomersRoute
   '/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
-  '/inventory/coremark-initial-order': typeof AppbarSidebarInventoryCoremarkInitialOrderRoute
+  '/projects/$id': typeof AppbarSidebarProjectsIdRoute
   '/reports/narrative': typeof AppbarSidebarReportsNarrativeRoute
   '/settings/logs': typeof AppbarSidebarSettingsLogsRoute
   '/settings/roles': typeof AppbarSidebarSettingsRolesRoute
   '/settings/users': typeof AppbarSidebarSettingsUsersRoute
+  '/projects': typeof AppbarSidebarProjectsIndexRoute
   '/access/personnel': typeof AppbarAdminSidebarAccessPersonnelRoute
   '/access/resources': typeof AppbarAdminSidebarAccessResourcesRoute
   '/assets/devices': typeof AppbarAdminSidebarAssetsDevicesRoute
@@ -469,7 +511,7 @@ export interface FileRoutesById {
   '/_appbar/_fuel/kardpoll': typeof AppbarFuelKardpollRoute
   '/_appbar/_sidebar/cipher': typeof AppbarSidebarCipherRouteWithChildren
   '/_appbar/_sidebar/hub': typeof AppbarSidebarHubRouteWithChildren
-  '/_appbar/_sidebar/inventory': typeof AppbarSidebarInventoryRouteWithChildren
+  '/_appbar/_sidebar/projects': typeof AppbarSidebarProjectsRouteWithChildren
   '/_appbar/_sidebar/reports': typeof AppbarSidebarReportsRouteWithChildren
   '/_appbar/_sidebar/settings': typeof AppbarSidebarSettingsRouteWithChildren
   '/_appbar/_admin/_sidebar/access': typeof AppbarAdminSidebarAccessRouteWithChildren
@@ -484,15 +526,20 @@ export interface FileRoutesById {
   '/_appbar/_sidebar/academy/media': typeof AppbarSidebarAcademyMediaRoute
   '/_appbar/_sidebar/cipher/lock': typeof AppbarSidebarCipherLockRoute
   '/_appbar/_sidebar/cipher/unlock': typeof AppbarSidebarCipherUnlockRoute
+  '/_appbar/_sidebar/hub/ar-customers': typeof AppbarSidebarHubArCustomersRoute
   '/_appbar/_sidebar/hub/cash-management': typeof AppbarSidebarHubCashManagementRoute
+  '/_appbar/_sidebar/hub/cash-rec': typeof AppbarSidebarHubCashRecRoute
   '/_appbar/_sidebar/hub/cdn': typeof AppbarSidebarHubCdnRoute
+  '/_appbar/_sidebar/hub/fleet-cards': typeof AppbarSidebarHubFleetCardsRoute
+  '/_appbar/_sidebar/hub/fleet-customers': typeof AppbarSidebarHubFleetCustomersRoute
   '/_appbar/_sidebar/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/_appbar/_sidebar/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
-  '/_appbar/_sidebar/inventory/coremark-initial-order': typeof AppbarSidebarInventoryCoremarkInitialOrderRoute
+  '/_appbar/_sidebar/projects/$id': typeof AppbarSidebarProjectsIdRoute
   '/_appbar/_sidebar/reports/narrative': typeof AppbarSidebarReportsNarrativeRoute
   '/_appbar/_sidebar/settings/logs': typeof AppbarSidebarSettingsLogsRoute
   '/_appbar/_sidebar/settings/roles': typeof AppbarSidebarSettingsRolesRoute
   '/_appbar/_sidebar/settings/users': typeof AppbarSidebarSettingsUsersRoute
+  '/_appbar/_sidebar/projects/': typeof AppbarSidebarProjectsIndexRoute
   '/_appbar/_admin/_sidebar/access/personnel': typeof AppbarAdminSidebarAccessPersonnelRoute
   '/_appbar/_admin/_sidebar/access/resources': typeof AppbarAdminSidebarAccessResourcesRoute
   '/_appbar/_admin/_sidebar/assets/devices': typeof AppbarAdminSidebarAssetsDevicesRoute
@@ -520,7 +567,7 @@ export interface FileRouteTypes {
     | '/fuel-rec'
     | '/kardpoll'
     | '/cipher'
-    | '/inventory'
+    | '/projects'
     | '/reports'
     | '/settings'
     | '/access'
@@ -535,15 +582,20 @@ export interface FileRouteTypes {
     | '/academy/media'
     | '/cipher/lock'
     | '/cipher/unlock'
+    | '/hub/ar-customers'
     | '/hub/cash-management'
+    | '/hub/cash-rec'
     | '/hub/cdn'
+    | '/hub/fleet-cards'
+    | '/hub/fleet-customers'
     | '/hub/payables'
     | '/hub/receivables'
-    | '/inventory/coremark-initial-order'
+    | '/projects/$id'
     | '/reports/narrative'
     | '/settings/logs'
     | '/settings/roles'
     | '/settings/users'
+    | '/projects/'
     | '/access/personnel'
     | '/access/resources'
     | '/assets/devices'
@@ -569,7 +621,6 @@ export interface FileRouteTypes {
     | '/fuel-rec'
     | '/kardpoll'
     | '/cipher'
-    | '/inventory'
     | '/reports'
     | '/settings'
     | '/access'
@@ -581,15 +632,20 @@ export interface FileRouteTypes {
     | '/academy/media'
     | '/cipher/lock'
     | '/cipher/unlock'
+    | '/hub/ar-customers'
     | '/hub/cash-management'
+    | '/hub/cash-rec'
     | '/hub/cdn'
+    | '/hub/fleet-cards'
+    | '/hub/fleet-customers'
     | '/hub/payables'
     | '/hub/receivables'
-    | '/inventory/coremark-initial-order'
+    | '/projects/$id'
     | '/reports/narrative'
     | '/settings/logs'
     | '/settings/roles'
     | '/settings/users'
+    | '/projects'
     | '/access/personnel'
     | '/access/resources'
     | '/assets/devices'
@@ -621,7 +677,7 @@ export interface FileRouteTypes {
     | '/_appbar/_fuel/kardpoll'
     | '/_appbar/_sidebar/cipher'
     | '/_appbar/_sidebar/hub'
-    | '/_appbar/_sidebar/inventory'
+    | '/_appbar/_sidebar/projects'
     | '/_appbar/_sidebar/reports'
     | '/_appbar/_sidebar/settings'
     | '/_appbar/_admin/_sidebar/access'
@@ -636,15 +692,20 @@ export interface FileRouteTypes {
     | '/_appbar/_sidebar/academy/media'
     | '/_appbar/_sidebar/cipher/lock'
     | '/_appbar/_sidebar/cipher/unlock'
+    | '/_appbar/_sidebar/hub/ar-customers'
     | '/_appbar/_sidebar/hub/cash-management'
+    | '/_appbar/_sidebar/hub/cash-rec'
     | '/_appbar/_sidebar/hub/cdn'
+    | '/_appbar/_sidebar/hub/fleet-cards'
+    | '/_appbar/_sidebar/hub/fleet-customers'
     | '/_appbar/_sidebar/hub/payables'
     | '/_appbar/_sidebar/hub/receivables'
-    | '/_appbar/_sidebar/inventory/coremark-initial-order'
+    | '/_appbar/_sidebar/projects/$id'
     | '/_appbar/_sidebar/reports/narrative'
     | '/_appbar/_sidebar/settings/logs'
     | '/_appbar/_sidebar/settings/roles'
     | '/_appbar/_sidebar/settings/users'
+    | '/_appbar/_sidebar/projects/'
     | '/_appbar/_admin/_sidebar/access/personnel'
     | '/_appbar/_admin/_sidebar/access/resources'
     | '/_appbar/_admin/_sidebar/assets/devices'
@@ -739,11 +800,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppbarSidebarReportsRouteImport
       parentRoute: typeof AppbarSidebarRoute
     }
-    '/_appbar/_sidebar/inventory': {
-      id: '/_appbar/_sidebar/inventory'
-      path: '/inventory'
-      fullPath: '/inventory'
-      preLoaderRoute: typeof AppbarSidebarInventoryRouteImport
+    '/_appbar/_sidebar/projects': {
+      id: '/_appbar/_sidebar/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof AppbarSidebarProjectsRouteImport
       parentRoute: typeof AppbarSidebarRoute
     }
     '/_appbar/_sidebar/hub': {
@@ -788,6 +849,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppbarAdminSidebarRouteImport
       parentRoute: typeof AppbarAdminRoute
     }
+    '/_appbar/_sidebar/projects/': {
+      id: '/_appbar/_sidebar/projects/'
+      path: '/'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof AppbarSidebarProjectsIndexRouteImport
+      parentRoute: typeof AppbarSidebarProjectsRoute
+    }
     '/_appbar/_sidebar/settings/users': {
       id: '/_appbar/_sidebar/settings/users'
       path: '/users'
@@ -816,12 +884,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppbarSidebarReportsNarrativeRouteImport
       parentRoute: typeof AppbarSidebarReportsRoute
     }
-    '/_appbar/_sidebar/inventory/coremark-initial-order': {
-      id: '/_appbar/_sidebar/inventory/coremark-initial-order'
-      path: '/coremark-initial-order'
-      fullPath: '/inventory/coremark-initial-order'
-      preLoaderRoute: typeof AppbarSidebarInventoryCoremarkInitialOrderRouteImport
-      parentRoute: typeof AppbarSidebarInventoryRoute
+    '/_appbar/_sidebar/projects/$id': {
+      id: '/_appbar/_sidebar/projects/$id'
+      path: '/$id'
+      fullPath: '/projects/$id'
+      preLoaderRoute: typeof AppbarSidebarProjectsIdRouteImport
+      parentRoute: typeof AppbarSidebarProjectsRoute
     }
     '/_appbar/_sidebar/hub/receivables': {
       id: '/_appbar/_sidebar/hub/receivables'
@@ -837,6 +905,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppbarSidebarHubPayablesRouteImport
       parentRoute: typeof AppbarSidebarHubRoute
     }
+    '/_appbar/_sidebar/hub/fleet-customers': {
+      id: '/_appbar/_sidebar/hub/fleet-customers'
+      path: '/fleet-customers'
+      fullPath: '/hub/fleet-customers'
+      preLoaderRoute: typeof AppbarSidebarHubFleetCustomersRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
+    '/_appbar/_sidebar/hub/fleet-cards': {
+      id: '/_appbar/_sidebar/hub/fleet-cards'
+      path: '/fleet-cards'
+      fullPath: '/hub/fleet-cards'
+      preLoaderRoute: typeof AppbarSidebarHubFleetCardsRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
     '/_appbar/_sidebar/hub/cdn': {
       id: '/_appbar/_sidebar/hub/cdn'
       path: '/cdn'
@@ -844,11 +926,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppbarSidebarHubCdnRouteImport
       parentRoute: typeof AppbarSidebarHubRoute
     }
+    '/_appbar/_sidebar/hub/cash-rec': {
+      id: '/_appbar/_sidebar/hub/cash-rec'
+      path: '/cash-rec'
+      fullPath: '/hub/cash-rec'
+      preLoaderRoute: typeof AppbarSidebarHubCashRecRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
     '/_appbar/_sidebar/hub/cash-management': {
       id: '/_appbar/_sidebar/hub/cash-management'
       path: '/cash-management'
       fullPath: '/hub/cash-management'
       preLoaderRoute: typeof AppbarSidebarHubCashManagementRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
+    '/_appbar/_sidebar/hub/ar-customers': {
+      id: '/_appbar/_sidebar/hub/ar-customers'
+      path: '/ar-customers'
+      fullPath: '/hub/ar-customers'
+      preLoaderRoute: typeof AppbarSidebarHubArCustomersRouteImport
       parentRoute: typeof AppbarSidebarHubRoute
     }
     '/_appbar/_sidebar/cipher/unlock': {
@@ -1219,15 +1315,23 @@ const AppbarSidebarCipherRouteWithChildren =
   AppbarSidebarCipherRoute._addFileChildren(AppbarSidebarCipherRouteChildren)
 
 interface AppbarSidebarHubRouteChildren {
+  AppbarSidebarHubArCustomersRoute: typeof AppbarSidebarHubArCustomersRoute
   AppbarSidebarHubCashManagementRoute: typeof AppbarSidebarHubCashManagementRoute
+  AppbarSidebarHubCashRecRoute: typeof AppbarSidebarHubCashRecRoute
   AppbarSidebarHubCdnRoute: typeof AppbarSidebarHubCdnRoute
+  AppbarSidebarHubFleetCardsRoute: typeof AppbarSidebarHubFleetCardsRoute
+  AppbarSidebarHubFleetCustomersRoute: typeof AppbarSidebarHubFleetCustomersRoute
   AppbarSidebarHubPayablesRoute: typeof AppbarSidebarHubPayablesRoute
   AppbarSidebarHubReceivablesRoute: typeof AppbarSidebarHubReceivablesRoute
 }
 
 const AppbarSidebarHubRouteChildren: AppbarSidebarHubRouteChildren = {
+  AppbarSidebarHubArCustomersRoute: AppbarSidebarHubArCustomersRoute,
   AppbarSidebarHubCashManagementRoute: AppbarSidebarHubCashManagementRoute,
+  AppbarSidebarHubCashRecRoute: AppbarSidebarHubCashRecRoute,
   AppbarSidebarHubCdnRoute: AppbarSidebarHubCdnRoute,
+  AppbarSidebarHubFleetCardsRoute: AppbarSidebarHubFleetCardsRoute,
+  AppbarSidebarHubFleetCustomersRoute: AppbarSidebarHubFleetCustomersRoute,
   AppbarSidebarHubPayablesRoute: AppbarSidebarHubPayablesRoute,
   AppbarSidebarHubReceivablesRoute: AppbarSidebarHubReceivablesRoute,
 }
@@ -1235,19 +1339,19 @@ const AppbarSidebarHubRouteChildren: AppbarSidebarHubRouteChildren = {
 const AppbarSidebarHubRouteWithChildren =
   AppbarSidebarHubRoute._addFileChildren(AppbarSidebarHubRouteChildren)
 
-interface AppbarSidebarInventoryRouteChildren {
-  AppbarSidebarInventoryCoremarkInitialOrderRoute: typeof AppbarSidebarInventoryCoremarkInitialOrderRoute
+interface AppbarSidebarProjectsRouteChildren {
+  AppbarSidebarProjectsIdRoute: typeof AppbarSidebarProjectsIdRoute
+  AppbarSidebarProjectsIndexRoute: typeof AppbarSidebarProjectsIndexRoute
 }
 
-const AppbarSidebarInventoryRouteChildren: AppbarSidebarInventoryRouteChildren =
-  {
-    AppbarSidebarInventoryCoremarkInitialOrderRoute:
-      AppbarSidebarInventoryCoremarkInitialOrderRoute,
-  }
+const AppbarSidebarProjectsRouteChildren: AppbarSidebarProjectsRouteChildren = {
+  AppbarSidebarProjectsIdRoute: AppbarSidebarProjectsIdRoute,
+  AppbarSidebarProjectsIndexRoute: AppbarSidebarProjectsIndexRoute,
+}
 
-const AppbarSidebarInventoryRouteWithChildren =
-  AppbarSidebarInventoryRoute._addFileChildren(
-    AppbarSidebarInventoryRouteChildren,
+const AppbarSidebarProjectsRouteWithChildren =
+  AppbarSidebarProjectsRoute._addFileChildren(
+    AppbarSidebarProjectsRouteChildren,
   )
 
 interface AppbarSidebarReportsRouteChildren {
@@ -1299,7 +1403,7 @@ const AppbarSidebarAcademyCoursesRouteWithChildren =
 interface AppbarSidebarRouteChildren {
   AppbarSidebarCipherRoute: typeof AppbarSidebarCipherRouteWithChildren
   AppbarSidebarHubRoute: typeof AppbarSidebarHubRouteWithChildren
-  AppbarSidebarInventoryRoute: typeof AppbarSidebarInventoryRouteWithChildren
+  AppbarSidebarProjectsRoute: typeof AppbarSidebarProjectsRouteWithChildren
   AppbarSidebarReportsRoute: typeof AppbarSidebarReportsRouteWithChildren
   AppbarSidebarSettingsRoute: typeof AppbarSidebarSettingsRouteWithChildren
   AppbarSidebarAcademyCompletionsRoute: typeof AppbarSidebarAcademyCompletionsRoute
@@ -1311,7 +1415,7 @@ interface AppbarSidebarRouteChildren {
 const AppbarSidebarRouteChildren: AppbarSidebarRouteChildren = {
   AppbarSidebarCipherRoute: AppbarSidebarCipherRouteWithChildren,
   AppbarSidebarHubRoute: AppbarSidebarHubRouteWithChildren,
-  AppbarSidebarInventoryRoute: AppbarSidebarInventoryRouteWithChildren,
+  AppbarSidebarProjectsRoute: AppbarSidebarProjectsRouteWithChildren,
   AppbarSidebarReportsRoute: AppbarSidebarReportsRouteWithChildren,
   AppbarSidebarSettingsRoute: AppbarSidebarSettingsRouteWithChildren,
   AppbarSidebarAcademyCompletionsRoute: AppbarSidebarAcademyCompletionsRoute,
