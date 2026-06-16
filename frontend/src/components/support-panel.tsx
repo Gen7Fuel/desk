@@ -228,6 +228,9 @@ export function SupportPanel({
     const socket = getHubSupportSocket()
     socket.emit('join-room', activeTicketId)
 
+    // Re-fetch to pick up messages that arrived while the panel was closed
+    onRefresh()
+
     const onNewMessage = (msg: TicketMessage) => {
       onAddMessage(activeTicketId, msg)
     }
@@ -236,7 +239,7 @@ export function SupportPanel({
     return () => {
       socket.off('new-message', onNewMessage)
     }
-  }, [activeTicketId])
+  }, [activeTicketId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const sendMessage = () => {
     if (!messageText.trim() || !activeTicketId) return
