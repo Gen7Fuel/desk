@@ -1,5 +1,6 @@
 const express = require('express')
 const rateLimit = require('express-rate-limit')
+const { BlobServiceClient } = require('@azure/storage-blob')
 const { connectToMongo } = require('./config/db')
 const cipherRoutes = require('./apps/cipher/cipher.routes')
 const authRoutes = require('./apps/auth/auth.routes')
@@ -80,7 +81,37 @@ app.get('/api/health', (_, res) => {
   res.json({ status: 'ok', started: new Date().toISOString() })
 })
 
+// Allow browsers on any origin to fetch academy HLS segments directly from Azure.
+// SAS tokens in the URLs are the actual auth — CORS just lets the XHR through.
+async function configureAzureCors() {
+  const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING
+  if (!connectionString) return
+  try {
+    const client = BlobServiceClient.fromConnectionString(connectionString)
+    const props = await client.getProperties()
+    const existing = props.cors ?? []
+    if (existing.some((r) => r.allowedOrigins === '*')) return
+    await client.setProperties({
+      ...props,
+      cors: [
+        ...existing,
+        {
+          allowedOrigins: '*',
+          allowedMethods: 'GET,HEAD,OPTIONS',
+          allowedHeaders: '*',
+          exposedHeaders: 'Content-Length,Content-Type,Content-Range,Accept-Ranges',
+          maxAgeInSeconds: 86400,
+        },
+      ],
+    })
+    console.log('[azure/cors] CORS rule added for blob storage')
+  } catch (err) {
+    console.error('[azure/cors] Failed to set CORS:', err.message)
+  }
+}
+
 connectToMongo().then(() => {
+  configureAzureCors()
   app.listen(port, () => {
     console.log(`API listening on port ${port}`)
   })
