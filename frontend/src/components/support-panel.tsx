@@ -239,7 +239,7 @@ export function SupportPanel({
     return () => {
       socket.off('new-message', onNewMessage)
     }
-  }, [activeTicketId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeTicketId])
 
   const sendMessage = () => {
     if (!messageText.trim() || !activeTicketId) return
