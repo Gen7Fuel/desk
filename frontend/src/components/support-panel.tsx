@@ -228,6 +228,9 @@ export function SupportPanel({
     const socket = getHubSupportSocket()
     socket.emit('join-room', activeTicketId)
 
+    // Re-fetch to pick up messages that arrived while the panel was closed
+    onRefresh()
+
     const onNewMessage = (msg: TicketMessage) => {
       onAddMessage(activeTicketId, msg)
     }
