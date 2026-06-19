@@ -30,6 +30,7 @@ interface Props {
   site: string
   from: string
   to: string
+  receiptDataUris?: Record<string, string>
 }
 
 function fmtDate(iso: string) {
@@ -257,6 +258,7 @@ export default function ReceivablesReportPDF({
   site,
   from,
   to,
+  receiptDataUris,
 }: Props) {
   const total = orders.reduce((s, o) => s + (o.amount || 0), 0)
   const totalQty = orders.reduce((s, o) => s + (o.quantity || 0), 0)
@@ -433,7 +435,11 @@ export default function ReceivablesReportPDF({
           {o.receipt ? (
             <View style={{ flex: 1, alignItems: 'center' }}>
               <Image
-                src={`${HUB}/cdn/download/${o.receipt}`}
+                src={
+                  receiptDataUris?.[o.receipt]
+                    ? receiptDataUris[o.receipt]
+                    : `${HUB}/cdn/download/${o.receipt}`
+                }
                 style={{ width: '100%', objectFit: 'contain', maxHeight: 560 }}
               />
             </View>
