@@ -48,7 +48,8 @@ export async function createFleetCustomer(data: {
   const body = await res.json()
   if (!res.ok)
     throw new Error(
-      (body as { message?: string }).message ?? 'Failed to create fleet customer',
+      (body as { message?: string }).message ??
+        'Failed to create fleet customer',
     )
   return body
 }
@@ -64,7 +65,8 @@ export async function updateFleetCustomer(
   const body = await res.json()
   if (!res.ok)
     throw new Error(
-      (body as { message?: string }).message ?? 'Failed to update fleet customer',
+      (body as { message?: string }).message ??
+        'Failed to update fleet customer',
     )
   return body
 }

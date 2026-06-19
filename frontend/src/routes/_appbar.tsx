@@ -53,7 +53,15 @@ function RouteComponent() {
   const navigate = useNavigate()
   const matchRoute = useMatchRoute()
   const { can } = usePermissions()
-  const { tickets, openCount, loading: ticketsLoading, refresh: refreshTickets, addMessage, updateTicket, addTicket } = useSupportTickets()
+  const {
+    tickets,
+    openCount,
+    loading: ticketsLoading,
+    refresh: refreshTickets,
+    addMessage,
+    updateTicket,
+    addTicket,
+  } = useSupportTickets()
   const [supportOpen, setSupportOpen] = useState(false)
 
   const handleLogout = () => {

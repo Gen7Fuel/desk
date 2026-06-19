@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Headset, Plus, RefreshCw, Send, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { disconnectHubSupportSocket, getHubSupportSocket } from '@/lib/hubSocket'
+import {
+  disconnectHubSupportSocket,
+  getHubSupportSocket,
+} from '@/lib/hubSocket'
 import { getExternalToken } from '@/lib/permissions'
 
 const HUB = 'https://app.gen7fuel.com'
@@ -32,7 +35,11 @@ function getExternalUserId(): string | null {
 }
 
 function senderDisplayName(user: TicketUser): string {
-  return [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || 'Unknown'
+  return (
+    [user.firstName, user.lastName].filter(Boolean).join(' ') ||
+    user.email ||
+    'Unknown'
+  )
 }
 
 interface TicketMessage {
@@ -101,7 +108,10 @@ export function useSupportTickets() {
           icon: '/favicon.ico',
           tag: `ticket-${ticket._id}`,
         })
-        n.onclick = () => { window.focus(); n.close() }
+        n.onclick = () => {
+          window.focus()
+          n.close()
+        }
       }
     })
 
@@ -131,7 +141,15 @@ export function useSupportTickets() {
 
   const openCount = tickets.filter((t) => t.status === 'open').length
 
-  return { tickets, openCount, loading, refresh: fetchTickets, addMessage, updateTicket, addTicket }
+  return {
+    tickets,
+    openCount,
+    loading,
+    refresh: fetchTickets,
+    addMessage,
+    updateTicket,
+    addTicket,
+  }
 }
 
 // ── Panel Component ────────────────────────────────────────────────────────────
@@ -162,7 +180,12 @@ const STATUS_STYLE: Record<string, string> = {
 
 function Badge({ label, style }: { label: string; style: string }) {
   return (
-    <span className={cn('inline-block text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded', style)}>
+    <span
+      className={cn(
+        'inline-block text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded',
+        style,
+      )}
+    >
       {label}
     </span>
   )
@@ -191,7 +214,7 @@ export function SupportPanel({
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const activeTicket = activeTicketId
-    ? tickets.find((t) => t._id === activeTicketId) ?? null
+    ? (tickets.find((t) => t._id === activeTicketId) ?? null)
     : null
 
   useEffect(() => {
@@ -210,8 +233,14 @@ export function SupportPanel({
 
   const submitCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newText.trim()) { setCreateError('Description is required.'); return }
-    if (!newSite.trim()) { setCreateError('Site is required.'); return }
+    if (!newText.trim()) {
+      setCreateError('Description is required.')
+      return
+    }
+    if (!newSite.trim()) {
+      setCreateError('Site is required.')
+      return
+    }
     setCreating(true)
     setCreateError(null)
     try {
@@ -222,7 +251,11 @@ export function SupportPanel({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ text: newText.trim(), priority: newPriority, site: newSite.trim() }),
+        body: JSON.stringify({
+          text: newText.trim(),
+          priority: newPriority,
+          site: newSite.trim(),
+        }),
       })
       const body = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(body?.message || 'Failed to create ticket.')
@@ -231,7 +264,9 @@ export function SupportPanel({
       resetCreateForm()
       setActiveTicketId((body.data as Ticket)._id)
     } catch (err: unknown) {
-      setCreateError(err instanceof Error ? err.message : 'Failed to create ticket.')
+      setCreateError(
+        err instanceof Error ? err.message : 'Failed to create ticket.',
+      )
     } finally {
       setCreating(false)
     }
@@ -297,16 +332,21 @@ export function SupportPanel({
     const diffMs = now.getTime() - d.getTime()
     if (diffMs < 60_000) return 'Just now'
     if (diffMs < 3_600_000) return `${Math.floor(diffMs / 60_000)}m ago`
-    if (diffMs < 86_400_000) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    if (diffMs < 86_400_000)
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
   }
 
   const filteredTickets =
-    statusFilter === 'all' ? tickets : tickets.filter((t) => t.status === statusFilter)
+    statusFilter === 'all'
+      ? tickets
+      : tickets.filter((t) => t.status === statusFilter)
 
   return (
     <>
-      {open && <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />}
+      {open && (
+        <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
+      )}
 
       <div
         className={cn(
@@ -322,14 +362,20 @@ export function SupportPanel({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 shrink-0"
-                onClick={() => { setIsCreating(false); resetCreateForm() }}
+                onClick={() => {
+                  setIsCreating(false)
+                  resetCreateForm()
+                }}
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <h2 className="text-sm font-semibold">New Ticket</h2>
             </div>
 
-            <form onSubmit={submitCreateTicket} className="flex flex-col gap-4 px-4 py-4 flex-1 overflow-y-auto">
+            <form
+              onSubmit={submitCreateTicket}
+              className="flex flex-col gap-4 px-4 py-4 flex-1 overflow-y-auto"
+            >
               <div className="space-y-1.5">
                 <label className="text-xs font-medium">Site</label>
                 <input
@@ -346,7 +392,9 @@ export function SupportPanel({
                 <label className="text-xs font-medium">Priority</label>
                 <select
                   value={newPriority}
-                  onChange={(e) => setNewPriority(e.target.value as Ticket['priority'])}
+                  onChange={(e) =>
+                    setNewPriority(e.target.value as Ticket['priority'])
+                  }
                   disabled={creating}
                   className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 >
@@ -370,7 +418,9 @@ export function SupportPanel({
                 />
               </div>
 
-              {createError && <p className="text-xs text-destructive">{createError}</p>}
+              {createError && (
+                <p className="text-xs text-destructive">{createError}</p>
+              )}
 
               <Button type="submit" className="w-full" disabled={creating}>
                 {creating ? 'Submitting…' : 'Submit Ticket'}
@@ -403,7 +453,10 @@ export function SupportPanel({
                 </div>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
-                <Badge label={activeTicket.status} style={STATUS_STYLE[activeTicket.status] ?? ''} />
+                <Badge
+                  label={activeTicket.status}
+                  style={STATUS_STYLE[activeTicket.status] ?? ''}
+                />
                 {activeTicket.status === 'open' && (
                   <Button
                     variant="outline"
@@ -422,36 +475,44 @@ export function SupportPanel({
               {(() => {
                 const currentHubUserId = getExternalUserId()
                 return activeTicket.messages.map((msg, idx) => {
-                const isSupportMsg = !!msg.sender.isSupport || (currentHubUserId ? msg.sender._id === currentHubUserId : false)
-                return (
-                  <div
-                    key={msg._id || idx}
-                    className={`flex ${isSupportMsg ? 'justify-end' : 'justify-start'}`}
-                  >
+                  const isSupportMsg =
+                    !!msg.sender.isSupport ||
+                    (currentHubUserId
+                      ? msg.sender._id === currentHubUserId
+                      : false)
+                  return (
                     <div
-                      className={cn(
-                        'max-w-[80%] rounded-lg px-3 py-2 text-sm',
-                        isSupportMsg ? 'bg-primary text-primary-foreground' : 'bg-muted',
-                      )}
+                      key={msg._id || idx}
+                      className={`flex ${isSupportMsg ? 'justify-end' : 'justify-start'}`}
                     >
-                      {!isSupportMsg && (
-                        <div className="text-[10px] font-semibold mb-0.5 opacity-70">
-                          {senderDisplayName(msg.sender) || 'Customer'}
-                        </div>
-                      )}
-                      <p className="whitespace-pre-wrap">{msg.text}</p>
                       <div
                         className={cn(
-                          'text-[10px] mt-1',
-                          isSupportMsg ? 'opacity-70' : 'text-muted-foreground',
+                          'max-w-[80%] rounded-lg px-3 py-2 text-sm',
+                          isSupportMsg
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted',
                         )}
                       >
-                        {fmtDate(msg.createdAt)}
+                        {!isSupportMsg && (
+                          <div className="text-[10px] font-semibold mb-0.5 opacity-70">
+                            {senderDisplayName(msg.sender) || 'Customer'}
+                          </div>
+                        )}
+                        <p className="whitespace-pre-wrap">{msg.text}</p>
+                        <div
+                          className={cn(
+                            'text-[10px] mt-1',
+                            isSupportMsg
+                              ? 'opacity-70'
+                              : 'text-muted-foreground',
+                          )}
+                        >
+                          {fmtDate(msg.createdAt)}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )
-              })
+                  )
+                })
               })()}
               <div ref={messagesEndRef} />
             </div>
@@ -459,7 +520,10 @@ export function SupportPanel({
             {activeTicket.status === 'open' ? (
               <form
                 className="flex gap-2 border-t px-4 py-3"
-                onSubmit={(e) => { e.preventDefault(); sendMessage() }}
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  sendMessage()
+                }}
               >
                 <input
                   type="text"
@@ -468,7 +532,11 @@ export function SupportPanel({
                   placeholder="Type a reply…"
                   className="flex-1 rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
-                <Button type="submit" size="icon" disabled={!messageText.trim()}>
+                <Button
+                  type="submit"
+                  size="icon"
+                  disabled={!messageText.trim()}
+                >
                   <Send className="h-4 w-4" />
                 </Button>
               </form>
@@ -491,7 +559,10 @@ export function SupportPanel({
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => { resetCreateForm(); setIsCreating(true) }}
+                  onClick={() => {
+                    resetCreateForm()
+                    setIsCreating(true)
+                  }}
                   title="New ticket"
                 >
                   <Plus className="h-4 w-4" />
@@ -503,16 +574,25 @@ export function SupportPanel({
                   onClick={onRefresh}
                   disabled={loading}
                 >
-                  <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
+                  <RefreshCw
+                    className={cn('h-3.5 w-3.5', loading && 'animate-spin')}
+                  />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={onClose}
+                >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
             <div className="flex gap-1 px-4 py-2 border-b">
-              {(['open', 'resolved', 'closed', 'all'] as Array<StatusFilter>).map((f) => (
+              {(
+                ['open', 'resolved', 'closed', 'all'] as Array<StatusFilter>
+              ).map((f) => (
                 <button
                   key={f}
                   onClick={() => setStatusFilter(f)}
@@ -556,8 +636,14 @@ export function SupportPanel({
                         {ticket.text}
                       </p>
                       <div className="flex items-center gap-1.5">
-                        <Badge label={ticket.status} style={STATUS_STYLE[ticket.status] ?? ''} />
-                        <Badge label={ticket.priority} style={PRIORITY_STYLE[ticket.priority] ?? ''} />
+                        <Badge
+                          label={ticket.status}
+                          style={STATUS_STYLE[ticket.status] ?? ''}
+                        />
+                        <Badge
+                          label={ticket.priority}
+                          style={PRIORITY_STYLE[ticket.priority] ?? ''}
+                        />
                         {ticket.messages.length > 1 && (
                           <span className="text-[10px] text-muted-foreground ml-auto">
                             {ticket.messages.length} messages

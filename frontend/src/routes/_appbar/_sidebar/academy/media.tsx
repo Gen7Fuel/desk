@@ -68,13 +68,7 @@ function fmtTime(s: number): string {
   return `${m}:${String(sec).padStart(2, '0')}`
 }
 
-function FileTypeIcon({
-  name,
-  isHls,
-}: {
-  name: string
-  isHls?: boolean
-}) {
+function FileTypeIcon({ name, isHls }: { name: string; isHls?: boolean }) {
   const ext = getExt(name)
   if (isHls || VIDEO_EXTS.has(ext))
     return <FileVideo className="h-4 w-4 text-blue-500" />
@@ -328,7 +322,11 @@ function RouteComponent() {
   }
 
   const busy = uploading || processing
-  const uploadLabel = uploading ? 'Uploading…' : processing ? 'Processing…' : 'Upload'
+  const uploadLabel = uploading
+    ? 'Uploading…'
+    : processing
+      ? 'Processing…'
+      : 'Upload'
 
   return (
     <div className="flex h-full overflow-hidden">

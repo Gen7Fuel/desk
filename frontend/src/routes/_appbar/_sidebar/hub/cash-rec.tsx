@@ -253,12 +253,12 @@ function RouteComponent() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <SitePicker
-          value={site}
-          onValueChange={setSite}
-          className="w-48"
+        <SitePicker value={site} onValueChange={setSite} className="w-48" />
+        <DatePicker
+          value={startDate}
+          onChange={setStartDate}
+          label="Start date"
         />
-        <DatePicker value={startDate} onChange={setStartDate} label="Start date" />
         <span className="text-sm text-muted-foreground">to</span>
         <DatePicker value={endDate} onChange={setEndDate} label="End date" />
         {dayCount > 31 && (
@@ -269,7 +269,9 @@ function RouteComponent() {
       </div>
 
       {!site && (
-        <p className="text-sm text-muted-foreground">Select a site to load data.</p>
+        <p className="text-sm text-muted-foreground">
+          Select a site to load data.
+        </p>
       )}
 
       {site && (
@@ -350,7 +352,9 @@ function RouteComponent() {
                                 className="h-7 w-32 ml-auto text-right"
                                 onChange={(e) =>
                                   setEditing((prev) =>
-                                    prev ? { ...prev, value: e.target.value } : null,
+                                    prev
+                                      ? { ...prev, value: e.target.value }
+                                      : null,
                                   )
                                 }
                                 onKeyDown={(e) => {
@@ -365,10 +369,14 @@ function RouteComponent() {
                                   canEdit &&
                                     'rounded px-1 hover:bg-muted transition-colors',
                                 )}
-                                title={canEdit ? 'Double-click to edit' : undefined}
+                                title={
+                                  canEdit ? 'Double-click to edit' : undefined
+                                }
                               >
                                 {!hasData ? (
-                                  <span className="text-muted-foreground/50">—</span>
+                                  <span className="text-muted-foreground/50">
+                                    —
+                                  </span>
                                 ) : (
                                   display
                                 )}

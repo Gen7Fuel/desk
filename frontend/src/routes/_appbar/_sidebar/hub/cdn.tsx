@@ -132,11 +132,18 @@ function RouteComponent() {
     setDeleteMonthState({ phase: 'deleting', month })
     try {
       const result = await deleteCdnMonth(month)
-      setDeleteMonthState({ phase: 'done', month, deleted: result.deleted, total: result.total })
+      setDeleteMonthState({
+        phase: 'done',
+        month,
+        deleted: result.deleted,
+        total: result.total,
+      })
       setMonths((prev) => prev.filter((m) => m.month !== month))
     } catch (err) {
       setDeleteMonthState(null)
-      alert(`Delete failed: ${err instanceof Error ? err.message : String(err)}`)
+      alert(
+        `Delete failed: ${err instanceof Error ? err.message : String(err)}`,
+      )
     }
   }
 
@@ -392,19 +399,23 @@ function RouteComponent() {
                         <Upload className="h-3 w-3" />
                         {backingUpMonth === m.month ? 'Backing up…' : 'Backup'}
                       </Button>
-                      {can('hub.cdn', 'delete') && m.month < deleteMonthCutoff && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={!!backingUpMonth}
-                          onClick={() =>
-                            setDeleteMonthState({ phase: 'confirm', month: m.month })
-                          }
-                        >
-                          <Trash2 className="h-3 w-3 text-red-500" />
-                          Delete
-                        </Button>
-                      )}
+                      {can('hub.cdn', 'delete') &&
+                        m.month < deleteMonthCutoff && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={!!backingUpMonth}
+                            onClick={() =>
+                              setDeleteMonthState({
+                                phase: 'confirm',
+                                month: m.month,
+                              })
+                            }
+                          >
+                            <Trash2 className="h-3 w-3 text-red-500" />
+                            Delete
+                          </Button>
+                        )}
                     </div>
                   </div>
                 ))}
@@ -484,10 +495,7 @@ function RouteComponent() {
                   <strong>{deleteMonthState.month}</strong>.
                 </DialogDescription>
                 <div className="flex justify-end">
-                  <Button
-                    size="sm"
-                    onClick={() => setDeleteMonthState(null)}
-                  >
+                  <Button size="sm" onClick={() => setDeleteMonthState(null)}>
                     Okay
                   </Button>
                 </div>

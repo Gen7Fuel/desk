@@ -282,8 +282,13 @@ function RouteComponent() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { name: string; email: string } }) =>
-      updateFleetCustomer(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string
+      data: { name: string; email: string }
+    }) => updateFleetCustomer(id, data),
     onSuccess: () => {
       invalidate()
       setEditCustomer(null)
@@ -353,11 +358,17 @@ function RouteComponent() {
                 <TableCell>{customer.email}</TableCell>
                 <TableCell>
                   {customer.username ? (
-                    <Badge className="bg-green-100 text-green-800" variant="outline">
+                    <Badge
+                      className="bg-green-100 text-green-800"
+                      variant="outline"
+                    >
                       {customer.username}
                     </Badge>
                   ) : (
-                    <Badge className="bg-gray-100 text-gray-600" variant="outline">
+                    <Badge
+                      className="bg-gray-100 text-gray-600"
+                      variant="outline"
+                    >
                       No access
                     </Badge>
                   )}

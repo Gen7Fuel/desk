@@ -4,6 +4,8 @@ import { apiFetch } from './api'
 
 export type ProjectStatus = 'planning' | 'active' | 'on-hold' | 'completed'
 export type TaskStatus = 'not-started' | 'in-progress' | 'completed' | 'blocked'
+export type TaskPhase = 'planning' | 'design' | 'development' | 'qa' | 'launch'
+export type TaskPriority = 'low' | 'medium' | 'high'
 
 export interface ProjectTask {
   _id: string
@@ -12,6 +14,8 @@ export interface ProjectTask {
   notes?: string
   assignee?: { _id: string; firstName: string; lastName: string } | null
   status: TaskStatus
+  phase?: TaskPhase
+  priority?: TaskPriority
   progress: number
   startDate: string
   endDate: string
@@ -154,6 +158,8 @@ export async function createProjectTask(
     notes?: string
     assignee?: string
     status: TaskStatus
+    phase?: TaskPhase
+    priority?: TaskPriority
     progress: number
     startDate: string
     endDate: string
@@ -183,6 +189,8 @@ export async function updateProjectTask(
     notes: string
     assignee: string | null
     status: TaskStatus
+    phase: TaskPhase
+    priority: TaskPriority
     progress: number
     startDate: string
     endDate: string

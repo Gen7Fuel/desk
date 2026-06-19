@@ -15,6 +15,16 @@ const TaskSchema = new mongoose.Schema(
       enum: ['not-started', 'in-progress', 'completed', 'blocked'],
       default: 'not-started',
     },
+    phase: {
+      type: String,
+      enum: ['planning', 'design', 'development', 'qa', 'launch'],
+      default: 'planning',
+    },
+    priority: {
+      type: String,
+      enum: ['low', 'medium', 'high'],
+      default: 'medium',
+    },
     notes: { type: String },
   },
   { timestamps: true }
