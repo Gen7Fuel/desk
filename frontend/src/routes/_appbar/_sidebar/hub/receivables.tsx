@@ -73,6 +73,55 @@ const formatFleetCardNumber = (number: string) => {
   return (number || '').replace(/(.{4})/g, '$1 ').trim()
 }
 
+async function compressImage(
+  filename: string,
+  token: string,
+  maxDimension = 1400,
+  quality = 0.75,
+): Promise<string | null> {
+  try {
+    const res = await fetch(`${HUB}/cdn/download/${filename}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'X-Required-Permission': 'po',
+      },
+    })
+    if (!res.ok) return null
+    const contentType = res.headers.get('content-type') ?? ''
+    if (!contentType.startsWith('image/')) return null
+
+    const blob = await res.blob()
+    const blobUrl = URL.createObjectURL(blob)
+
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image()
+      el.onload = () => resolve(el)
+      el.onerror = reject
+      el.src = blobUrl
+    })
+    URL.revokeObjectURL(blobUrl)
+
+    let { naturalWidth: w, naturalHeight: h } = img
+    if (w > maxDimension || h > maxDimension) {
+      if (w >= h) {
+        h = Math.round((h / w) * maxDimension)
+        w = maxDimension
+      } else {
+        w = Math.round((w / h) * maxDimension)
+        h = maxDimension
+      }
+    }
+
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    canvas.getContext('2d')!.drawImage(img, 0, 0, w, h)
+    return canvas.toDataURL('image/jpeg', quality)
+  } catch {
+    return null
+  }
+}
+
 function RouteComponent() {
   const [from, setFrom] = useState(todayIso())
   const [to, setTo] = useState(todayIso())
@@ -209,12 +258,26 @@ function RouteComponent() {
     if (purchaseOrders.length === 0) return
     setReportLoading(true)
     try {
+      const token = getExternalToken()
+      const uniqueFilenames = [
+        ...new Set(purchaseOrders.map((o) => o.receipt).filter(Boolean)),
+      ]
+      const results = await Promise.all(
+        uniqueFilenames.map((fn) => compressImage(fn, token)),
+      )
+      const receiptDataUris: Record<string, string> = {}
+      uniqueFilenames.forEach((fn, i) => {
+        const uri = results[i]
+        if (uri) receiptDataUris[fn] = uri
+      })
+
       const doc = (
         <ReceivablesReportPDF
           orders={purchaseOrders}
           site={site}
           from={from}
           to={to}
+          receiptDataUris={receiptDataUris}
         />
       )
       const instance = pdf(<></>)
