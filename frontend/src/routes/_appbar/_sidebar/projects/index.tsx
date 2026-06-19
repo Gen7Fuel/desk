@@ -284,7 +284,7 @@ function ProjectCard({
     site?: string
     status: ProjectStatus
     startDate: string
-    createdBy: { firstName: string; lastName: string }
+    createdBy?: { firstName: string; lastName: string } | null
   }
   onDelete: (id: string) => void
 }) {
@@ -322,13 +322,15 @@ function ProjectCard({
             <Calendar className="h-3 w-3" />
             {format(new Date(project.startDate), 'MMM d, yyyy')}
           </span>
-          <span className="flex items-center gap-1">
-            <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center text-[9px] font-semibold uppercase">
-              {project.createdBy.firstName[0]}
-              {project.createdBy.lastName[0]}
-            </div>
-            {project.createdBy.firstName}
-          </span>
+          {project.createdBy && (
+            <span className="flex items-center gap-1">
+              <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center text-[9px] font-semibold uppercase">
+                {project.createdBy.firstName[0]}
+                {project.createdBy.lastName[0]}
+              </div>
+              {project.createdBy.firstName}
+            </span>
+          )}
         </div>
       </div>
 
