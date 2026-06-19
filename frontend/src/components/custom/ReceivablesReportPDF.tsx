@@ -26,7 +26,7 @@ interface PurchaseOrder {
 }
 
 interface Props {
-  orders: PurchaseOrder[]
+  orders: Array<PurchaseOrder>
   site: string
   from: string
   to: string
