@@ -7,12 +7,14 @@ import {
   ExternalLink,
   Eye,
   FileDown,
+  FileText,
   RefreshCw,
   Trash2,
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { pdf } from '@react-pdf/renderer'
 import PurchaseOrderPDF from '@/components/custom/PurchaseOrderPDF'
+import ReceivablesReportPDF from '@/components/custom/ReceivablesReportPDF'
 import { can, getTokenPayload } from '@/lib/permissions'
 import { createLog } from '@/lib/log-api'
 import { SitePicker } from '@/components/custom/SitePicker'
@@ -78,6 +80,8 @@ function RouteComponent() {
   const [purchaseOrders, setPurchaseOrders] = useState<Array<PurchaseOrder>>([])
   const [loading, setLoading] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
+
+  const [reportLoading, setReportLoading] = useState(false)
 
   const [editingCell, setEditingCell] = useState<{
     id: string
@@ -198,6 +202,30 @@ function RouteComponent() {
       }
     } catch (err) {
       console.error('Delete failed:', err)
+    }
+  }
+
+  const generateReport = async () => {
+    if (purchaseOrders.length === 0) return
+    setReportLoading(true)
+    try {
+      const doc = (
+        <ReceivablesReportPDF
+          orders={purchaseOrders}
+          site={site}
+          from={from}
+          to={to}
+        />
+      )
+      const instance = pdf(<></>)
+      instance.updateContainer(doc)
+      const blob = await instance.toBlob()
+      const url = URL.createObjectURL(blob)
+      window.open(url)
+    } catch (e) {
+      console.error('Report PDF generation error', e)
+    } finally {
+      setReportLoading(false)
     }
   }
 
@@ -340,6 +368,15 @@ function RouteComponent() {
           </Popover>
         </div>
         <SitePicker value={site} onValueChange={setSite} />
+        <Button
+          variant="default"
+          onClick={() => void generateReport()}
+          disabled={reportLoading || purchaseOrders.length === 0}
+          className="ml-auto"
+        >
+          <FileText className="mr-2 h-4 w-4" />
+          {reportLoading ? 'Generating…' : 'PDF Report'}
+        </Button>
       </div>
 
       <div className="flex justify-between rounded-md bg-muted/50 px-4 py-3 text-sm font-medium">
