@@ -284,7 +284,7 @@ function ProjectCard({
     site?: string
     status: ProjectStatus
     startDate: string
-    createdBy?: { firstName: string; lastName: string } | null
+    createdBy?: { firstName?: string; lastName?: string } | null
   }
   onDelete: (id: string) => void
 }) {
