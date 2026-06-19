@@ -32,7 +32,7 @@ export interface Project {
   site?: string
   status: ProjectStatus
   startDate: string
-  createdBy: { _id: string; firstName: string; lastName: string }
+  createdBy?: { _id: string; firstName: string; lastName: string } | null
   createdAt: string
   updatedAt: string
 }
