@@ -124,7 +124,12 @@ async function resolveAggregateDates(
 
   const isHW = (d: Date) => {
     const dow = getDay(d)
-    return dow === 0 || dow === 5 || dow === 6 || taggedDates.has(format(d, 'yyyy-MM-dd'))
+    return (
+      dow === 0 ||
+      dow === 5 ||
+      dow === 6 ||
+      taggedDates.has(format(d, 'yyyy-MM-dd'))
+    )
   }
 
   const sel = parseISO(selectedDate)
@@ -878,7 +883,8 @@ function RouteComponent() {
   ]
 
   const selectedDow = getDay(parseISO(date))
-  const isAutoTagged = selectedDow === 0 || selectedDow === 5 || selectedDow === 6
+  const isAutoTagged =
+    selectedDow === 0 || selectedDow === 5 || selectedDow === 6
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -1007,8 +1013,18 @@ function RouteComponent() {
                       onChange={handleToggleAll}
                     />
                   </th>
-                  {['Date', 'Location', 'Txn Amount', 'Base Amount', 'Label', 'Summary'].map((h) => (
-                    <th key={h} className="border-b-2 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider">
+                  {[
+                    'Date',
+                    'Location',
+                    'Txn Amount',
+                    'Base Amount',
+                    'Label',
+                    'Summary',
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="border-b-2 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider"
+                    >
                       {h}
                     </th>
                   ))}
@@ -1031,14 +1047,19 @@ function RouteComponent() {
                     </td>
                     <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
                       {line['audit.createdDateTime']
-                        ? format(new Date(line['audit.createdDateTime']), 'MMM d, yyyy')
+                        ? format(
+                            new Date(line['audit.createdDateTime']),
+                            'MMM d, yyyy',
+                          )
                         : '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
                       {line['dimensions.location.name'] ?? '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-right font-mono text-sm tabular-nums">
-                      {line.txnAmount != null ? fmtVal(Number(line.txnAmount)) : '—'}
+                      {line.txnAmount != null
+                        ? fmtVal(Number(line.txnAmount))
+                        : '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-right font-mono text-sm tabular-nums">
                       {line.amount != null ? fmtVal(Number(line.amount)) : '—'}
@@ -1061,7 +1082,9 @@ function RouteComponent() {
             onClick={() => void handleCreateSageDeposit()}
             disabled={selectedKeys.size === 0 || depositLoading}
           >
-            {depositLoading ? 'Creating…' : `Create Deposit in Sage${selectedKeys.size > 0 ? ` (${selectedKeys.size})` : ''}`}
+            {depositLoading
+              ? 'Creating…'
+              : `Create Deposit in Sage${selectedKeys.size > 0 ? ` (${selectedKeys.size})` : ''}`}
           </Button>
           {depositSuccess && (
             <p className="text-sm text-green-600">

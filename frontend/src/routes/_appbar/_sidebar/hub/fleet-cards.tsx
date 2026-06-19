@@ -83,7 +83,11 @@ const EMPTY_FORM = {
 type FormState = typeof EMPTY_FORM
 
 type ParsedRow = Omit<FleetCard, '_id' | 'customerId' | 'customerEmail'>
-type ImportPreview = { rows: Array<ParsedRow>; creates: number; updates: number }
+type ImportPreview = {
+  rows: Array<ParsedRow>
+  creates: number
+  updates: number
+}
 type ImportResult = { created: number; updated: number; errors: Array<string> }
 
 function formatCardInput(value: string): string {
@@ -421,7 +425,9 @@ function RouteComponent() {
     try {
       const rows = await parseFleetCardXlsx(file)
       const existing = new Map(cards.map((c) => [c.fleetCardNumber, c._id]))
-      const creates = rows.filter((r) => !existing.has(r.fleetCardNumber)).length
+      const creates = rows.filter(
+        (r) => !existing.has(r.fleetCardNumber),
+      ).length
       const updates = rows.length - creates
       setImportPreview({ rows, creates, updates })
     } catch {
@@ -588,7 +594,9 @@ function RouteComponent() {
                 <TableCell
                   className="font-mono tracking-widest text-sm cursor-pointer select-none"
                   title="Click to copy"
-                  onClick={() => void navigator.clipboard.writeText(card.fleetCardNumber)}
+                  onClick={() =>
+                    void navigator.clipboard.writeText(card.fleetCardNumber)
+                  }
                 >
                   {formatCardNumber(card.fleetCardNumber)}
                 </TableCell>
@@ -703,10 +711,18 @@ function RouteComponent() {
                 <table className="w-full">
                   <thead className="bg-muted text-muted-foreground">
                     <tr>
-                      <th className="px-2 py-1.5 text-left font-medium">Card</th>
-                      <th className="px-2 py-1.5 text-left font-medium">Customer</th>
-                      <th className="px-2 py-1.5 text-left font-medium">Site</th>
-                      <th className="px-2 py-1.5 text-left font-medium">Driver</th>
+                      <th className="px-2 py-1.5 text-left font-medium">
+                        Card
+                      </th>
+                      <th className="px-2 py-1.5 text-left font-medium">
+                        Customer
+                      </th>
+                      <th className="px-2 py-1.5 text-left font-medium">
+                        Site
+                      </th>
+                      <th className="px-2 py-1.5 text-left font-medium">
+                        Driver
+                      </th>
                     </tr>
                   </thead>
                   <tbody>

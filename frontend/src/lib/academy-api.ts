@@ -198,7 +198,10 @@ export async function uploadAcademyMedia(
   }
   const data = await res.json()
   if ((data as { status?: string }).status === 'processing') {
-    return { type: 'processing', videoId: (data as { videoId: string }).videoId }
+    return {
+      type: 'processing',
+      videoId: (data as { videoId: string }).videoId,
+    }
   }
   return { type: 'immediate', file: data as AcademyMediaFile }
 }

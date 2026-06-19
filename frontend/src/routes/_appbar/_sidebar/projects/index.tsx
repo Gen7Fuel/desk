@@ -2,7 +2,16 @@ import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { FolderKanban, Plus, Trash2 } from 'lucide-react'
+import {
+  Activity,
+  Calendar,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  FolderKanban,
+  Plus,
+  Trash2,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import type { ProjectStatus } from '@/lib/projects-api'
 import { can } from '@/lib/permissions'
@@ -13,7 +22,6 @@ import {
   getProjects,
   projectKeys,
 } from '@/lib/projects-api'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -32,14 +40,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
 
 export const Route = createFileRoute('/_appbar/_sidebar/projects/')({
@@ -58,14 +58,56 @@ const STATUS_LABELS: Record<ProjectStatus, string> = {
   completed: 'Completed',
 }
 
-const STATUS_VARIANTS: Record<
+const STATUS_COLORS: Record<
   ProjectStatus,
-  'default' | 'secondary' | 'outline' | 'destructive'
+  { dot: string; badge: string; border: string }
 > = {
-  active: 'default',
-  planning: 'secondary',
-  'on-hold': 'outline',
-  completed: 'secondary',
+  active: {
+    dot: 'bg-emerald-500',
+    badge: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
+    border: 'border-t-emerald-500',
+  },
+  planning: {
+    dot: 'bg-primary',
+    badge: 'bg-primary/15 text-primary border-primary/20',
+    border: 'border-t-primary',
+  },
+  'on-hold': {
+    dot: 'bg-amber-500',
+    badge: 'bg-amber-500/15 text-amber-400 border-amber-500/20',
+    border: 'border-t-amber-500',
+  },
+  completed: {
+    dot: 'bg-muted-foreground',
+    badge: 'bg-muted text-muted-foreground border-border',
+    border: 'border-t-muted-foreground',
+  },
+}
+
+// ── Stats card ─────────────────────────────────────────────────────────────────
+
+function StatsCard({
+  icon: Icon,
+  label,
+  value,
+  color,
+}: {
+  icon: React.ElementType
+  label: string
+  value: number
+  color: string
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
+      <div className={`rounded-lg p-2 ${color}`}>
+        <Icon className="h-4 w-4" />
+      </div>
+      <div>
+        <p className="text-2xl font-bold leading-none">{value}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+      </div>
+    </div>
+  )
 }
 
 // ── New Project Dialog ─────────────────────────────────────────────────────────
@@ -126,8 +168,8 @@ function NewProjectDialog({ onCreated }: NewProjectDialogProps) {
       }}
     >
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button className="gap-2 shadow-lg shadow-primary/20">
+          <Plus className="h-4 w-4" />
           New Project
         </Button>
       </DialogTrigger>
@@ -230,6 +272,94 @@ function NewProjectDialog({ onCreated }: NewProjectDialogProps) {
   )
 }
 
+// ── Project card ───────────────────────────────────────────────────────────────
+
+function ProjectCard({
+  project,
+  onDelete,
+}: {
+  project: {
+    _id: string
+    name: string
+    site?: string
+    status: ProjectStatus
+    startDate: string
+    createdBy: { firstName: string; lastName: string }
+  }
+  onDelete: (id: string) => void
+}) {
+  const colors = STATUS_COLORS[project.status]
+
+  return (
+    <div
+      className={`group relative rounded-xl border border-border bg-card overflow-hidden transition-all duration-200 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 border-t-2 ${colors.border}`}
+    >
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="min-w-0 flex-1">
+            <Link
+              to="/projects/$id"
+              params={{ id: project._id }}
+              className="font-semibold text-sm leading-snug hover:text-primary transition-colors line-clamp-2"
+            >
+              {project.name}
+            </Link>
+            {project.site && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {project.site}
+              </p>
+            )}
+          </div>
+          <span
+            className={`shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full border ${colors.badge}`}
+          >
+            {STATUS_LABELS[project.status]}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            {format(new Date(project.startDate), 'MMM d, yyyy')}
+          </span>
+          <span className="flex items-center gap-1">
+            <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center text-[9px] font-semibold uppercase">
+              {project.createdBy.firstName[0]}
+              {project.createdBy.lastName[0]}
+            </div>
+            {project.createdBy.firstName}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between border-t border-border/50 px-5 py-2.5 bg-muted/30">
+        <Link
+          to="/projects/$id"
+          params={{ id: project._id }}
+          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+        >
+          View project
+          <ChevronRight className="h-3 w-3" />
+        </Link>
+        {can('projects', 'delete') && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive-foreground hover:bg-destructive/20"
+            onClick={() => {
+              if (confirm(`Delete "${project.name}"?`)) {
+                onDelete(project._id)
+              }
+            }}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Route component ────────────────────────────────────────────────────────────
 
 function RouteComponent() {
@@ -249,12 +379,24 @@ function RouteComponent() {
     onError: (err: Error) => toast.error(err.message),
   })
 
+  const active = projects.filter((p) => p.status === 'active').length
+  const completed = projects.filter((p) => p.status === 'completed').length
+  const planning = projects.filter((p) => p.status === 'planning').length
+
   return (
-    <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <FolderKanban className="h-6 w-6 text-muted-foreground" />
-          <h1 className="text-2xl font-semibold">Projects</h1>
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="rounded-lg bg-primary/10 p-2">
+            <FolderKanban className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold">Projects</h1>
+            <p className="text-xs text-muted-foreground">
+              {projects.length} project{projects.length !== 1 ? 's' : ''} total
+            </p>
+          </div>
         </div>
         {can('projects', 'create') && (
           <NewProjectDialog
@@ -265,65 +407,68 @@ function RouteComponent() {
         )}
       </div>
 
+      {/* Stats row */}
+      {projects.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatsCard
+            icon={Activity}
+            label="Total Projects"
+            value={projects.length}
+            color="bg-primary/10 text-primary"
+          />
+          <StatsCard
+            icon={Activity}
+            label="Active"
+            value={active}
+            color="bg-emerald-500/10 text-emerald-500"
+          />
+          <StatsCard
+            icon={Clock}
+            label="Planning"
+            value={planning}
+            color="bg-primary/10 text-primary"
+          />
+          <StatsCard
+            icon={CheckCircle2}
+            label="Completed"
+            value={completed}
+            color="bg-muted text-muted-foreground"
+          />
+        </div>
+      )}
+
+      {/* Projects grid */}
       {isLoading ? (
-        <p className="text-muted-foreground">Loading…</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-32 rounded-xl border border-border bg-card animate-pulse"
+            />
+          ))}
+        </div>
       ) : projects.length === 0 ? (
-        <p className="text-muted-foreground">
-          No projects yet. Create one to get started.
-        </p>
+        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border py-16 gap-3">
+          <div className="rounded-xl bg-primary/10 p-4">
+            <FolderKanban className="h-8 w-8 text-primary" />
+          </div>
+          <div className="text-center">
+            <p className="font-medium">No projects yet</p>
+            <p className="text-sm text-muted-foreground">
+              Create a project to start tracking work.
+            </p>
+          </div>
+        </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Site</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Start Date</TableHead>
-              <TableHead className="w-[80px]" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {projects.map((project) => (
-              <TableRow key={project._id}>
-                <TableCell className="font-medium">
-                  <Link
-                    to="/projects/$id"
-                    params={{ id: project._id }}
-                    className="hover:underline"
-                  >
-                    {project.name}
-                  </Link>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {project.site ?? '—'}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={STATUS_VARIANTS[project.status]}>
-                    {STATUS_LABELS[project.status]}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {format(new Date(project.startDate), 'MMM d, yyyy')}
-                </TableCell>
-                <TableCell>
-                  {can('projects', 'delete') && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        if (confirm(`Delete "${project.name}"?`)) {
-                          deleteMutation.mutate(project._id)
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {projects.map((project) => (
+            <ProjectCard
+              key={project._id}
+              project={project}
+              onDelete={(id) => deleteMutation.mutate(id)}
+            />
+          ))}
+        </div>
       )}
     </div>
   )
