@@ -325,10 +325,10 @@ function ProjectCard({
           {project.createdBy && (
             <span className="flex items-center gap-1">
               <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center text-[9px] font-semibold uppercase">
-                {project.createdBy?.firstName?.[0]}
-                {project.createdBy?.lastName?.[0]}
+                {project.createdBy.firstName?.[0]}
+                {project.createdBy.lastName?.[0]}
               </div>
-              {project.createdBy?.firstName}
+              {project.createdBy.firstName}
             </span>
           )}
         </div>
