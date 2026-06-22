@@ -15,6 +15,7 @@ import { format, parseISO } from 'date-fns'
 import { pdf } from '@react-pdf/renderer'
 import PurchaseOrderPDF from '@/components/custom/PurchaseOrderPDF'
 import ReceivablesReportPDF from '@/components/custom/ReceivablesReportPDF'
+import ARDiscrepancyReportPDF from '@/components/custom/ARDiscrepancyReportPDF'
 import { can, getTokenPayload } from '@/lib/permissions'
 import { createLog } from '@/lib/log-api'
 import { SitePicker } from '@/components/custom/SitePicker'
@@ -131,6 +132,7 @@ function RouteComponent() {
   const [fetchError, setFetchError] = useState<string | null>(null)
 
   const [reportLoading, setReportLoading] = useState(false)
+  const [arReportLoading, setArReportLoading] = useState(false)
 
   const [editingCell, setEditingCell] = useState<{
     id: string
@@ -251,6 +253,42 @@ function RouteComponent() {
       }
     } catch (err) {
       console.error('Delete failed:', err)
+    }
+  }
+
+  const generateArReport = async () => {
+    if (['Oliver', 'Osoyoos'].includes(site) || !from || !to) return
+    setArReportLoading(true)
+    try {
+      const token = getExternalToken()
+      const params = new URLSearchParams({ site, from, to })
+      const res = await fetch(
+        `${HUB}/api/cash-summary/ar-check-range?${params}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'X-Required-Permission': 'po',
+          },
+        },
+      )
+      if (!res.ok) return
+      const days: unknown = await res.json()
+      const doc = (
+        <ARDiscrepancyReportPDF
+          days={Array.isArray(days) ? days : []}
+          site={site}
+          from={from}
+          to={to}
+        />
+      )
+      const instance = pdf(<></>)
+      instance.updateContainer(doc)
+      const blob = await instance.toBlob()
+      window.open(URL.createObjectURL(blob))
+    } catch (e) {
+      console.error('AR report error', e)
+    } finally {
+      setArReportLoading(false)
     }
   }
 
@@ -431,15 +469,29 @@ function RouteComponent() {
           </Popover>
         </div>
         <SitePicker value={site} onValueChange={setSite} />
-        <Button
-          variant="default"
-          onClick={() => void generateReport()}
-          disabled={reportLoading || purchaseOrders.length === 0}
-          className="ml-auto"
-        >
-          <FileText className="mr-2 h-4 w-4" />
-          {reportLoading ? 'Generating…' : 'PDF Report'}
-        </Button>
+        <div className="ml-auto flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => void generateArReport()}
+            disabled={arReportLoading || ['Oliver', 'Osoyoos'].includes(site)}
+            title={
+              ['Oliver', 'Osoyoos'].includes(site)
+                ? 'Not available for this site'
+                : undefined
+            }
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            {arReportLoading ? 'Generating…' : 'AR Report'}
+          </Button>
+          <Button
+            variant="default"
+            onClick={() => void generateReport()}
+            disabled={reportLoading || purchaseOrders.length === 0}
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            {reportLoading ? 'Generating…' : 'PDF Report'}
+          </Button>
+        </div>
       </div>
 
       <div className="flex justify-between rounded-md bg-muted/50 px-4 py-3 text-sm font-medium">
