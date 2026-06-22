@@ -272,7 +272,7 @@ export default function ARDiscrepancyReportPDF({ days, site, from, to }: Props) 
           <Text
             style={[S.tableHeadCell, { width: W.arIncurred, textAlign: 'right' }]}
           >
-            AR Incurred (Hub)
+            AR Incurred (Bulloch)
           </Text>
           <Text
             style={[
@@ -280,7 +280,7 @@ export default function ARDiscrepancyReportPDF({ days, site, from, to }: Props) 
               { width: W.transactions, textAlign: 'right' },
             ]}
           >
-            Transactions (Bulloch)
+            Transactions (Hub)
           </Text>
           <Text
             style={[
