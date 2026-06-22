@@ -17,7 +17,7 @@ interface ARDiscrepancyDay {
 }
 
 interface Props {
-  days: ARDiscrepancyDay[]
+  days: Array<ARDiscrepancyDay>
   site: string
   from: string
   to: string
