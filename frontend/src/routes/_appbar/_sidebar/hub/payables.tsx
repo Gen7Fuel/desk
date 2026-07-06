@@ -45,7 +45,7 @@ interface Payable {
   vendorName: string
   location: {
     _id: string
-    name: string
+    stationName: string
     csoCode: string
   }
   notes: string
@@ -78,6 +78,15 @@ function getExternalToken(): string {
 
 function toLocalDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-CA')
+}
+
+function payableDateStr(payable: Pick<Payable, 'date' | 'createdAt'>): string {
+  return payable.date || toLocalDate(payable.createdAt)
+}
+
+function ymdToLocalDate(ymd: string): Date {
+  const [y, m, d] = ymd.split('-').map(Number)
+  return new Date(y, (m || 1) - 1, d || 1)
 }
 
 type SafesheetEntry = { _id: string; date: string; description: string }
@@ -177,9 +186,11 @@ function PayableDateCell({
   onUpdate,
 }: {
   payable: Payable
-  onUpdate: (newCreatedAt: string, newVal: string) => void
+  onUpdate: (newVal: string) => void
 }) {
-  const [selected, setSelected] = useState(new Date(payable.createdAt))
+  const [selected, setSelected] = useState(
+    payable.date ? ymdToLocalDate(payable.date) : new Date(payable.createdAt),
+  )
 
   return (
     <Popover>
@@ -196,7 +207,7 @@ function PayableDateCell({
           onSelect={(date) => {
             if (date) {
               setSelected(date)
-              onUpdate(date, format(date, 'yyyy-MM-dd'))
+              onUpdate(format(date, 'yyyy-MM-dd'))
             }
           }}
           initialFocus
@@ -214,7 +225,7 @@ function RouteComponent() {
   const [loading, setLoading] = useState(false)
   const [editingCell, setEditingCell] = useState<{
     id: string
-    field: 'createdAt' | 'vendorName' | 'amount' | 'paymentMethod'
+    field: 'vendorName' | 'amount' | 'paymentMethod'
   } | null>(null)
   const [editValue, setEditValue] = useState<string>('')
   const [imageModal, setImageModal] = useState<{
@@ -295,7 +306,7 @@ function RouteComponent() {
 
   const updatePayable = async (
     id: string,
-    field: 'createdAt' | 'vendorName' | 'amount',
+    field: 'vendorName' | 'amount' | 'paymentMethod',
     value: string,
   ) => {
     if (!editingCell) return
@@ -307,12 +318,7 @@ function RouteComponent() {
     }
 
     let isChanged = false
-    if (field === 'createdAt') {
-      const currentVal = new Date(currentPayable.createdAt).toLocaleDateString(
-        'en-CA',
-      )
-      isChanged = currentVal !== value
-    } else if (field === 'amount') {
+    if (field === 'amount') {
       isChanged = currentPayable.amount !== parseFloat(value)
     } else {
       isChanged =
@@ -328,10 +334,7 @@ function RouteComponent() {
       const token = getExternalToken()
       const body: Record<string, unknown> = {}
 
-      if (field === 'createdAt') {
-        body.createdAt = `${value}T12:00:00.000Z`
-        body.date = value
-      } else if (field === 'amount') {
+      if (field === 'amount') {
         body.amount = parseFloat(value)
       } else {
         body[field] = value
@@ -354,38 +357,29 @@ function RouteComponent() {
           entityId: id,
           field,
           oldValue:
-            field === 'createdAt'
-              ? new Date(currentPayable.createdAt).toLocaleDateString('en-CA')
-              : field === 'amount'
-                ? currentPayable.amount
-                : (currentPayable as Record<string, unknown>)[field as string],
+            field === 'amount'
+              ? currentPayable.amount
+              : (currentPayable as Record<string, unknown>)[field as string],
           newValue: field === 'amount' ? parseFloat(value) : value,
         })
         setPayables((prev) =>
           prev.map((p) =>
             p._id === id
-              ? {
-                  ...p,
-                  [field]: field === 'amount' ? parseFloat(value) : value,
-                  createdAt:
-                    field === 'createdAt'
-                      ? `${value}T12:00:00.000Z`
-                      : p.createdAt,
-                }
+              ? { ...p, [field]: field === 'amount' ? parseFloat(value) : value }
               : p,
           ),
         )
 
         // Sync safesheet
-        const stationName = currentPayable.location.name
-        const dateStr = toLocalDate(currentPayable.createdAt)
+        const stationName = currentPayable.location.stationName
+        const dateStr = payableDateStr(currentPayable)
 
         if (field === 'paymentMethod') {
           const oldMethod = currentPayable.paymentMethod
           if (oldMethod !== 'safe' && value === 'safe') {
             void createSafesheetEntry(
               stationName,
-              currentPayable.createdAt,
+              dateStr,
               currentPayable.vendorName,
               currentPayable.amount,
             )
@@ -427,21 +421,6 @@ function RouteComponent() {
             if (entry)
               await updateSafesheetEntry(stationName, entry._id, {
                 description: `Payout - ${value}`,
-              })
-          })()
-        } else if (
-          field === 'createdAt' &&
-          currentPayable.paymentMethod === 'safe'
-        ) {
-          void (async () => {
-            const entry = await findSafesheetEntry(
-              stationName,
-              dateStr,
-              currentPayable.vendorName,
-            )
-            if (entry)
-              await updateSafesheetEntry(stationName, entry._id, {
-                date: `${value}T12:00:00.000Z`,
               })
           })()
         }
@@ -651,14 +630,11 @@ function RouteComponent() {
                     <td className="px-4 py-2">
                       <PayableDateCell
                         payable={payable}
-                        onUpdate={(date, newVal) => {
+                        onUpdate={(newVal) => {
                           void (async () => {
                             try {
                               const token = getExternalToken()
-                              const body = {
-                                createdAt: `${newVal}T12:00:00.000Z`,
-                                date: newVal,
-                              }
+                              const body = { date: newVal }
                               const res = await fetch(
                                 `${HUB}/api/payables/${payable._id}`,
                                 {
@@ -676,27 +652,21 @@ function RouteComponent() {
                                   app: 'hub.payables',
                                   action: 'edit',
                                   entityId: payable._id,
-                                  field: 'createdAt',
-                                  oldValue: toLocalDate(payable.createdAt),
+                                  field: 'date',
+                                  oldValue: payableDateStr(payable),
                                   newValue: newVal,
                                 })
                                 setPayables((prev) =>
                                   prev.map((p) =>
                                     p._id === payable._id
-                                      ? {
-                                          ...p,
-                                          createdAt: body.createdAt,
-                                          date: newVal,
-                                        }
+                                      ? { ...p, date: newVal }
                                       : p,
                                   ),
                                 )
                                 if (payable.paymentMethod === 'safe') {
                                   const stationName =
                                     payable.location.stationName
-                                  const oldDateStr = toLocalDate(
-                                    payable.createdAt,
-                                  )
+                                  const oldDateStr = payableDateStr(payable)
                                   void (async () => {
                                     const entry = await findSafesheetEntry(
                                       stationName,

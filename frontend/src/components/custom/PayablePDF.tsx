@@ -109,11 +109,12 @@ const styles = StyleSheet.create({
 interface PayablePDFProps {
   payable: {
     vendorName: string
-    location?: { name?: string }
+    location?: { stationName?: string }
     paymentMethod: string
     amount: number
     notes: string
     createdAt: string
+    date?: string
     images: Array<string>
   }
   imageDataUris: Array<string>
@@ -140,7 +141,7 @@ export default function PayablePDF({
           <View style={styles.row}>
             <Text style={styles.cellLabel}>Location</Text>
             <Text style={styles.cellValue}>
-              {payable.location?.name || '-'}
+              {payable.location?.stationName || '-'}
             </Text>
           </View>
           <View style={styles.row}>
@@ -152,11 +153,12 @@ export default function PayablePDF({
             <Text style={styles.cellValue}>{fmtMoney(payable.amount)}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.cellLabel}>Created</Text>
+            <Text style={styles.cellLabel}>Date</Text>
             <Text style={styles.cellValue}>
-              {new Date(payable.createdAt).toLocaleString('en-US', {
-                timeZone: 'UTC',
-              })}
+              {payable.date ||
+                new Date(payable.createdAt).toLocaleString('en-US', {
+                  timeZone: 'UTC',
+                })}
             </Text>
           </View>
           <View style={[styles.row, styles.rowLast]}>
