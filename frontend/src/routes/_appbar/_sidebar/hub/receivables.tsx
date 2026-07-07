@@ -46,6 +46,7 @@ export const Route = createFileRoute('/_appbar/_sidebar/hub/receivables')({
 interface PurchaseOrder {
   _id: string
   date: string
+  dateStr?: string
   fleetCardNumber: string
   customerName: string
   driverName: string
@@ -63,6 +64,15 @@ const HUB = 'https://app.gen7fuel.com'
 
 function todayIso(): string {
   return new Date().toISOString().split('T')[0]
+}
+
+function poDateStr(order: Pick<PurchaseOrder, 'date' | 'dateStr'>): string {
+  return order.dateStr || new Date(order.date).toLocaleDateString('en-CA')
+}
+
+function ymdToLocalDate(ymd: string): Date {
+  const [y, m, d] = ymd.split('-').map(Number)
+  return new Date(y, (m || 1) - 1, d || 1)
 }
 
 function getExternalToken(): string {
@@ -222,6 +232,46 @@ function RouteComponent() {
       console.error('Update failed:', err)
     } finally {
       setEditingCell(null)
+    }
+  }
+
+  // Bespoke updater (rather than the generic single-field updatePurchaseOrder):
+  // the response carries both `date` and `dateStr`, and both must be applied to
+  // local state together — otherwise poDateStr()'s `dateStr || ...` fallback
+  // keeps showing the stale date until the next refetch.
+  const updatePurchaseOrderDate = async (order: PurchaseOrder, newDate: Date) => {
+    const dateStr = format(newDate, 'yyyy-MM-dd')
+    try {
+      const token = getExternalToken()
+      const res = await fetch(`${HUB}/api/purchase-orders/${order._id}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'X-Required-Permission': 'po',
+        },
+        body: JSON.stringify({ date: dateStr }),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        void createLog({
+          app: 'hub.receivables',
+          action: 'edit',
+          entityId: order._id,
+          field: 'date',
+          oldValue: poDateStr(order),
+          newValue: updated.dateStr ?? dateStr,
+        })
+        setPurchaseOrders((prev) =>
+          prev.map((o) =>
+            o._id === order._id
+              ? { ...o, date: updated.date, dateStr: updated.dateStr }
+              : o,
+          ),
+        )
+      }
+    } catch (err) {
+      console.error('Update failed:', err)
     }
   }
 
@@ -528,31 +578,19 @@ function RouteComponent() {
                       <Popover>
                         <PopoverTrigger asChild>
                           <button className="w-full cursor-pointer rounded px-1 text-left hover:bg-muted/50">
-                            {new Date(order.date).toLocaleDateString('en-CA')}
+                            {poDateStr(order)}
                           </button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
                           <Calendar
                             mode="single"
-                            selected={new Date(order.date)}
+                            selected={
+                              order.dateStr
+                                ? ymdToLocalDate(order.dateStr)
+                                : new Date(order.date)
+                            }
                             onSelect={(date) => {
-                              if (date) {
-                                void createLog({
-                                  app: 'hub.receivables',
-                                  action: 'edit',
-                                  entityId: order._id,
-                                  field: 'date',
-                                  oldValue: new Date(
-                                    order.date,
-                                  ).toLocaleDateString('en-CA'),
-                                  newValue: `${format(date, 'yyyy-MM-dd')}T12:00:00.000Z`,
-                                })
-                                void updatePurchaseOrder(
-                                  order._id,
-                                  'date',
-                                  `${format(date, 'yyyy-MM-dd')}T12:00:00.000Z`,
-                                )
-                              }
+                              if (date) void updatePurchaseOrderDate(order, date)
                             }}
                             initialFocus
                           />
