@@ -55,6 +55,7 @@ interface PurchaseOrder {
   quantity: number
   amount: number
   description: string
+  productCode: string
   vehicleMakeModel: string
   signature: string
   receipt: string

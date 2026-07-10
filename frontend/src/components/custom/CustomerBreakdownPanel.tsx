@@ -8,7 +8,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import type { PurchaseOrderLike } from '@/lib/customer-activity'
+import type { CustomerRow, PurchaseOrderLike } from '@/lib/customer-activity'
 import { buildCustomerRows } from '@/lib/customer-activity'
 import {
   Table,
@@ -19,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { cn } from '@/lib/utils'
 
 interface PurchaseOrder extends PurchaseOrderLike {
   date: string
@@ -26,11 +27,17 @@ interface PurchaseOrder extends PurchaseOrderLike {
   poNumber: string
   fleetCardNumber: string
   driverName: string
+  productCode: string
 }
 
 interface Props {
   orders: Array<PurchaseOrder>
 }
+
+// Non-fuel transactions rung in through the Chicken Delight terminal are
+// tagged with this productCode so they can be reported in their own section
+// instead of being mixed into the fuel AR ranking/listing.
+const CD_PRODUCT_CODE = 'CD'
 
 function poDateStr(order: Pick<PurchaseOrder, 'date' | 'dateStr'>): string {
   return order.dateStr || new Date(order.date).toLocaleDateString('en-CA')
@@ -72,25 +79,24 @@ function ChartTooltip({
   )
 }
 
-export default function CustomerBreakdownPanel({ orders }: Props) {
-  // buildCustomerRows sorts by totalAmount descending — highest-selling
-  // customer (by $ volume) first, lowest last.
-  const rows = useMemo(() => buildCustomerRows(orders), [orders])
+function CustomerGroupSection({
+  title,
+  rows,
+  barColor,
+  headerClassName,
+}: {
+  title: string
+  rows: Array<CustomerRow<PurchaseOrder>>
+  barColor: string
+  headerClassName?: string
+}) {
   const chartData = rows.slice(0, 10)
-
-  if (rows.length === 0) {
-    return (
-      <div className="flex flex-1 items-center justify-center text-muted-foreground">
-        No purchase orders to summarize.
-      </div>
-    )
-  }
 
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-md border p-4">
         <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-          Top customers by AR amount
+          {title}
         </h3>
         <ResponsiveContainer
           width="100%"
@@ -125,7 +131,7 @@ export default function CustomerBreakdownPanel({ orders }: Props) {
             />
             <Bar
               dataKey="totalAmount"
-              fill="var(--color-primary)"
+              fill={barColor}
               radius={[0, 4, 4, 0]}
               maxBarSize={20}
             >
@@ -147,7 +153,12 @@ export default function CustomerBreakdownPanel({ orders }: Props) {
             key={row.customerName}
             className="overflow-hidden rounded-md border"
           >
-            <div className="flex items-center justify-between bg-muted/50 px-4 py-2">
+            <div
+              className={cn(
+                'flex items-center justify-between px-4 py-2',
+                headerClassName ?? 'bg-muted/50',
+              )}
+            >
               <h4 className="font-semibold">{row.customerName}</h4>
               <span className="text-sm text-muted-foreground">
                 {row.entries} transaction{row.entries === 1 ? '' : 's'}
@@ -197,6 +208,61 @@ export default function CustomerBreakdownPanel({ orders }: Props) {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+export default function CustomerBreakdownPanel({ orders }: Props) {
+  const fuelOrders = useMemo(
+    () => orders.filter((o) => o.productCode !== CD_PRODUCT_CODE),
+    [orders],
+  )
+  const cdOrders = useMemo(
+    () => orders.filter((o) => o.productCode === CD_PRODUCT_CODE),
+    [orders],
+  )
+
+  // buildCustomerRows sorts by totalAmount descending — highest-selling
+  // customer (by $ volume) first, lowest last.
+  const fuelRows = useMemo(() => buildCustomerRows(fuelOrders), [fuelOrders])
+  const cdRows = useMemo(() => buildCustomerRows(cdOrders), [cdOrders])
+  const cdTotal = cdRows.reduce((s, r) => s + r.totalAmount, 0)
+
+  if (fuelRows.length === 0 && cdRows.length === 0) {
+    return (
+      <div className="flex flex-1 items-center justify-center text-muted-foreground">
+        No purchase orders to summarize.
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-10">
+      {fuelRows.length > 0 && (
+        <CustomerGroupSection
+          title="Top customers by AR amount"
+          rows={fuelRows}
+          barColor="var(--color-primary)"
+        />
+      )}
+
+      {cdRows.length > 0 && (
+        <div className="flex flex-col gap-4">
+          <div className="flex items-baseline gap-2">
+            <h2 className="text-lg font-semibold">Chicken Delight</h2>
+            <span className="text-sm text-muted-foreground">
+              {cdRows.length} customer{cdRows.length === 1 ? '' : 's'} ·{' '}
+              {formatCurrency(cdTotal)} total
+            </span>
+          </div>
+          <CustomerGroupSection
+            title="Top customers by amount"
+            rows={cdRows}
+            barColor="#14b8a6"
+            headerClassName="bg-teal-500/10 dark:bg-teal-400/10"
+          />
+        </div>
+      )}
     </div>
   )
 }
