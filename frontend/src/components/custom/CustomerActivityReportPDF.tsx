@@ -10,7 +10,13 @@ import { format, parseISO } from 'date-fns'
 import type { PurchaseOrderLike } from '@/lib/customer-activity'
 import { buildCustomerRows } from '@/lib/customer-activity'
 
-type PurchaseOrder = PurchaseOrderLike
+interface PurchaseOrder extends PurchaseOrderLike {
+  date: string
+  dateStr?: string
+  poNumber: string
+  fleetCardNumber: string
+  driverName: string
+}
 
 interface Props {
   orders: Array<PurchaseOrder>
@@ -27,13 +33,25 @@ function fmtDate(iso: string) {
   }
 }
 
-const W = {
-  customer: '32%',
-  entries: '12%',
+function orderDate(o: Pick<PurchaseOrder, 'date' | 'dateStr'>) {
+  return fmtDate(o.dateStr || o.date)
+}
+
+function fmtFleet(n: string) {
+  return (n || '').replace(/(.{4})/g, '$1 ').trim()
+}
+
+function poDisplay(o: Pick<PurchaseOrder, 'fleetCardNumber' | 'poNumber'>) {
+  if (o.fleetCardNumber) return fmtFleet(o.fleetCardNumber)
+  return o.poNumber || '—'
+}
+
+const WD = {
+  date: '16%',
+  po: '20%',
+  driver: '24%',
   qty: '18%',
-  amount: '18%',
-  avg: '12%',
-  share: '8%',
+  amount: '22%',
 }
 
 const S = StyleSheet.create({
@@ -85,6 +103,61 @@ const S = StyleSheet.create({
     fontSize: 7.5,
     color: '#94a3b8',
   },
+  sectionTitle: {
+    fontSize: 12,
+    fontFamily: 'Helvetica-Bold',
+    color: '#1e3a5f',
+    marginBottom: 14,
+  },
+  chartRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  chartLabel: {
+    width: '26%',
+    fontSize: 8,
+    color: '#1e293b',
+    paddingRight: 6,
+  },
+  chartTrack: {
+    width: '54%',
+    height: 14,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 2,
+  },
+  chartFill: {
+    height: 14,
+    backgroundColor: '#3b82f6',
+    borderRadius: 2,
+  },
+  chartValue: {
+    width: '20%',
+    textAlign: 'right',
+    fontSize: 8,
+    fontFamily: 'Helvetica-Bold',
+    color: '#1e293b',
+    paddingLeft: 6,
+  },
+  customerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#1e3a5f',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 2,
+    marginBottom: 2,
+  },
+  customerHeaderName: {
+    fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
+    color: '#ffffff',
+  },
+  customerHeaderCount: {
+    fontSize: 8,
+    color: '#cbd5e1',
+  },
   tableHead: {
     flexDirection: 'row',
     backgroundColor: '#1e3a5f',
@@ -128,6 +201,7 @@ const S = StyleSheet.create({
     backgroundColor: '#0f172a',
     borderRadius: 2,
     marginTop: 2,
+    marginBottom: 14,
     alignItems: 'center',
   },
   tableTotalLabel: {
@@ -185,6 +259,8 @@ export default function CustomerActivityReportPDF({
   from,
   to,
 }: Props) {
+  // buildCustomerRows sorts by totalAmount descending — highest-selling
+  // customer (by $ volume) first, lowest last.
   const rows = buildCustomerRows(orders)
   const grandTotal = rows.reduce((s, r) => s + r.totalAmount, 0)
   const totalEntries = rows.reduce((s, r) => s + r.entries, 0)
@@ -197,6 +273,9 @@ export default function CustomerActivityReportPDF({
     ['TOTAL AMOUNT', `$${grandTotal.toFixed(2)}`],
     ['GENERATED', generated],
   ]
+
+  const chartRows = rows.slice(0, 10)
+  const maxAmount = Math.max(...chartRows.map((r) => r.totalAmount), 1)
 
   return (
     <Document
@@ -276,80 +355,101 @@ export default function CustomerActivityReportPDF({
         </View>
       </Page>
 
-      {/* ── Summary Table Page ── */}
+      {/* ── Chart Page ── */}
+      <Page style={S.contentPage}>
+        <PageHeader site={site} dateRange={dateRange} />
+
+        <Text style={S.sectionTitle}>
+          Top {chartRows.length} Customer{chartRows.length === 1 ? '' : 's'}{' '}
+          by AR Amount
+        </Text>
+
+        {chartRows.map((row) => (
+          <View key={row.customerName} style={S.chartRow} wrap={false}>
+            <Text style={S.chartLabel}>{row.customerName}</Text>
+            <View style={S.chartTrack}>
+              <View
+                style={[
+                  S.chartFill,
+                  { width: `${(row.totalAmount / maxAmount) * 100}%` },
+                ]}
+              />
+            </View>
+            <Text style={S.chartValue}>${row.totalAmount.toFixed(2)}</Text>
+          </View>
+        ))}
+
+        <PageFooter site={site} dateRange={dateRange} />
+      </Page>
+
+      {/* ── Grouped Transaction Listing ── */}
       <Page style={S.contentPage} wrap>
         <PageHeader site={site} dateRange={dateRange} />
 
-        <View style={S.tableHead}>
-          <Text style={[S.tableHeadCell, { width: W.customer }]}>
-            Customer
-          </Text>
-          <Text
-            style={[S.tableHeadCell, { width: W.entries, textAlign: 'right' }]}
-          >
-            Entries
-          </Text>
-          <Text
-            style={[S.tableHeadCell, { width: W.qty, textAlign: 'right' }]}
-          >
-            Qty (L)
-          </Text>
-          <Text
-            style={[S.tableHeadCell, { width: W.amount, textAlign: 'right' }]}
-          >
-            Amount
-          </Text>
-          <Text
-            style={[S.tableHeadCell, { width: W.avg, textAlign: 'right' }]}
-          >
-            Avg $/Entry
-          </Text>
-          <Text
-            style={[S.tableHeadCell, { width: W.share, textAlign: 'right' }]}
-          >
-            Share
-          </Text>
-        </View>
-
-        {rows.map((row, i) => {
-          const avgAmount = row.entries > 0 ? row.totalAmount / row.entries : 0
-          const sharePct = grandTotal > 0 ? (row.totalAmount / grandTotal) * 100 : 0
-          return (
-            <View
-              key={row.customerName}
-              style={[S.tableRow, i % 2 === 1 ? S.tableRowAlt : {}]}
-              wrap={false}
-            >
-              <Text style={[S.tableCell, { width: W.customer }]}>
-                {row.customerName}
-              </Text>
-              <Text style={[S.tableCellRight, { width: W.entries }]}>
-                {row.entries}
-              </Text>
-              <Text style={[S.tableCellRight, { width: W.qty }]}>
-                {row.totalQty.toFixed(2)} L
-              </Text>
-              <Text style={[S.tableCellRight, { width: W.amount }]}>
-                ${row.totalAmount.toFixed(2)}
-              </Text>
-              <Text style={[S.tableCellRight, { width: W.avg }]}>
-                ${avgAmount.toFixed(2)}
-              </Text>
-              <Text style={[S.tableCellRight, { width: W.share }]}>
-                {sharePct.toFixed(1)}%
+        {rows.map((row) => (
+          <View key={row.customerName}>
+            <View style={S.customerHeader} wrap={false}>
+              <Text style={S.customerHeaderName}>{row.customerName}</Text>
+              <Text style={S.customerHeaderCount}>
+                {row.entries} transaction{row.entries === 1 ? '' : 's'}
               </Text>
             </View>
-          )
-        })}
 
-        <View style={S.tableTotalRow} wrap={false}>
-          <Text style={[S.tableTotalLabel, { width: '62%' }]}>
-            Total ({totalEntries} entries)
-          </Text>
-          <Text style={[S.tableTotalValue, { width: W.amount }]}>
-            ${grandTotal.toFixed(2)}
-          </Text>
-        </View>
+            <View style={S.tableHead} wrap={false}>
+              <Text style={[S.tableHeadCell, { width: WD.date }]}>Date</Text>
+              <Text style={[S.tableHeadCell, { width: WD.po }]}>
+                Fleet Card / PO #
+              </Text>
+              <Text style={[S.tableHeadCell, { width: WD.driver }]}>
+                Driver
+              </Text>
+              <Text
+                style={[S.tableHeadCell, { width: WD.qty, textAlign: 'right' }]}
+              >
+                Qty (L)
+              </Text>
+              <Text
+                style={[
+                  S.tableHeadCell,
+                  { width: WD.amount, textAlign: 'right' },
+                ]}
+              >
+                Amount
+              </Text>
+            </View>
+
+            {row.orders.map((o, i) => (
+              <View
+                key={o._id}
+                style={[S.tableRow, i % 2 === 1 ? S.tableRowAlt : {}]}
+                wrap={false}
+              >
+                <Text style={[S.tableCell, { width: WD.date }]}>
+                  {orderDate(o)}
+                </Text>
+                <Text style={[S.tableCell, { width: WD.po }]}>
+                  {poDisplay(o)}
+                </Text>
+                <Text style={[S.tableCell, { width: WD.driver }]}>
+                  {o.driverName || '—'}
+                </Text>
+                <Text style={[S.tableCellRight, { width: WD.qty }]}>
+                  {(o.quantity || 0).toFixed(2)} L
+                </Text>
+                <Text style={[S.tableCellRight, { width: WD.amount }]}>
+                  ${(o.amount || 0).toFixed(2)}
+                </Text>
+              </View>
+            ))}
+
+            <View style={S.tableTotalRow} wrap={false}>
+              <Text style={[S.tableTotalLabel, { width: '78%' }]}>Total</Text>
+              <Text style={[S.tableTotalValue, { width: WD.amount }]}>
+                ${row.totalAmount.toFixed(2)}
+              </Text>
+            </View>
+          </View>
+        ))}
 
         <PageFooter site={site} dateRange={dateRange} />
       </Page>
