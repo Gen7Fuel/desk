@@ -7,7 +7,7 @@ import {
   View,
 } from '@react-pdf/renderer'
 import { format, parseISO } from 'date-fns'
-import type { PurchaseOrderLike } from '@/lib/customer-activity'
+import type { CustomerRow, PurchaseOrderLike } from '@/lib/customer-activity'
 import { buildCustomerRows } from '@/lib/customer-activity'
 
 interface PurchaseOrder extends PurchaseOrderLike {
@@ -16,6 +16,7 @@ interface PurchaseOrder extends PurchaseOrderLike {
   poNumber: string
   fleetCardNumber: string
   driverName: string
+  productCode: string
 }
 
 interface Props {
@@ -24,6 +25,11 @@ interface Props {
   from: string
   to: string
 }
+
+// Non-fuel transactions rung in through the Chicken Delight terminal are
+// tagged with this productCode so they can be reported in their own section
+// instead of being mixed into the fuel AR ranking/listing.
+const CD_PRODUCT_CODE = 'CD'
 
 function fmtDate(iso: string) {
   try {
@@ -107,6 +113,11 @@ const S = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Helvetica-Bold',
     color: '#1e3a5f',
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 9,
+    color: '#64748b',
     marginBottom: 14,
   },
   chartRow: {
@@ -128,7 +139,6 @@ const S = StyleSheet.create({
   },
   chartFill: {
     height: 14,
-    backgroundColor: '#3b82f6',
     borderRadius: 2,
   },
   chartValue: {
@@ -143,7 +153,6 @@ const S = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#1e3a5f',
     paddingVertical: 6,
     paddingHorizontal: 8,
     borderRadius: 2,
@@ -160,7 +169,6 @@ const S = StyleSheet.create({
   },
   tableHead: {
     flexDirection: 'row',
-    backgroundColor: '#1e3a5f',
     paddingVertical: 7,
     paddingHorizontal: 2,
     borderRadius: 2,
@@ -219,6 +227,14 @@ const S = StyleSheet.create({
   },
 })
 
+// Fuel AR sections use the report's established navy/blue palette; the
+// Chicken Delight sections use a teal accent so the two are visually
+// distinguishable at a glance without changing the overall layout.
+const FUEL_ACCENT = '#1e3a5f'
+const FUEL_CHART_FILL = '#3b82f6'
+const CD_ACCENT = '#0f766e'
+const CD_CHART_FILL = '#14b8a6'
+
 function PageHeader({ site, dateRange }: { site: string; dateRange: string }) {
   return (
     <View style={S.pageHeader} fixed>
@@ -253,29 +269,157 @@ function PageFooter({ site, dateRange }: { site: string; dateRange: string }) {
   )
 }
 
+function ChartSection({
+  title,
+  rows,
+  fill,
+}: {
+  title: string
+  rows: Array<CustomerRow<PurchaseOrder>>
+  fill: string
+}) {
+  const maxAmount = Math.max(...rows.map((r) => r.totalAmount), 1)
+  return (
+    <View>
+      <Text style={S.sectionTitle}>{title}</Text>
+      {rows.map((row) => (
+        <View key={row.customerName} style={S.chartRow} wrap={false}>
+          <Text style={S.chartLabel}>{row.customerName}</Text>
+          <View style={S.chartTrack}>
+            <View
+              style={[
+                S.chartFill,
+                {
+                  width: `${(row.totalAmount / maxAmount) * 100}%`,
+                  backgroundColor: fill,
+                },
+              ]}
+            />
+          </View>
+          <Text style={S.chartValue}>${row.totalAmount.toFixed(2)}</Text>
+        </View>
+      ))}
+    </View>
+  )
+}
+
+function GroupedListing({
+  rows,
+  accent,
+}: {
+  rows: Array<CustomerRow<PurchaseOrder>>
+  accent: string
+}) {
+  return (
+    <View>
+      {rows.map((row) => (
+        <View key={row.customerName}>
+          <View
+            style={[S.customerHeader, { backgroundColor: accent }]}
+            wrap={false}
+          >
+            <Text style={S.customerHeaderName}>{row.customerName}</Text>
+            <Text style={S.customerHeaderCount}>
+              {row.entries} transaction{row.entries === 1 ? '' : 's'}
+            </Text>
+          </View>
+
+          <View
+            style={[S.tableHead, { backgroundColor: accent }]}
+            wrap={false}
+          >
+            <Text style={[S.tableHeadCell, { width: WD.date }]}>Date</Text>
+            <Text style={[S.tableHeadCell, { width: WD.po }]}>
+              Fleet Card / PO #
+            </Text>
+            <Text style={[S.tableHeadCell, { width: WD.driver }]}>
+              Driver
+            </Text>
+            <Text
+              style={[S.tableHeadCell, { width: WD.qty, textAlign: 'right' }]}
+            >
+              Qty (L)
+            </Text>
+            <Text
+              style={[
+                S.tableHeadCell,
+                { width: WD.amount, textAlign: 'right' },
+              ]}
+            >
+              Amount
+            </Text>
+          </View>
+
+          {row.orders.map((o, i) => (
+            <View
+              key={o._id}
+              style={[S.tableRow, i % 2 === 1 ? S.tableRowAlt : {}]}
+              wrap={false}
+            >
+              <Text style={[S.tableCell, { width: WD.date }]}>
+                {orderDate(o)}
+              </Text>
+              <Text style={[S.tableCell, { width: WD.po }]}>
+                {poDisplay(o)}
+              </Text>
+              <Text style={[S.tableCell, { width: WD.driver }]}>
+                {o.driverName || '—'}
+              </Text>
+              <Text style={[S.tableCellRight, { width: WD.qty }]}>
+                {(o.quantity || 0).toFixed(2)} L
+              </Text>
+              <Text style={[S.tableCellRight, { width: WD.amount }]}>
+                ${(o.amount || 0).toFixed(2)}
+              </Text>
+            </View>
+          ))}
+
+          <View style={S.tableTotalRow} wrap={false}>
+            <Text style={[S.tableTotalLabel, { width: '78%' }]}>Total</Text>
+            <Text style={[S.tableTotalValue, { width: WD.amount }]}>
+              ${row.totalAmount.toFixed(2)}
+            </Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  )
+}
+
 export default function CustomerActivityReportPDF({
   orders,
   site,
   from,
   to,
 }: Props) {
-  // buildCustomerRows sorts by totalAmount descending — highest-selling
-  // customer (by $ volume) first, lowest last.
-  const rows = buildCustomerRows(orders)
-  const grandTotal = rows.reduce((s, r) => s + r.totalAmount, 0)
-  const totalEntries = rows.reduce((s, r) => s + r.entries, 0)
+  // Overall stats on the title page cover every transaction in the period
+  // (fuel + Chicken Delight combined).
+  const allRows = buildCustomerRows(orders)
+  const grandTotal = allRows.reduce((s, r) => s + r.totalAmount, 0)
+  const totalEntries = allRows.reduce((s, r) => s + r.entries, 0)
   const dateRange = `${fmtDate(from)} – ${fmtDate(to)}`
   const generated = format(new Date(), 'MMM dd, yyyy')
 
   const stats: Array<[string, string]> = [
-    ['CUSTOMERS', rows.length.toString()],
+    ['CUSTOMERS', allRows.length.toString()],
     ['TOTAL ENTRIES', totalEntries.toString()],
     ['TOTAL AMOUNT', `$${grandTotal.toFixed(2)}`],
     ['GENERATED', generated],
   ]
 
-  const chartRows = rows.slice(0, 10)
-  const maxAmount = Math.max(...chartRows.map((r) => r.totalAmount), 1)
+  // Chicken Delight (non-fuel, rung in through its own terminal) is reported
+  // in a separate section rather than mixed into the fuel AR ranking/listing.
+  const fuelOrders = orders.filter((o) => o.productCode !== CD_PRODUCT_CODE)
+  const cdOrders = orders.filter((o) => o.productCode === CD_PRODUCT_CODE)
+
+  // buildCustomerRows sorts by totalAmount descending — highest-selling
+  // customer (by $ volume) first, lowest last.
+  const fuelRows = buildCustomerRows(fuelOrders)
+  const cdRows = buildCustomerRows(cdOrders)
+  const cdTotal = cdRows.reduce((s, r) => s + r.totalAmount, 0)
+
+  const fuelChartRows = fuelRows.slice(0, 10)
+  const cdChartRows = cdRows.slice(0, 10)
 
   return (
     <Document
@@ -355,104 +499,49 @@ export default function CustomerActivityReportPDF({
         </View>
       </Page>
 
-      {/* ── Chart Page ── */}
+      {/* ── Fuel: Chart Page ── */}
       <Page style={S.contentPage}>
         <PageHeader site={site} dateRange={dateRange} />
-
-        <Text style={S.sectionTitle}>
-          Top {chartRows.length} Customer{chartRows.length === 1 ? '' : 's'}{' '}
-          by AR Amount
-        </Text>
-
-        {chartRows.map((row) => (
-          <View key={row.customerName} style={S.chartRow} wrap={false}>
-            <Text style={S.chartLabel}>{row.customerName}</Text>
-            <View style={S.chartTrack}>
-              <View
-                style={[
-                  S.chartFill,
-                  { width: `${(row.totalAmount / maxAmount) * 100}%` },
-                ]}
-              />
-            </View>
-            <Text style={S.chartValue}>${row.totalAmount.toFixed(2)}</Text>
-          </View>
-        ))}
-
+        <ChartSection
+          title={`Top ${fuelChartRows.length} Customer${fuelChartRows.length === 1 ? '' : 's'} by AR Amount`}
+          rows={fuelChartRows}
+          fill={FUEL_CHART_FILL}
+        />
         <PageFooter site={site} dateRange={dateRange} />
       </Page>
 
-      {/* ── Grouped Transaction Listing ── */}
+      {/* ── Fuel: Grouped Transaction Listing ── */}
       <Page style={S.contentPage} wrap>
         <PageHeader site={site} dateRange={dateRange} />
-
-        {rows.map((row) => (
-          <View key={row.customerName}>
-            <View style={S.customerHeader} wrap={false}>
-              <Text style={S.customerHeaderName}>{row.customerName}</Text>
-              <Text style={S.customerHeaderCount}>
-                {row.entries} transaction{row.entries === 1 ? '' : 's'}
-              </Text>
-            </View>
-
-            <View style={S.tableHead} wrap={false}>
-              <Text style={[S.tableHeadCell, { width: WD.date }]}>Date</Text>
-              <Text style={[S.tableHeadCell, { width: WD.po }]}>
-                Fleet Card / PO #
-              </Text>
-              <Text style={[S.tableHeadCell, { width: WD.driver }]}>
-                Driver
-              </Text>
-              <Text
-                style={[S.tableHeadCell, { width: WD.qty, textAlign: 'right' }]}
-              >
-                Qty (L)
-              </Text>
-              <Text
-                style={[
-                  S.tableHeadCell,
-                  { width: WD.amount, textAlign: 'right' },
-                ]}
-              >
-                Amount
-              </Text>
-            </View>
-
-            {row.orders.map((o, i) => (
-              <View
-                key={o._id}
-                style={[S.tableRow, i % 2 === 1 ? S.tableRowAlt : {}]}
-                wrap={false}
-              >
-                <Text style={[S.tableCell, { width: WD.date }]}>
-                  {orderDate(o)}
-                </Text>
-                <Text style={[S.tableCell, { width: WD.po }]}>
-                  {poDisplay(o)}
-                </Text>
-                <Text style={[S.tableCell, { width: WD.driver }]}>
-                  {o.driverName || '—'}
-                </Text>
-                <Text style={[S.tableCellRight, { width: WD.qty }]}>
-                  {(o.quantity || 0).toFixed(2)} L
-                </Text>
-                <Text style={[S.tableCellRight, { width: WD.amount }]}>
-                  ${(o.amount || 0).toFixed(2)}
-                </Text>
-              </View>
-            ))}
-
-            <View style={S.tableTotalRow} wrap={false}>
-              <Text style={[S.tableTotalLabel, { width: '78%' }]}>Total</Text>
-              <Text style={[S.tableTotalValue, { width: WD.amount }]}>
-                ${row.totalAmount.toFixed(2)}
-              </Text>
-            </View>
-          </View>
-        ))}
-
+        <GroupedListing rows={fuelRows} accent={FUEL_ACCENT} />
         <PageFooter site={site} dateRange={dateRange} />
       </Page>
+
+      {/* ── Chicken Delight: Chart + Listing (only if there is any) ── */}
+      {cdRows.length > 0 && (
+        <>
+          <Page style={S.contentPage}>
+            <PageHeader site={site} dateRange={dateRange} />
+            <Text style={S.sectionTitle}>Chicken Delight</Text>
+            <Text style={S.sectionSubtitle}>
+              {cdRows.length} customer{cdRows.length === 1 ? '' : 's'} • $
+              {cdTotal.toFixed(2)} total
+            </Text>
+            <ChartSection
+              title={`Top ${cdChartRows.length} Customer${cdChartRows.length === 1 ? '' : 's'} by Amount`}
+              rows={cdChartRows}
+              fill={CD_CHART_FILL}
+            />
+            <PageFooter site={site} dateRange={dateRange} />
+          </Page>
+
+          <Page style={S.contentPage} wrap>
+            <PageHeader site={site} dateRange={dateRange} />
+            <GroupedListing rows={cdRows} accent={CD_ACCENT} />
+            <PageFooter site={site} dateRange={dateRange} />
+          </Page>
+        </>
+      )}
     </Document>
   )
 }
