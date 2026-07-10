@@ -16,6 +16,7 @@ import { pdf } from '@react-pdf/renderer'
 import PurchaseOrderPDF from '@/components/custom/PurchaseOrderPDF'
 import ReceivablesReportPDF from '@/components/custom/ReceivablesReportPDF'
 import ARDiscrepancyReportPDF from '@/components/custom/ARDiscrepancyReportPDF'
+import CustomerActivityReportPDF from '@/components/custom/CustomerActivityReportPDF'
 import { can, getTokenPayload } from '@/lib/permissions'
 import { createLog } from '@/lib/log-api'
 import { SitePicker } from '@/components/custom/SitePicker'
@@ -143,6 +144,7 @@ function RouteComponent() {
 
   const [reportLoading, setReportLoading] = useState(false)
   const [arReportLoading, setArReportLoading] = useState(false)
+  const [customerReportLoading, setCustomerReportLoading] = useState(false)
 
   const [editingCell, setEditingCell] = useState<{
     id: string
@@ -165,7 +167,7 @@ function RouteComponent() {
       const params = new URLSearchParams({
         startDate: from,
         endDate: to,
-        stationName: site,
+        site,
       })
 
       const res = await fetch(`${HUB}/api/purchase-orders?${params}`, {
@@ -339,6 +341,29 @@ function RouteComponent() {
       console.error('AR report error', e)
     } finally {
       setArReportLoading(false)
+    }
+  }
+
+  const generateCustomerReport = async () => {
+    if (purchaseOrders.length === 0) return
+    setCustomerReportLoading(true)
+    try {
+      const doc = (
+        <CustomerActivityReportPDF
+          orders={purchaseOrders}
+          site={site}
+          from={from}
+          to={to}
+        />
+      )
+      const instance = pdf(<></>)
+      instance.updateContainer(doc)
+      const blob = await instance.toBlob()
+      window.open(URL.createObjectURL(blob))
+    } catch (e) {
+      console.error('Customer report PDF generation error', e)
+    } finally {
+      setCustomerReportLoading(false)
     }
   }
 
@@ -532,6 +557,14 @@ function RouteComponent() {
           >
             <FileText className="mr-2 h-4 w-4" />
             {arReportLoading ? 'Generating…' : 'AR Report'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => void generateCustomerReport()}
+            disabled={customerReportLoading || purchaseOrders.length === 0}
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            {customerReportLoading ? 'Generating…' : 'Customer Report'}
           </Button>
           <Button
             variant="default"

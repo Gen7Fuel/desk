@@ -87,7 +87,7 @@ export async function updateFleetCard(
 }
 
 export async function getHubLocations(): Promise<
-  Array<{ stationName: string }>
+  Array<{ stationName: string; site?: string }>
 > {
   const res = await hubFetch('/api/locations')
   if (!res.ok) throw new Error('Failed to fetch locations')
