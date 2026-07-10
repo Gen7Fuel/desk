@@ -164,10 +164,14 @@ function RouteComponent() {
     setFetchError(null)
     try {
       const token = getExternalToken()
+      // Hub's deployed /api/purchase-orders route only reads `stationName` —
+      // it doesn't yet alias `site`, so a `site`-only request silently matches
+      // zero documents. Send both until the backend alias fix ships.
       const params = new URLSearchParams({
         startDate: from,
         endDate: to,
         site,
+        stationName: site,
       })
 
       const res = await fetch(`${HUB}/api/purchase-orders?${params}`, {
