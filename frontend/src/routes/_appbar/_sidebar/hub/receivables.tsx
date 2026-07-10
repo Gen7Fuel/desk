@@ -142,7 +142,7 @@ function RouteComponent() {
   const [purchaseOrders, setPurchaseOrders] = useState<Array<PurchaseOrder>>([])
   const [loading, setLoading] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
-  const [view, setView] = useState<'orders' | 'customers'>('orders')
+  const [view, setView] = useState<'orders' | 'customers'>('customers')
 
   const [reportLoading, setReportLoading] = useState(false)
   const [arReportLoading, setArReportLoading] = useState(false)
