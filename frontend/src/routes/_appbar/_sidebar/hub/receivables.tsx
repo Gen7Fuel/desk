@@ -17,6 +17,7 @@ import PurchaseOrderPDF from '@/components/custom/PurchaseOrderPDF'
 import ReceivablesReportPDF from '@/components/custom/ReceivablesReportPDF'
 import ARDiscrepancyReportPDF from '@/components/custom/ARDiscrepancyReportPDF'
 import CustomerActivityReportPDF from '@/components/custom/CustomerActivityReportPDF'
+import CustomerBreakdownPanel from '@/components/custom/CustomerBreakdownPanel'
 import { can, getTokenPayload } from '@/lib/permissions'
 import { createLog } from '@/lib/log-api'
 import { SitePicker } from '@/components/custom/SitePicker'
@@ -141,6 +142,7 @@ function RouteComponent() {
   const [purchaseOrders, setPurchaseOrders] = useState<Array<PurchaseOrder>>([])
   const [loading, setLoading] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
+  const [view, setView] = useState<'orders' | 'customers'>('orders')
 
   const [reportLoading, setReportLoading] = useState(false)
   const [arReportLoading, setArReportLoading] = useState(false)
@@ -587,10 +589,29 @@ function RouteComponent() {
         <span>Total Amount: ${totalAmount.toFixed(2)}</span>
       </div>
 
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          variant={view === 'orders' ? 'default' : 'outline'}
+          onClick={() => setView('orders')}
+        >
+          Orders
+        </Button>
+        <Button
+          size="sm"
+          variant={view === 'customers' ? 'default' : 'outline'}
+          onClick={() => setView('customers')}
+        >
+          By Customer
+        </Button>
+      </div>
+
       {loading ? (
         <div className="flex flex-1 items-center justify-center text-muted-foreground">
           Loading…
         </div>
+      ) : view === 'customers' ? (
+        <CustomerBreakdownPanel orders={purchaseOrders} />
       ) : (
         <div className="overflow-auto rounded-md border">
           <table className="w-full text-sm">

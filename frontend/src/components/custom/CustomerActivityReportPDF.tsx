@@ -7,13 +7,10 @@ import {
   View,
 } from '@react-pdf/renderer'
 import { format, parseISO } from 'date-fns'
+import type { PurchaseOrderLike } from '@/lib/customer-activity'
+import { buildCustomerRows } from '@/lib/customer-activity'
 
-interface PurchaseOrder {
-  _id: string
-  customerName: string
-  quantity: number
-  amount: number
-}
+type PurchaseOrder = PurchaseOrderLike
 
 interface Props {
   orders: Array<PurchaseOrder>
@@ -22,62 +19,12 @@ interface Props {
   to: string
 }
 
-interface CustomerRow {
-  customerName: string
-  entries: number
-  totalQty: number
-  totalAmount: number
-}
-
 function fmtDate(iso: string) {
   try {
     return format(parseISO(iso.split('T')[0]), 'MMM dd, yyyy')
   } catch {
     return iso
   }
-}
-
-function normalizeKey(name: string): string {
-  return (name || 'Unknown').trim().replace(/\s+/g, ' ').toLowerCase()
-}
-
-function buildCustomerRows(
-  orders: Array<PurchaseOrder>,
-): Array<CustomerRow> {
-  const map = new Map<
-    string,
-    { row: CustomerRow; nameCounts: Map<string, number> }
-  >()
-
-  for (const o of orders) {
-    const key = normalizeKey(o.customerName)
-    const displayCandidate = (o.customerName || 'Unknown')
-      .trim()
-      .replace(/\s+/g, ' ')
-
-    let entry = map.get(key)
-    if (!entry) {
-      entry = {
-        row: { customerName: displayCandidate, entries: 0, totalQty: 0, totalAmount: 0 },
-        nameCounts: new Map(),
-      }
-      map.set(key, entry)
-    }
-    entry.row.entries += 1
-    entry.row.totalQty += o.quantity || 0
-    entry.row.totalAmount += o.amount || 0
-    entry.nameCounts.set(
-      displayCandidate,
-      (entry.nameCounts.get(displayCandidate) || 0) + 1,
-    )
-  }
-
-  return [...map.values()]
-    .map(({ row, nameCounts }) => ({
-      ...row,
-      customerName: [...nameCounts.entries()].sort((a, b) => b[1] - a[1])[0][0],
-    }))
-    .sort((a, b) => b.totalAmount - a.totalAmount)
 }
 
 const W = {
