@@ -87,7 +87,12 @@
       "PowerShell(cd \"C:\\\\Users\\\\MohammadHasan\\\\workspace\\\\desk\\\\frontend\"; npx tsc --noEmit 2>&1 | Out-String | Select-String -Pattern \"projects\" -AllMatches | ForEach-Object { $_.Matches } | ForEach-Object { Write-Output $_.Value })",
       "PowerShell(Tee-Object *)",
       "PowerShell(cd \"C:\\\\Users\\\\MohammadHasan\\\\workspace\\\\desk\\\\frontend\"; $result = npx tsc --noEmit 2>&1; \\($result -join \"`n\"\\) -split \"`n\" | Where-Object { $_ -match 'projects' } | Select-Object -First 30)",
-      "PowerShell(Get-Content *)"
+      "PowerShell(Get-Content *)",
+      "Bash(git show *)",
+      "Bash(wc -l /tmp_dateStr_commit.diff)",
+      "Bash(head -200 /tmp_dateStr_commit.diff)",
+      "Bash(curl -s \"https://app.gen7fuel.com/api/locations\" -H \"Accept: application/json\")",
+      "Bash(curl -s \"https://app.gen7fuel.com/api/locations\" -H \"Accept: application/json\" -o \"C:\\\\Users\\\\MOHAMM~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-MohammadHasan-workspace-desk\\\\b5f398bc-609d-4eba-87c1-283bf8104b3e\\\\scratchpad\\\\locations.json\")"
     ]
   }
 }

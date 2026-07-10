@@ -562,7 +562,10 @@ function RouteComponent() {
 
       const [poRes, kardpollRes] = await Promise.all([
         fetch(
-          `${HUB}/api/purchase-orders?startDate=${date}&endDate=${date}&site=${encodeURIComponent(site)}`,
+          // Hub's deployed /api/purchase-orders route only reads `stationName`
+          // — it doesn't yet alias `site`, so a `site`-only request silently
+          // matches zero documents. Send both until the backend alias fix ships.
+          `${HUB}/api/purchase-orders?startDate=${date}&endDate=${date}&site=${encodeURIComponent(site)}&stationName=${encodeURIComponent(site)}`,
           { headers: { Authorization: `Bearer ${getExternalToken()}` } },
         ).then((r) =>
           r.ok ? (r.json() as Promise<Array<ArRow>>) : ([] as Array<ArRow>),
