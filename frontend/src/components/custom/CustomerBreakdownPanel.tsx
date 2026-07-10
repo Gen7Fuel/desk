@@ -1,5 +1,4 @@
-import { Fragment, useMemo, useState } from 'react'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { useMemo } from 'react'
 import {
   Bar,
   BarChart,
@@ -15,6 +14,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -73,10 +73,9 @@ function ChartTooltip({
 }
 
 export default function CustomerBreakdownPanel({ orders }: Props) {
-  const [expandedKey, setExpandedKey] = useState<string | null>(null)
-
+  // buildCustomerRows sorts by totalAmount descending — highest-selling
+  // customer (by $ volume) first, lowest last.
   const rows = useMemo(() => buildCustomerRows(orders), [orders])
-  const grandTotal = rows.reduce((s, r) => s + r.totalAmount, 0)
   const chartData = rows.slice(0, 10)
 
   if (rows.length === 0) {
@@ -142,105 +141,61 @@ export default function CustomerBreakdownPanel({ orders }: Props) {
         </ResponsiveContainer>
       </div>
 
-      <div className="overflow-auto rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-8" />
-              <TableHead>Customer</TableHead>
-              <TableHead className="text-right">Entries</TableHead>
-              <TableHead className="text-right">Qty (L)</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="text-right">Avg $/Entry</TableHead>
-              <TableHead className="text-right">Share</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((row) => {
-              const isExpanded = expandedKey === row.customerName
-              const avgAmount =
-                row.entries > 0 ? row.totalAmount / row.entries : 0
-              const sharePct =
-                grandTotal > 0 ? (row.totalAmount / grandTotal) * 100 : 0
-              return (
-                <Fragment key={row.customerName}>
-                  <TableRow
-                    className="cursor-pointer"
-                    onClick={() =>
-                      setExpandedKey(isExpanded ? null : row.customerName)
-                    }
-                  >
+      <div className="flex flex-col gap-6">
+        {rows.map((row) => (
+          <div
+            key={row.customerName}
+            className="overflow-hidden rounded-md border"
+          >
+            <div className="flex items-center justify-between bg-muted/50 px-4 py-2">
+              <h4 className="font-semibold">{row.customerName}</h4>
+              <span className="text-sm text-muted-foreground">
+                {row.entries} transaction{row.entries === 1 ? '' : 's'}
+              </span>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Fleet Card / PO #</TableHead>
+                  <TableHead>Driver</TableHead>
+                  <TableHead className="text-right">Qty (L)</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {row.orders.map((o) => (
+                  <TableRow key={o._id}>
+                    <TableCell>{poDateStr(o)}</TableCell>
                     <TableCell>
-                      {isExpanded ? (
-                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      )}
+                      {formatFleetCardNumber(o.fleetCardNumber) ||
+                        o.poNumber ||
+                        '-'}
                     </TableCell>
-                    <TableCell className="font-medium">
-                      {row.customerName}
+                    <TableCell>{o.driverName || '-'}</TableCell>
+                    <TableCell className="text-right">
+                      {(o.quantity || 0).toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {row.entries}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {row.totalQty.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(row.totalAmount)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(avgAmount)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {sharePct.toFixed(1)}%
+                      {formatCurrency(o.amount || 0)}
                     </TableCell>
                   </TableRow>
-                  {isExpanded && (
-                    <TableRow>
-                      <TableCell colSpan={7} className="bg-muted/30 p-0">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Date</TableHead>
-                              <TableHead>Fleet Card / PO #</TableHead>
-                              <TableHead>Driver</TableHead>
-                              <TableHead className="text-right">
-                                Qty (L)
-                              </TableHead>
-                              <TableHead className="text-right">
-                                Amount
-                              </TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {row.orders.map((o) => (
-                              <TableRow key={o._id}>
-                                <TableCell>{poDateStr(o)}</TableCell>
-                                <TableCell>
-                                  {formatFleetCardNumber(o.fleetCardNumber) ||
-                                    o.poNumber ||
-                                    '-'}
-                                </TableCell>
-                                <TableCell>{o.driverName || '-'}</TableCell>
-                                <TableCell className="text-right">
-                                  {(o.quantity || 0).toFixed(2)}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  {formatCurrency(o.amount || 0)}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </Fragment>
-              )
-            })}
-          </TableBody>
-        </Table>
+                ))}
+              </TableBody>
+              <TableFooter>
+                <TableRow>
+                  <TableCell colSpan={3}>Total</TableCell>
+                  <TableCell className="text-right">
+                    {row.totalQty.toFixed(2)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatCurrency(row.totalAmount)}
+                  </TableCell>
+                </TableRow>
+              </TableFooter>
+            </Table>
+          </div>
+        ))}
       </div>
     </div>
   )
