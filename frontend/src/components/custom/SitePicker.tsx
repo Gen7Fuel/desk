@@ -12,6 +12,7 @@ import {
 interface Location {
   _id: string
   stationName: string
+  site?: string
 }
 
 interface SitePickerProps {
@@ -79,8 +80,11 @@ export function SitePicker({
           <SelectLabel>{label}</SelectLabel>
           {locations.length > 0 ? (
             locations.map((location) => (
-              <SelectItem key={location._id} value={location.stationName}>
-                {location.stationName}
+              <SelectItem
+                key={location._id}
+                value={location.site ?? location.stationName}
+              >
+                {location.site ?? location.stationName}
               </SelectItem>
             ))
           ) : (

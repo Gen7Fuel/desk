@@ -229,8 +229,11 @@ function CardForm({
             <SelectContent>
               <SelectItem value="__none__">— None —</SelectItem>
               {locations.map((l) => (
-                <SelectItem key={l.stationName} value={l.stationName}>
-                  {l.stationName}
+                <SelectItem
+                  key={l.stationName}
+                  value={l.site ?? l.stationName}
+                >
+                  {l.site ?? l.stationName}
                 </SelectItem>
               ))}
             </SelectContent>

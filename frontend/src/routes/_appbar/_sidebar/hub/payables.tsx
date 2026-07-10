@@ -244,9 +244,9 @@ function RouteComponent() {
       const locRes = await fetch(`${HUB}/api/locations`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      const locations: Array<{ _id: string; stationName: string }> =
+      const locations: Array<{ _id: string; stationName: string; site?: string }> =
         await locRes.json()
-      const selected = locations.find((l) => l.stationName === site)
+      const selected = locations.find((l) => (l.site ?? l.stationName) === site)
       if (!selected) {
         setPayables([])
         return
