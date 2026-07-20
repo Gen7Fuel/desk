@@ -120,6 +120,7 @@ async function createSafesheetEntry(
   isoDate: string,
   vendorName: string,
   amount: number,
+  payableId: string,
 ): Promise<void> {
   try {
     await fetch(
@@ -134,6 +135,7 @@ async function createSafesheetEntry(
           date: isoDate,
           description: `Payout - ${vendorName}`,
           cashExpenseOut: amount,
+          payableId,
         }),
       },
     )
@@ -382,6 +384,7 @@ function RouteComponent() {
               dateStr,
               currentPayable.vendorName,
               currentPayable.amount,
+              currentPayable._id,
             )
           } else if (oldMethod === 'safe' && value !== 'safe') {
             void (async () => {
@@ -390,7 +393,16 @@ function RouteComponent() {
                 dateStr,
                 currentPayable.vendorName,
               )
-              if (entry) await deleteSafesheetEntry(stationName, entry._id)
+              if (entry) {
+                // Strip the payableId link first — Hub's safesheet-entry delete
+                // now cascade-deletes the linked payable, but here the payable
+                // is being kept (just reclassified), only the stale ledger row
+                // should go.
+                await updateSafesheetEntry(stationName, entry._id, {
+                  payableId: null,
+                })
+                await deleteSafesheetEntry(stationName, entry._id)
+              }
             })()
           }
         } else if (
