@@ -136,7 +136,6 @@ function RouteComponent() {
 
   useEffect(() => {
     void fetchReport()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [from, to, site])
 
   const totals = useMemo(() => {
