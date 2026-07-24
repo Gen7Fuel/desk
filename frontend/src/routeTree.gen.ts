@@ -36,6 +36,7 @@ import { Route as AppbarSidebarHubReceivablesRouteImport } from './routes/_appba
 import { Route as AppbarSidebarHubPayablesRouteImport } from './routes/_appbar/_sidebar/hub/payables'
 import { Route as AppbarSidebarHubFleetCustomersRouteImport } from './routes/_appbar/_sidebar/hub/fleet-customers'
 import { Route as AppbarSidebarHubFleetCardsRouteImport } from './routes/_appbar/_sidebar/hub/fleet-cards'
+import { Route as AppbarSidebarHubFleetCardComplianceRouteImport } from './routes/_appbar/_sidebar/hub/fleet-card-compliance'
 import { Route as AppbarSidebarHubCdnRouteImport } from './routes/_appbar/_sidebar/hub/cdn'
 import { Route as AppbarSidebarHubCashRecRouteImport } from './routes/_appbar/_sidebar/hub/cash-rec'
 import { Route as AppbarSidebarHubCashManagementRouteImport } from './routes/_appbar/_sidebar/hub/cash-management'
@@ -205,6 +206,12 @@ const AppbarSidebarHubFleetCardsRoute =
   AppbarSidebarHubFleetCardsRouteImport.update({
     id: '/fleet-cards',
     path: '/fleet-cards',
+    getParentRoute: () => AppbarSidebarHubRoute,
+  } as any)
+const AppbarSidebarHubFleetCardComplianceRoute =
+  AppbarSidebarHubFleetCardComplianceRouteImport.update({
+    id: '/fleet-card-compliance',
+    path: '/fleet-card-compliance',
     getParentRoute: () => AppbarSidebarHubRoute,
   } as any)
 const AppbarSidebarHubCdnRoute = AppbarSidebarHubCdnRouteImport.update({
@@ -419,6 +426,7 @@ export interface FileRoutesByFullPath {
   '/hub/cash-management': typeof AppbarSidebarHubCashManagementRoute
   '/hub/cash-rec': typeof AppbarSidebarHubCashRecRoute
   '/hub/cdn': typeof AppbarSidebarHubCdnRoute
+  '/hub/fleet-card-compliance': typeof AppbarSidebarHubFleetCardComplianceRoute
   '/hub/fleet-cards': typeof AppbarSidebarHubFleetCardsRoute
   '/hub/fleet-customers': typeof AppbarSidebarHubFleetCustomersRoute
   '/hub/payables': typeof AppbarSidebarHubPayablesRoute
@@ -469,6 +477,7 @@ export interface FileRoutesByTo {
   '/hub/cash-management': typeof AppbarSidebarHubCashManagementRoute
   '/hub/cash-rec': typeof AppbarSidebarHubCashRecRoute
   '/hub/cdn': typeof AppbarSidebarHubCdnRoute
+  '/hub/fleet-card-compliance': typeof AppbarSidebarHubFleetCardComplianceRoute
   '/hub/fleet-cards': typeof AppbarSidebarHubFleetCardsRoute
   '/hub/fleet-customers': typeof AppbarSidebarHubFleetCustomersRoute
   '/hub/payables': typeof AppbarSidebarHubPayablesRoute
@@ -530,6 +539,7 @@ export interface FileRoutesById {
   '/_appbar/_sidebar/hub/cash-management': typeof AppbarSidebarHubCashManagementRoute
   '/_appbar/_sidebar/hub/cash-rec': typeof AppbarSidebarHubCashRecRoute
   '/_appbar/_sidebar/hub/cdn': typeof AppbarSidebarHubCdnRoute
+  '/_appbar/_sidebar/hub/fleet-card-compliance': typeof AppbarSidebarHubFleetCardComplianceRoute
   '/_appbar/_sidebar/hub/fleet-cards': typeof AppbarSidebarHubFleetCardsRoute
   '/_appbar/_sidebar/hub/fleet-customers': typeof AppbarSidebarHubFleetCustomersRoute
   '/_appbar/_sidebar/hub/payables': typeof AppbarSidebarHubPayablesRoute
@@ -586,6 +596,7 @@ export interface FileRouteTypes {
     | '/hub/cash-management'
     | '/hub/cash-rec'
     | '/hub/cdn'
+    | '/hub/fleet-card-compliance'
     | '/hub/fleet-cards'
     | '/hub/fleet-customers'
     | '/hub/payables'
@@ -636,6 +647,7 @@ export interface FileRouteTypes {
     | '/hub/cash-management'
     | '/hub/cash-rec'
     | '/hub/cdn'
+    | '/hub/fleet-card-compliance'
     | '/hub/fleet-cards'
     | '/hub/fleet-customers'
     | '/hub/payables'
@@ -696,6 +708,7 @@ export interface FileRouteTypes {
     | '/_appbar/_sidebar/hub/cash-management'
     | '/_appbar/_sidebar/hub/cash-rec'
     | '/_appbar/_sidebar/hub/cdn'
+    | '/_appbar/_sidebar/hub/fleet-card-compliance'
     | '/_appbar/_sidebar/hub/fleet-cards'
     | '/_appbar/_sidebar/hub/fleet-customers'
     | '/_appbar/_sidebar/hub/payables'
@@ -917,6 +930,13 @@ declare module '@tanstack/react-router' {
       path: '/fleet-cards'
       fullPath: '/hub/fleet-cards'
       preLoaderRoute: typeof AppbarSidebarHubFleetCardsRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
+    '/_appbar/_sidebar/hub/fleet-card-compliance': {
+      id: '/_appbar/_sidebar/hub/fleet-card-compliance'
+      path: '/fleet-card-compliance'
+      fullPath: '/hub/fleet-card-compliance'
+      preLoaderRoute: typeof AppbarSidebarHubFleetCardComplianceRouteImport
       parentRoute: typeof AppbarSidebarHubRoute
     }
     '/_appbar/_sidebar/hub/cdn': {
@@ -1319,6 +1339,7 @@ interface AppbarSidebarHubRouteChildren {
   AppbarSidebarHubCashManagementRoute: typeof AppbarSidebarHubCashManagementRoute
   AppbarSidebarHubCashRecRoute: typeof AppbarSidebarHubCashRecRoute
   AppbarSidebarHubCdnRoute: typeof AppbarSidebarHubCdnRoute
+  AppbarSidebarHubFleetCardComplianceRoute: typeof AppbarSidebarHubFleetCardComplianceRoute
   AppbarSidebarHubFleetCardsRoute: typeof AppbarSidebarHubFleetCardsRoute
   AppbarSidebarHubFleetCustomersRoute: typeof AppbarSidebarHubFleetCustomersRoute
   AppbarSidebarHubPayablesRoute: typeof AppbarSidebarHubPayablesRoute
@@ -1330,6 +1351,8 @@ const AppbarSidebarHubRouteChildren: AppbarSidebarHubRouteChildren = {
   AppbarSidebarHubCashManagementRoute: AppbarSidebarHubCashManagementRoute,
   AppbarSidebarHubCashRecRoute: AppbarSidebarHubCashRecRoute,
   AppbarSidebarHubCdnRoute: AppbarSidebarHubCdnRoute,
+  AppbarSidebarHubFleetCardComplianceRoute:
+    AppbarSidebarHubFleetCardComplianceRoute,
   AppbarSidebarHubFleetCardsRoute: AppbarSidebarHubFleetCardsRoute,
   AppbarSidebarHubFleetCustomersRoute: AppbarSidebarHubFleetCustomersRoute,
   AppbarSidebarHubPayablesRoute: AppbarSidebarHubPayablesRoute,
