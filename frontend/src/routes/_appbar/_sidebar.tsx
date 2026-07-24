@@ -52,6 +52,11 @@ const sidebarLinks: Record<
       path: '/hub/ar-customers',
       permission: 'hub.arCustomers',
     },
+    {
+      label: 'Fleet Card Compliance',
+      path: '/hub/fleet-card-compliance',
+      permission: 'hub.fleetCardCompliance',
+    },
   ],
   academy: [
     {

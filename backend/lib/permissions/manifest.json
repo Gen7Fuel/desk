@@ -62,7 +62,8 @@
         "cashRec":         { "actions": ["read", "update"] },
         "fleetCards":      { "actions": ["create", "read", "update", "delete"] },
         "fleetCustomers":  { "actions": ["create", "read", "update"] },
-        "arCustomers":     { "actions": ["create", "read", "update", "delete"] }
+        "arCustomers":     { "actions": ["create", "read", "update", "delete"] },
+        "fleetCardCompliance": { "actions": ["read"] }
       }
     },
     "issues": {
