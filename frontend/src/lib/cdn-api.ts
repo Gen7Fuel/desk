@@ -1,5 +1,4 @@
 const CDN_BASE = import.meta.env.VITE_CDN_BASE as string
-const CDN_TOKEN = import.meta.env.VITE_CDN_ADMIN_TOKEN as string
 
 export interface CdnFile {
   filename: string
@@ -15,22 +14,23 @@ export interface CdnFileList {
 }
 
 export async function getCdnFiles(page = 1): Promise<CdnFileList> {
-  const res = await fetch(`${CDN_BASE}/cdn/files?page=${page}`, {
-    headers: { Authorization: `Bearer ${CDN_TOKEN}` },
-  })
-  if (!res.ok) throw new Error('Failed to fetch CDN files')
-  return res.json()
+  const { apiFetch } = await import('@/lib/api')
+  const res = await apiFetch(`/api/cdn/files?page=${page}`)
+  const data = await res.json()
+  if (!res.ok)
+    throw new Error(data?.message ?? `Failed to fetch CDN files (${res.status})`)
+  return data
 }
 
 export async function deleteCdnFile(filename: string): Promise<void> {
-  const res = await fetch(
-    `${CDN_BASE}/cdn/delete/${encodeURIComponent(filename)}`,
-    {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${CDN_TOKEN}` },
-    },
-  )
-  if (!res.ok) throw new Error('Failed to delete file')
+  const { apiFetch } = await import('@/lib/api')
+  const res = await apiFetch(`/api/cdn/delete/${encodeURIComponent(filename)}`, {
+    method: 'DELETE',
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data?.message ?? `Failed to delete file (${res.status})`)
+  }
 }
 
 export function getCdnDownloadUrl(filename: string): string {

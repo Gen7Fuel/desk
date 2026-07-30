@@ -101,7 +101,6 @@ jobs:
             ghcr.io/${{ needs.check-changes.outputs.owner }}/desk-frontend:latest
           build-args: |
             VITE_CDN_BASE=${{ secrets.VITE_CDN_BASE }}
-            VITE_CDN_ADMIN_TOKEN=${{ secrets.VITE_CDN_ADMIN_TOKEN }}
           cache-from: type=gha,scope=desk-frontend
           cache-to: type=gha,mode=max,scope=desk-frontend
 

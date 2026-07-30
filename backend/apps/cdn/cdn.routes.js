@@ -57,6 +57,56 @@ async function buildMonthTar(month, files, cdnBase, cdnToken) {
   return filepath
 }
 
+/** GET /cdn/files?page= — list CDN files (paginated), proxied so the admin token never reaches the browser */
+router.get('/cdn/files', authenticate, requirePermission('hub.cdn', 'read'), async (req, res) => {
+  const CDN_BASE = process.env.CDN_BASE
+  const CDN_TOKEN = process.env.CDN_ADMIN_TOKEN
+  const page = parseInt(req.query.page, 10) || 1
+
+  if (!CDN_BASE || !CDN_TOKEN) {
+    return res.status(500).json({ message: 'CDN not configured on server.' })
+  }
+
+  try {
+    const r = await fetch(`${CDN_BASE}/cdn/files?page=${page}`, {
+      headers: { Authorization: `Bearer ${CDN_TOKEN}` },
+    })
+    const data = await r.json()
+    if (!r.ok) {
+      return res.status(r.status).json({ message: data?.error ?? 'Failed to list CDN files' })
+    }
+    res.json(data)
+  } catch (err) {
+    console.error('[cdn/files] error:', err)
+    res.status(500).json({ message: 'Failed to list CDN files', error: err.message })
+  }
+})
+
+/** DELETE /cdn/delete/:filename — delete a single CDN file, proxied so the admin token never reaches the browser */
+router.delete('/cdn/delete/:filename', authenticate, requirePermission('hub.cdn', 'delete'), async (req, res) => {
+  const CDN_BASE = process.env.CDN_BASE
+  const CDN_TOKEN = process.env.CDN_ADMIN_TOKEN
+
+  if (!CDN_BASE || !CDN_TOKEN) {
+    return res.status(500).json({ message: 'CDN not configured on server.' })
+  }
+
+  try {
+    const r = await fetch(`${CDN_BASE}/cdn/delete/${encodeURIComponent(req.params.filename)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${CDN_TOKEN}` },
+    })
+    const data = await r.json().catch(() => ({}))
+    if (!r.ok) {
+      return res.status(r.status).json({ message: data?.error ?? 'Failed to delete file' })
+    }
+    res.json(data)
+  } catch (err) {
+    console.error('[cdn/delete] error:', err)
+    res.status(500).json({ message: 'Failed to delete file', error: err.message })
+  }
+})
+
 /** GET /cdn/search?q= — search across all CDN files by filename */
 router.get('/cdn/search', authenticate, requirePermission('hub.cdn', 'read'), async (req, res) => {
   const CDN_BASE = process.env.CDN_BASE

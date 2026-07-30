@@ -9,7 +9,6 @@ RUN --mount=type=cache,target=/root/.npm \
 
 COPY . .
 ARG VITE_CDN_BASE
-ARG VITE_CDN_ADMIN_TOKEN
 RUN npm run build
 
 # ── Stage 2: serve static files with Caddy ────────────────────────────────────
