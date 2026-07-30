@@ -292,7 +292,11 @@ function CalcSheet({
 
 // Sage deposit workflow (Load Deposit Lines / Create Deposit) is paused
 // pending correct deposit-detail filtering — flip back on when resumed.
-const SHOW_DEPOSIT_WORKFLOW = false
+// let (not const) widens the type to `boolean` so
+// @typescript-eslint/no-unnecessary-condition doesn't flag the check below
+// as always-false.
+// eslint-disable-next-line prefer-const
+let SHOW_DEPOSIT_WORKFLOW = false
 
 // ── Route component ───────────────────────────────────────────────────────────
 
