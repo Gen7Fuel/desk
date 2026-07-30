@@ -290,6 +290,10 @@ function CalcSheet({
   )
 }
 
+// Sage deposit workflow (Load Deposit Lines / Create Deposit) is paused
+// pending correct deposit-detail filtering — flip back on when resumed.
+const SHOW_DEPOSIT_WORKFLOW = false
+
 // ── Route component ───────────────────────────────────────────────────────────
 
 function RouteComponent() {
@@ -989,6 +993,7 @@ function RouteComponent() {
         {sageError && <p className="text-sm text-destructive">{sageError}</p>}
       </div>
 
+      {SHOW_DEPOSIT_WORKFLOW && (
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-4">
           <Button
@@ -1090,6 +1095,7 @@ function RouteComponent() {
           )}
         </div>
       </div>
+      )}
     </div>
   )
 }
