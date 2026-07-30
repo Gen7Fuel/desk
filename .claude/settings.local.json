@@ -100,7 +100,13 @@
       "Read(//c/Users/MohammadHasan/workspace/**)",
       "WebSearch",
       "WebFetch(domain:developer.intacct.com)",
-      "WebFetch(domain:developer.sage.com)"
+      "WebFetch(domain:developer.sage.com)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(docker --version)",
+      "Bash(docker info *)",
+      "Bash(docker run *)",
+      "Bash(MSYS_NO_PATHCONV=1 docker run --rm -v \"C:/Users/MohammadHasan/workspace/desk\":/w -w /w node:22 node scripts/audit-ci.mjs)",
+      "Bash(MSYS_NO_PATHCONV=1 docker run *)"
     ]
   }
 }

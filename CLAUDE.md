@@ -12,6 +12,8 @@ npm run test      # Run tests (Vitest)
 npm run lint      # ESLint
 npm run format    # Prettier
 npm run check     # Prettier write + ESLint fix (combined)
+npm run audit     # Same audit gate CI runs
+npm run lock      # Regenerate package-lock.json in a Linux container
 ```
 
 ### Backend (`/backend`)
@@ -20,6 +22,8 @@ npm run dev       # Dev server with nodemon (port 5000)
 npm start         # Production server
 npm test          # Run tests (Vitest + Supertest)
 npm run test:watch
+npm run audit     # Same audit gate CI runs
+npm run lock      # Regenerate package-lock.json in a Linux container
 ```
 
 ### Infrastructure
@@ -57,6 +61,60 @@ This is a full-stack internal tool for **Gen7 Fuel** covering fuel invoicing, pe
 ### CI/CD
 - GitHub Actions: `.github/workflows/ci.yml` runs frontend lint/build + backend tests on PRs
 - `.github/workflows/deploy.yml` SSH-deploys to production server
+
+## Dependency audits
+
+CI runs `node scripts/audit-ci.mjs <workspace>` instead of a bare
+`npm audit --audit-level=high`. It fails on any high/critical advisory that is
+**not** in the `ALLOWLIST` at the top of `scripts/audit-ci.mjs`. Reproduce a CI
+audit failure locally with `npm run audit` in `frontend/` or `backend/`.
+
+The allowlist is keyed by **GHSA id**, not package name, so a new advisory
+against an already-allowlisted package still fails the build.
+
+### When the audit fails
+
+Work down this list — do not skip to the bottom:
+
+1. **Check whether the flagged version is actually vulnerable.** Advisory
+   ranges are sometimes written too broadly and sweep in patched maintenance
+   releases. Open the installed copy in `node_modules` and look for the fix.
+   This is not hypothetical — it is exactly the `brace-expansion` case below.
+2. **Fix it for real** if a compatible version exists: bump the direct
+   dependency, or add a bounded `overrides` entry in that workspace's
+   `package.json`.
+3. **Only then** add a GHSA id to `ALLOWLIST` with a written reason. If you
+   cannot articulate why it is not actionable, it is actionable.
+
+After any dependency change run `npm run lock` (Docker, Linux `node:22`) — never
+commit a lockfile generated on Windows, it drifts on platform-specific optional
+deps.
+
+### Do not "fix" audits with unbounded overrides
+
+`npm audit fix --force` and open-ended override targets are how this repo gets
+broken. Two concrete traps:
+
+- **Unbounded target ranges jump majors.** `"brace-expansion@1": ">=1.1.18"`
+  resolves to **5.0.9**, because 5.0.9 satisfies `>=1.1.18`. Always bound the
+  target: `"brace-expansion@1": "^1.1.18"`.
+- **A green audit can mean broken code.** Forcing
+  `"brace-expansion": "^5.0.9"` makes `npm audit` report zero
+  vulnerabilities *and* breaks the app: 5.x changed the CommonJS export from a
+  callable `module.exports = expandTop` to a named `exports.expand`, so
+  minimatch 3.x/5.x throws `expand is not a function`.
+
+### Current allowlist entries
+
+| GHSA | Package | Why |
+|------|---------|-----|
+| `GHSA-mh99-v99m-4gvg` | `brace-expansion` | **False positive.** Range is `<=5.0.7`, which sweeps in all of 1.x/2.x — but the resolved 1.1.18 and 2.1.4 are the maintenance backports that already contain the CVE-2026-14257 fix (both ship `EXPANSION_MAX_LENGTH`). No 1.x/2.x release exists above 5.0.7, and forcing 5.x breaks minimatch (see above). Floors pinned via `overrides` in `frontend/package.json`. Reaches the tree through `exceljs → archiver@5 → glob@7 → minimatch@3`. |
+| `GHSA-4r6h-8v6p-xvw6` | `xlsx` | Prototype pollution in SheetJS; no fixed version published on npm (range `*`). |
+| `GHSA-5pgg-2g8v-p4x9` | `xlsx` | ReDoS in SheetJS; same, no fix published. |
+
+Running the full gate (`node scripts/audit-ci.mjs` with no argument) also
+reports allowlist entries that no longer match anything, so stale suppressions
+get removed rather than silently hiding future advisories.
 
 ## Hub Integration
 
