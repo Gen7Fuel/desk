@@ -10,7 +10,8 @@
     "lint": "eslint",
     "format": "prettier",
     "check": "prettier --write . && eslint --fix",
-    "lock": "node ../scripts/relock.mjs frontend"
+    "lock": "node ../scripts/relock.mjs frontend",
+    "audit": "node ../scripts/audit-ci.mjs frontend"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -29,7 +30,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "exceljs": "^3.4.0",
+    "exceljs": "^4.4.0",
     "gantt-task-react": "^0.3.9",
     "hls.js": "^1.5.13",
     "jszip": "^3.10.1",
@@ -52,7 +53,9 @@
   "overrides": {
     "h3-v2": "npm:h3@2.0.1-rc.19",
     "uuid": ">=11.1.1",
-    "ws": ">=8.20.2"
+    "ws": ">=8.20.2",
+    "brace-expansion@1": "^1.1.18",
+    "brace-expansion@2": "^2.1.4"
   },
   "devDependencies": {
     "@tanstack/devtools-vite": "^0.7.2",
@@ -65,7 +68,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.4",
-    "eslint": "^9.0.0",
+    "eslint": "^10.8.0",
     "jsdom": "^29.1.1",
     "prettier": "^3.5.3",
     "shadcn": "^4.11.0",

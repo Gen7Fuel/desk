@@ -95,7 +95,18 @@
       "Bash(curl -s \"https://app.gen7fuel.com/api/locations\" -H \"Accept: application/json\" -o \"C:\\\\Users\\\\MOHAMM~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-MohammadHasan-workspace-desk\\\\b5f398bc-609d-4eba-87c1-283bf8104b3e\\\\scratchpad\\\\locations.json\")",
       "Bash(git diff *)",
       "Bash(wc -l /tmp_diff_output.txt)",
-      "Read(//c/Users/MohammadHasan/AppData/Local/Temp/**)"
+      "Read(//c/Users/MohammadHasan/AppData/Local/Temp/**)",
+      "Read(//c//**)",
+      "Read(//c/Users/MohammadHasan/workspace/**)",
+      "WebSearch",
+      "WebFetch(domain:developer.intacct.com)",
+      "WebFetch(domain:developer.sage.com)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(docker --version)",
+      "Bash(docker info *)",
+      "Bash(docker run *)",
+      "Bash(MSYS_NO_PATHCONV=1 docker run --rm -v \"C:/Users/MohammadHasan/workspace/desk\":/w -w /w node:22 node scripts/audit-ci.mjs)",
+      "Bash(MSYS_NO_PATHCONV=1 docker run *)"
     ]
   }
 }

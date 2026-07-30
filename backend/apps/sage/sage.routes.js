@@ -331,8 +331,18 @@ router.get('/other-receipts', authenticate, async (req, res) => {
 
 /**
  * GET /sage/deposit-lines
- * Lists deposit lines from the Sage Intacct cash-management API.
- * Accepts startDate and endDate query params (YYYY-MM-DD) to filter by depositDate.
+ * Lists cash-management/deposit-detail records not yet swept into a deposit,
+ * as candidates for a new bank deposit. This is the single object Sage's own
+ * "Create Deposit" screen is backed by — it unifies both Other Receipts
+ * (payee populated, customer null) and AR Payments (customer populated,
+ * payee null) into one pool, each with a `deposit` reference populated once
+ * it's been included in a Deposit.
+ *
+ * Filtering by audit.createdDateTime fails the whole query with a generic
+ * "operationFailed" error on this object specifically (unlike other objects
+ * where the same filter works fine) — likely more malformed underlying data,
+ * same as the DEPOSITSTATE enum issue. So only deposit.key === null is sent
+ * to Sage; startDate/endDate (YYYY-MM-DD) are applied locally afterward.
  */
 router.get('/deposit-lines', authenticate, async (req, res) => {
   try {
@@ -344,8 +354,7 @@ router.get('/deposit-lines', authenticate, async (req, res) => {
     const entityId = req.headers['x-sage-entity'] || LOCATION_ID
     const { startDate, endDate } = req.query
 
-    const url = `${SAGE_BASE}services/core/query`
-    const response = await fetch(url, {
+    const response = await fetch(`${SAGE_BASE}services/core/query`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${sageToken}`,
@@ -353,16 +362,10 @@ router.get('/deposit-lines', authenticate, async (req, res) => {
         'X-IA-API-Param-Entity': entityId,
       },
       body: JSON.stringify({
-        object: 'cash-management/deposit-line',
-        fields: ['key', 'id', 'amount', 'txnAmount', 'description', 'arAccountLabel.label', 'dimensions.location.name', 'audit.createdDateTime'],
-        filters: [
-          { '$gte': { 'audit.createdDateTime': `${startDate}T00:00:00Z` } },
-          { '$lte': { 'audit.createdDateTime': `${endDate}T23:59:59Z` } },
-        ],
-        filterParameters: {
-          caseSensitiveComparison: true,
-          includePrivate: true,
-        },
+        object: 'cash-management/deposit-detail',
+        fields: ['key', 'id', 'summary', 'payee', 'customer.name', 'totalEntered', 'paymentMethod', 'documentNumber', 'audit.createdDateTime'],
+        filters: [{ '$eq': { 'deposit.key': null } }],
+        filterParameters: { caseSensitiveComparison: true, includePrivate: true },
         orderBy: [{ 'audit.createdDateTime': 'asc' }],
       }),
     })
@@ -376,9 +379,25 @@ router.get('/deposit-lines', authenticate, async (req, res) => {
       )
     }
 
-    const sample = Array.isArray(data?.['ia::result']) ? data['ia::result'][0] : null
-    console.log('[sage/deposit-lines] sample result:', JSON.stringify(sample, null, 2))
-    return res.status(response.status).json(data)
+    const startBound = `${startDate}T00:00:00Z`
+    const endBound = `${endDate}T23:59:59Z`
+    const normalized = (data?.['ia::result'] ?? [])
+      .filter((r) => {
+        const d = r['audit.createdDateTime']
+        return d && d >= startBound && d <= endBound
+      })
+      .map((r) => ({
+        key: r.key,
+        id: r.id,
+        source: r.payee != null ? 'other-receipt' : 'ar-payment',
+        payer: r.payee ?? r['customer.name'],
+        description: r.summary,
+        amount: r.totalEntered,
+        date: r['audit.createdDateTime'],
+      }))
+
+    console.log('[sage/deposit-lines] sample result:', JSON.stringify(normalized[0], null, 2))
+    return res.json({ 'ia::result': normalized })
   } catch (err) {
     console.error('[sage/deposit-lines] error:', err)
     return res.status(500).json({ message: 'Sage deposit-lines request failed.' })

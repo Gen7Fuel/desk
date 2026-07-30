@@ -87,12 +87,11 @@ interface ArRow {
 interface DepositLine {
   key: string
   id: string
-  amount?: string
-  txnAmount?: string
+  source?: 'other-receipt' | 'ar-payment'
+  payer?: string | null
   description?: string | null
-  'arAccountLabel.label'?: string | null
-  'dimensions.location.name'?: string
-  'audit.createdDateTime'?: string
+  amount?: string
+  date?: string
 }
 
 // ── Formatting ────────────────────────────────────────────────────────────────
@@ -290,6 +289,14 @@ function CalcSheet({
     </div>
   )
 }
+
+// Sage deposit workflow (Load Deposit Lines / Create Deposit) is paused
+// pending correct deposit-detail filtering — flip back on when resumed.
+// let (not const) widens the type to `boolean` so
+// @typescript-eslint/no-unnecessary-condition doesn't flag the check below
+// as always-false.
+// eslint-disable-next-line prefer-const
+let SHOW_DEPOSIT_WORKFLOW = false
 
 // ── Route component ───────────────────────────────────────────────────────────
 
@@ -990,6 +997,7 @@ function RouteComponent() {
         {sageError && <p className="text-sm text-destructive">{sageError}</p>}
       </div>
 
+      {SHOW_DEPOSIT_WORKFLOW && (
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-4">
           <Button
@@ -1021,11 +1029,10 @@ function RouteComponent() {
                   </th>
                   {[
                     'Date',
-                    'Location',
-                    'Txn Amount',
-                    'Base Amount',
-                    'Label',
-                    'Summary',
+                    'Type',
+                    'Payer',
+                    'Amount',
+                    'Description',
                   ].map((h) => (
                     <th
                       key={h}
@@ -1052,26 +1059,16 @@ function RouteComponent() {
                       />
                     </td>
                     <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
-                      {line['audit.createdDateTime']
-                        ? format(
-                            new Date(line['audit.createdDateTime']),
-                            'MMM d, yyyy',
-                          )
-                        : '—'}
+                      {line.date ? format(new Date(line.date), 'MMM d, yyyy') : '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
-                      {line['dimensions.location.name'] ?? '—'}
+                      {line.source === 'ar-payment' ? 'AR Payment' : 'Other Receipt'}
                     </td>
-                    <td className="border-b px-3 py-1.5 text-right font-mono text-sm tabular-nums">
-                      {line.txnAmount != null
-                        ? fmtVal(Number(line.txnAmount))
-                        : '—'}
+                    <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
+                      {line.payer ?? '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-right font-mono text-sm tabular-nums">
                       {line.amount != null ? fmtVal(Number(line.amount)) : '—'}
-                    </td>
-                    <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
-                      {line['arAccountLabel.label'] ?? '—'}
                     </td>
                     <td className="border-b px-3 py-1.5 text-sm text-muted-foreground">
                       {line.description ?? '—'}
@@ -1102,6 +1099,7 @@ function RouteComponent() {
           )}
         </div>
       </div>
+      )}
     </div>
   )
 }

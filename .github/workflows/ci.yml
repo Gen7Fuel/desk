@@ -28,9 +28,10 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+      # Fails on any high/critical advisory that is not allowlisted with a
+      # written reason in scripts/audit-ci.mjs. See CLAUDE.md ("Dependency audits").
       - name: Audit
-        working-directory: frontend
-        run: npm audit --audit-level=high
+        run: node scripts/audit-ci.mjs frontend
 
   backend:
     name: Backend — test & audit
@@ -51,16 +52,7 @@ jobs:
         working-directory: backend
         run: npm test
 
+      # Fails on any high/critical advisory that is not allowlisted with a
+      # written reason in scripts/audit-ci.mjs. See CLAUDE.md ("Dependency audits").
       - name: Audit
-        working-directory: backend
-        # xlsx (SheetJS) has known high-severity vulnerabilities with no fix available.
-        # Fail only if there are high/critical advisories other than the known xlsx ones.
-        run: |
-          AUDIT_JSON=$(npm audit --json 2>/dev/null || true)
-          HIGH_COUNT=$(echo "$AUDIT_JSON" | jq '[.vulnerabilities // {} | to_entries[] | select(.value.severity == "high" or .value.severity == "critical") | select(.key != "xlsx")] | length')
-          if [ "$HIGH_COUNT" -gt 0 ]; then
-            echo "Found $HIGH_COUNT high/critical vulnerabilities (excluding xlsx):"
-            npm audit --audit-level=high
-            exit 1
-          fi
-          echo "Audit passed (xlsx excluded — no fix available)"
+        run: node scripts/audit-ci.mjs backend
