@@ -96,6 +96,70 @@ describe('buildArPaidReportDocx', () => {
     expect(xml).toContain('No A/R payments were recorded for this site')
   })
 
+  // These lock the layout to the hand-made original
+  // (AR_Payments_Report_June2026.docx). Fed the same data, this builder emits a
+  // body byte-identical to that file — keep it that way.
+  it('matches the original report formatting', async () => {
+    const zip = await JSZip.loadAsync(
+      await (await buildArPaidReportDocx(report)).arrayBuffer(),
+    )
+    const xml = await zip.file('word/document.xml')!.async('string')
+
+    // US Letter, not docx's A4 default — this drives every line wrap.
+    expect(xml).toContain(
+      '<w:pgSz w:w="12240" w:h="15840" w:orient="portrait"/>',
+    )
+
+    // Cover: 1800tw top spacer, navy 3pt rule, letter-spaced GEN7 eyebrow.
+    expect(xml).toContain('<w:spacing w:before="1800"/>')
+    expect(xml).toContain(
+      '<w:bottom w:val="single" w:color="1F3864" w:sz="24" w:space="1"/>',
+    )
+    expect(xml).toContain('<w:color w:val="9AA5B1"/><w:spacing w:val="30"/>')
+
+    // Title is split across two 36pt navy lines.
+    expect(xml).toContain(
+      '<w:sz w:val="72"/><w:szCs w:val="72"/></w:rPr><w:t xml:space="preserve">A/R Payments</w:t>',
+    )
+    expect(xml).toContain(
+      '<w:sz w:val="72"/><w:szCs w:val="72"/></w:rPr><w:t xml:space="preserve">Received Report</w:t>',
+    )
+
+    // Hairline rules around the SITES COVERED block.
+    expect(xml).toContain(
+      '<w:bottom w:val="single" w:color="D9D9D9" w:sz="6" w:space="4"/>',
+    )
+    expect(xml).toContain(
+      '<w:top w:val="single" w:color="D9D9D9" w:sz="6" w:space="4"/>',
+    )
+
+    // Section heading is 22pt navy; Summary headings use the Heading2 style.
+    expect(xml).toContain('<w:sz w:val="44"/><w:szCs w:val="44"/>')
+    expect(xml).toContain('<w:pStyle w:val="Heading2"/>')
+
+    // Table: fixed 8400tw grid, full borders, navy header, white bold header text.
+    expect(xml).toContain('<w:tblW w:type="dxa" w:w="8400"/>')
+    expect(xml).toContain(
+      '<w:gridCol w:w="1800"/><w:gridCol w:w="2600"/><w:gridCol w:w="2200"/><w:gridCol w:w="1800"/>',
+    )
+    expect(xml).toContain('<w:insideH w:val="single" w:color="auto" w:sz="4"/>')
+    expect(xml).toContain('<w:shd w:fill="1F3864" w:val="clear"/>')
+    expect(xml).toContain('<w:color w:val="FFFFFF"/>')
+    expect(xml).toContain('<w:tblHeader/>')
+
+    // Shift # is centred; Amount Paid right-aligned.
+    expect(xml).toContain('<w:jc w:val="center"/>')
+    expect(xml).toContain('<w:jc w:val="right"/>')
+
+    // The total row is plain — no shading, no bold.
+    expect(xml).not.toContain('<w:shd w:fill="F2F2F2"')
+    const totalCell = xml.slice(
+      xml.indexOf('>Total<') - 400,
+      xml.indexOf('>Total<'),
+    )
+    expect(totalCell).toContain('<w:b w:val="false"/>')
+  })
+
   it('names the file after the month', () => {
     expect(arPaidReportFilename(report)).toBe(
       'AR_Payments_Report_July2026.docx',

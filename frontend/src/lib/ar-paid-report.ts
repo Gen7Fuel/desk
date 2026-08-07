@@ -112,8 +112,30 @@ export function arPaidReportFilename(report: ArPaidReport): string {
 
 // ─── .docx ────────────────────────────────────────────────────────────────────
 
+// Palette and metrics transcribed from the original hand-made report
+// (AR_Payments_Report_June2026.docx). Sizes are half-points, spacing is twips.
+const NAVY = '1F3864'
+const SLATE = '9AA5B1'
+const BODY_GREY = '444444'
+const SITE_GREY = '222222'
+const MUTED_GREY = '777777'
+const RULE_GREY = 'D9D9D9'
+const WHITE = 'FFFFFF'
+const BLACK = '000000'
+
+/** US Letter in twips. The original is Letter; docx would otherwise default to A4. */
+const PAGE_WIDTH = 12240
+const PAGE_HEIGHT = 15840
+const MARGIN = 1440
+
+const COLUMN_WIDTHS = [1800, 2600, 2200, 1800] // dxa, 8400 total
+const CELL_MARGINS = { top: 100, left: 120, bottom: 100, right: 120 }
+
 /**
  * Builds the Word document.
+ *
+ * Structurally mirrors the hand-made original: Letter page, navy/grey palette,
+ * two-line cover title, hairline rules, navy table header, unshaded total row.
  *
  * `docx` is imported lazily: routeTree.gen.ts static-imports every route module,
  * so a top-level import would put the library (and its jszip dependency) in the
@@ -136,202 +158,262 @@ export async function buildArPaidReportDocx(
     TableRow,
     TextRun,
     WidthType,
-    VerticalAlign,
   } = await import('docx')
 
-  const COLUMN_WIDTHS = [22, 43, 13, 22]
-  const HEADER_FILL = 'E2F0D9'
-  const TOTAL_FILL = 'F2F2F2'
+  const ALIGNMENTS = [
+    AlignmentType.LEFT,
+    AlignmentType.LEFT,
+    AlignmentType.CENTER,
+    AlignmentType.RIGHT,
+  ]
 
-  const cell = (
-    text: string,
-    opts: { bold?: boolean; right?: boolean; fill?: string; width: number },
+  /** One run of text in its own paragraph. */
+  const line = (
+    content: string,
+    opts: {
+      bold?: boolean
+      size?: number
+      color?: string
+      characterSpacing?: number
+      after?: number
+      before?: number
+      alignment?: (typeof AlignmentType)[keyof typeof AlignmentType]
+    } = {},
   ) =>
-    new TableCell({
-      width: { size: opts.width, type: WidthType.PERCENTAGE },
-      shading: opts.fill
-        ? { type: ShadingType.CLEAR, color: 'auto', fill: opts.fill }
-        : undefined,
-      verticalAlign: VerticalAlign.CENTER,
-      margins: { top: 60, bottom: 60, left: 100, right: 100 },
+    new Paragraph({
+      alignment: opts.alignment,
+      // Omit entirely when unset, so docx does not emit a bare <w:spacing/>.
+      spacing:
+        opts.after === undefined && opts.before === undefined
+          ? undefined
+          : { after: opts.after, before: opts.before },
       children: [
-        new Paragraph({
-          alignment: opts.right ? AlignmentType.RIGHT : AlignmentType.LEFT,
-          children: [new TextRun({ text, bold: opts.bold, size: 20 })],
+        new TextRun({
+          text: content,
+          bold: opts.bold,
+          size: opts.size,
+          color: opts.color,
+          characterSpacing: opts.characterSpacing,
         }),
       ],
     })
 
-  const detailTable = (site: ArPaidSite) =>
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        new TableRow({
-          tableHeader: true,
-          children: ['Date', 'A/R Customer', 'Shift #', 'Amount Paid'].map(
-            (h, i) =>
-              cell(h, {
-                bold: true,
-                right: i === 3,
-                fill: HEADER_FILL,
-                width: COLUMN_WIDTHS[i],
-              }),
-          ),
-        }),
-        ...site.rows.map(
-          (r) =>
-            new TableRow({
-              children: [
-                cell(r.dateLabel, { width: COLUMN_WIDTHS[0] }),
-                cell(r.customer, { width: COLUMN_WIDTHS[1] }),
-                cell(r.shiftNumber, { width: COLUMN_WIDTHS[2] }),
-                cell(r.amountLabel, { right: true, width: COLUMN_WIDTHS[3] }),
-              ],
-            }),
-        ),
-        new TableRow({
+  /** An otherwise empty paragraph carrying a horizontal rule. */
+  const rule = (
+    edge: 'top' | 'bottom',
+    opts: {
+      color: string
+      size: number
+      space: number
+      after?: number
+      before?: number
+    },
+  ) =>
+    new Paragraph({
+      border: {
+        [edge]: {
+          style: BorderStyle.SINGLE,
+          color: opts.color,
+          size: opts.size,
+          space: opts.space,
+        },
+      },
+      spacing: { after: opts.after, before: opts.before },
+      children: [new TextRun({ text: '' })],
+    })
+
+  const cell = (
+    content: string,
+    column: number,
+    opts: { bold?: boolean; color?: string; fill?: string } = {},
+  ) =>
+    new TableCell({
+      width: { size: COLUMN_WIDTHS[column], type: WidthType.DXA },
+      shading: opts.fill
+        ? { type: ShadingType.CLEAR, fill: opts.fill }
+        : undefined,
+      margins: CELL_MARGINS,
+      children: [
+        new Paragraph({
+          alignment: ALIGNMENTS[column],
           children: [
-            cell('', { fill: TOTAL_FILL, width: COLUMN_WIDTHS[0] }),
-            cell('Total', {
-              bold: true,
-              fill: TOTAL_FILL,
-              width: COLUMN_WIDTHS[1],
-            }),
-            cell(site.paymentCountLabel, {
-              bold: true,
-              fill: TOTAL_FILL,
-              width: COLUMN_WIDTHS[2],
-            }),
-            cell(site.totalPaidLabel, {
-              bold: true,
-              right: true,
-              fill: TOTAL_FILL,
-              width: COLUMN_WIDTHS[3],
+            new TextRun({
+              text: content,
+              bold: opts.bold ?? false,
+              color: opts.color ?? BLACK,
+              size: 20,
             }),
           ],
         }),
       ],
     })
 
-  const text = (
-    content: string,
-    opts: {
-      bold?: boolean
-      size?: number
-      spacing?: number
-      color?: string
-      alignment?: (typeof AlignmentType)[keyof typeof AlignmentType]
-    } = {},
-  ) =>
-    new Paragraph({
-      alignment: opts.alignment,
-      spacing: { after: opts.spacing ?? 120 },
-      children: [
-        new TextRun({
-          text: content,
-          bold: opts.bold,
-          size: opts.size ?? 22,
-          color: opts.color,
+  const detailTable = (site: ArPaidSite) => {
+    const edge = { style: BorderStyle.SINGLE, size: 4, color: 'auto' }
+    return new Table({
+      width: { size: 8400, type: WidthType.DXA },
+      columnWidths: COLUMN_WIDTHS,
+      borders: {
+        top: edge,
+        bottom: edge,
+        left: edge,
+        right: edge,
+        insideHorizontal: edge,
+        insideVertical: edge,
+      },
+      rows: [
+        new TableRow({
+          tableHeader: true,
+          children: ['Date', 'A/R Customer', 'Shift #', 'Amount Paid'].map(
+            (heading, i) =>
+              cell(heading, i, { bold: true, color: WHITE, fill: NAVY }),
+          ),
+        }),
+        ...site.rows.map(
+          (r) =>
+            new TableRow({
+              children: [
+                cell(r.dateLabel, 0),
+                cell(r.customer, 1),
+                cell(r.shiftNumber, 2),
+                cell(r.amountLabel, 3),
+              ],
+            }),
+        ),
+        // The original leaves the total row unshaded and unbolded.
+        new TableRow({
+          children: [
+            cell('', 0),
+            cell('Total', 1),
+            cell(site.paymentCountLabel, 2),
+            cell(site.totalPaidLabel, 3),
+          ],
         }),
       ],
     })
+  }
 
   // ── Cover page ──
+  const lastSite = report.sites.length - 1
   const cover = [
-    text('GEN7', { bold: true, size: 28, spacing: 400 }),
+    new Paragraph({ spacing: { before: 1800 } }),
+    rule('bottom', { color: NAVY, size: 24, space: 1, after: 500 }),
+    line('GEN7', {
+      bold: true,
+      color: SLATE,
+      characterSpacing: 30,
+      size: 24,
+      after: 200,
+      alignment: AlignmentType.LEFT,
+    }),
+    // The original splits the title across two lines.
+    line('A/R Payments', { bold: true, color: NAVY, size: 72, after: 0 }),
+    line('Received Report', { bold: true, color: NAVY, size: 72, after: 300 }),
+    line(`Consolidated Summary — ${report.monthLabel}`, {
+      color: BODY_GREY,
+      size: 26,
+      after: 900,
+    }),
     new Paragraph({
-      heading: HeadingLevel.TITLE,
-      spacing: { after: 120 },
+      border: {
+        bottom: {
+          style: BorderStyle.SINGLE,
+          color: RULE_GREY,
+          size: 6,
+          space: 4,
+        },
+      },
+      spacing: { after: 160 },
       children: [
         new TextRun({
-          text: 'A/R Payments Received Report',
+          text: 'SITES COVERED',
           bold: true,
-          size: 48,
+          color: NAVY,
+          characterSpacing: 20,
+          size: 20,
         }),
       ],
     }),
-    text(`Consolidated Summary — ${report.monthLabel}`, {
-      size: 26,
-      spacing: 600,
-    }),
-    text('SITES COVERED', { bold: true, size: 20, spacing: 200 }),
-    ...report.sites.flatMap((s) => [
-      text(s.displayName, { bold: true, spacing: 40 }),
-      text(s.coverageLabel, { size: 20, color: '595959', spacing: 240 }),
+    ...report.sites.flatMap((s, i) => [
+      line(s.displayName, {
+        color: SITE_GREY,
+        size: 24,
+        after: 40,
+        before: i === 0 ? 120 : undefined,
+      }),
+      line(s.coverageLabel, {
+        color: MUTED_GREY,
+        size: 19,
+        after: i === lastSite ? 900 : 200,
+      }),
     ]),
-    text('Prepared for: Gen7', { spacing: 40 }),
-    text(`Report period: ${report.periodLabel}`, { spacing: 0 }),
+    rule('top', {
+      color: RULE_GREY,
+      size: 6,
+      space: 4,
+      after: 100,
+      before: 600,
+    }),
+    line('Prepared for: Gen7', { color: MUTED_GREY, size: 19, after: 40 }),
+    line(`Report period: ${report.periodLabel}`, {
+      color: MUTED_GREY,
+      size: 19,
+    }),
   ]
 
   // ── One section per site ──
   const siteBlocks = report.sites.flatMap((site) => [
     new Paragraph({ children: [new PageBreak()] }),
-    new Paragraph({
-      heading: HeadingLevel.HEADING_1,
-      spacing: { after: 60 },
-      children: [
-        new TextRun({
-          text: 'A/R Payments Received Report',
-          bold: true,
-          size: 32,
-        }),
-      ],
+    line('A/R Payments Received Report', {
+      bold: true,
+      color: NAVY,
+      size: 44,
+      after: 120,
     }),
-    text(site.displayName, { bold: true, size: 26, spacing: 40 }),
-    text(`Reporting Period: ${report.monthLabel}`, {
-      size: 20,
-      color: '595959',
-      spacing: 300,
-    }),
-    new Paragraph({
-      heading: HeadingLevel.HEADING_2,
-      spacing: { after: 80 },
-      children: [new TextRun({ text: 'Summary', bold: true, size: 24 })],
-    }),
-    new Paragraph({
-      spacing: { after: 300, line: 300 },
-      border: {
-        left: {
-          style: BorderStyle.SINGLE,
-          size: 6,
-          color: 'D0D0D0',
-          space: 12,
-        },
-      },
-      children: [new TextRun({ text: site.summaryText, size: 22 })],
+    line(site.displayName, { color: BODY_GREY, size: 22, after: 60 }),
+    line(`Reporting Period: ${report.monthLabel}`, {
+      color: BODY_GREY,
+      size: 22,
+      after: 400,
     }),
     new Paragraph({
       heading: HeadingLevel.HEADING_2,
       spacing: { after: 120 },
-      children: [
-        new TextRun({ text: 'A/R Payments Detail', bold: true, size: 24 }),
-      ],
+      children: [new TextRun({ text: 'Summary' })],
+    }),
+    new Paragraph({
+      spacing: { after: 300 },
+      children: [new TextRun({ text: site.summaryText })],
+    }),
+    new Paragraph({
+      heading: HeadingLevel.HEADING_2,
+      spacing: { after: 120 },
+      children: [new TextRun({ text: 'A/R Payments Detail' })],
     }),
     ...(site.rows.length > 0
       ? [detailTable(site)]
       : [
-          text(
+          line(
             'No A/R payments were recorded for this site during this period.',
-            {
-              color: '595959',
-            },
+            { color: MUTED_GREY, size: 19 },
           ),
         ]),
+    // Data-quality notes; the original never needed these.
     ...(site.hasUnnamedCustomers
       ? [
-          text(
-            '* One or more payments were recorded against a blank customer name on the shift ' +
-              'report and appear as (Unnamed).',
-            { size: 18, color: '9C6500', spacing: 40 },
+          line(
+            '* One or more payments were recorded against a blank customer name on ' +
+              'the shift report and appear as (Unnamed).',
+            { color: MUTED_GREY, size: 18, before: 160 },
           ),
         ]
       : []),
     ...(site.hasNegativeAmounts
       ? [
-          text(
-            '* This period includes one or more negative A/R payment amounts (reversals or ' +
-              'corrections).',
-            { size: 18, color: '9C6500', spacing: 40 },
+          line(
+            '* This period includes one or more negative A/R payment amounts ' +
+              '(reversals or corrections).',
+            { color: MUTED_GREY, size: 18, before: 160 },
           ),
         ]
       : []),
@@ -341,7 +423,22 @@ export async function buildArPaidReportDocx(
     creator: 'Gen7 Desk',
     title: `A/R Payments Received Report — ${report.monthLabel}`,
     description: `A/R payments received across the Wavers sites for ${report.monthLabel}`,
-    sections: [{ children: [...cover, ...siteBlocks] }],
+    sections: [
+      {
+        properties: {
+          page: {
+            size: { width: PAGE_WIDTH, height: PAGE_HEIGHT },
+            margin: {
+              top: MARGIN,
+              right: MARGIN,
+              bottom: MARGIN,
+              left: MARGIN,
+            },
+          },
+        },
+        children: [...cover, ...siteBlocks],
+      },
+    ],
   })
 
   return Packer.toBlob(doc)
