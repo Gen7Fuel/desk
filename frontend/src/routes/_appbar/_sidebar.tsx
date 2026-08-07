@@ -57,6 +57,11 @@ const sidebarLinks: Record<
       path: '/hub/fleet-card-compliance',
       permission: 'hub.fleetCardCompliance',
     },
+    {
+      label: 'A/R Paid Report',
+      path: '/hub/ar-paid-report',
+      permission: 'hub.arPaidReport',
+    },
   ],
   academy: [
     {
