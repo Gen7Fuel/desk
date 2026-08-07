@@ -40,6 +40,7 @@ import { Route as AppbarSidebarHubFleetCardComplianceRouteImport } from './route
 import { Route as AppbarSidebarHubCdnRouteImport } from './routes/_appbar/_sidebar/hub/cdn'
 import { Route as AppbarSidebarHubCashRecRouteImport } from './routes/_appbar/_sidebar/hub/cash-rec'
 import { Route as AppbarSidebarHubCashManagementRouteImport } from './routes/_appbar/_sidebar/hub/cash-management'
+import { Route as AppbarSidebarHubArPaidReportRouteImport } from './routes/_appbar/_sidebar/hub/ar-paid-report'
 import { Route as AppbarSidebarHubArCustomersRouteImport } from './routes/_appbar/_sidebar/hub/ar-customers'
 import { Route as AppbarSidebarCipherUnlockRouteImport } from './routes/_appbar/_sidebar/cipher/unlock'
 import { Route as AppbarSidebarCipherLockRouteImport } from './routes/_appbar/_sidebar/cipher/lock'
@@ -228,6 +229,12 @@ const AppbarSidebarHubCashManagementRoute =
   AppbarSidebarHubCashManagementRouteImport.update({
     id: '/cash-management',
     path: '/cash-management',
+    getParentRoute: () => AppbarSidebarHubRoute,
+  } as any)
+const AppbarSidebarHubArPaidReportRoute =
+  AppbarSidebarHubArPaidReportRouteImport.update({
+    id: '/ar-paid-report',
+    path: '/ar-paid-report',
     getParentRoute: () => AppbarSidebarHubRoute,
   } as any)
 const AppbarSidebarHubArCustomersRoute =
@@ -423,6 +430,7 @@ export interface FileRoutesByFullPath {
   '/cipher/lock': typeof AppbarSidebarCipherLockRoute
   '/cipher/unlock': typeof AppbarSidebarCipherUnlockRoute
   '/hub/ar-customers': typeof AppbarSidebarHubArCustomersRoute
+  '/hub/ar-paid-report': typeof AppbarSidebarHubArPaidReportRoute
   '/hub/cash-management': typeof AppbarSidebarHubCashManagementRoute
   '/hub/cash-rec': typeof AppbarSidebarHubCashRecRoute
   '/hub/cdn': typeof AppbarSidebarHubCdnRoute
@@ -474,6 +482,7 @@ export interface FileRoutesByTo {
   '/cipher/lock': typeof AppbarSidebarCipherLockRoute
   '/cipher/unlock': typeof AppbarSidebarCipherUnlockRoute
   '/hub/ar-customers': typeof AppbarSidebarHubArCustomersRoute
+  '/hub/ar-paid-report': typeof AppbarSidebarHubArPaidReportRoute
   '/hub/cash-management': typeof AppbarSidebarHubCashManagementRoute
   '/hub/cash-rec': typeof AppbarSidebarHubCashRecRoute
   '/hub/cdn': typeof AppbarSidebarHubCdnRoute
@@ -536,6 +545,7 @@ export interface FileRoutesById {
   '/_appbar/_sidebar/cipher/lock': typeof AppbarSidebarCipherLockRoute
   '/_appbar/_sidebar/cipher/unlock': typeof AppbarSidebarCipherUnlockRoute
   '/_appbar/_sidebar/hub/ar-customers': typeof AppbarSidebarHubArCustomersRoute
+  '/_appbar/_sidebar/hub/ar-paid-report': typeof AppbarSidebarHubArPaidReportRoute
   '/_appbar/_sidebar/hub/cash-management': typeof AppbarSidebarHubCashManagementRoute
   '/_appbar/_sidebar/hub/cash-rec': typeof AppbarSidebarHubCashRecRoute
   '/_appbar/_sidebar/hub/cdn': typeof AppbarSidebarHubCdnRoute
@@ -593,6 +603,7 @@ export interface FileRouteTypes {
     | '/cipher/lock'
     | '/cipher/unlock'
     | '/hub/ar-customers'
+    | '/hub/ar-paid-report'
     | '/hub/cash-management'
     | '/hub/cash-rec'
     | '/hub/cdn'
@@ -644,6 +655,7 @@ export interface FileRouteTypes {
     | '/cipher/lock'
     | '/cipher/unlock'
     | '/hub/ar-customers'
+    | '/hub/ar-paid-report'
     | '/hub/cash-management'
     | '/hub/cash-rec'
     | '/hub/cdn'
@@ -705,6 +717,7 @@ export interface FileRouteTypes {
     | '/_appbar/_sidebar/cipher/lock'
     | '/_appbar/_sidebar/cipher/unlock'
     | '/_appbar/_sidebar/hub/ar-customers'
+    | '/_appbar/_sidebar/hub/ar-paid-report'
     | '/_appbar/_sidebar/hub/cash-management'
     | '/_appbar/_sidebar/hub/cash-rec'
     | '/_appbar/_sidebar/hub/cdn'
@@ -958,6 +971,13 @@ declare module '@tanstack/react-router' {
       path: '/cash-management'
       fullPath: '/hub/cash-management'
       preLoaderRoute: typeof AppbarSidebarHubCashManagementRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
+    '/_appbar/_sidebar/hub/ar-paid-report': {
+      id: '/_appbar/_sidebar/hub/ar-paid-report'
+      path: '/ar-paid-report'
+      fullPath: '/hub/ar-paid-report'
+      preLoaderRoute: typeof AppbarSidebarHubArPaidReportRouteImport
       parentRoute: typeof AppbarSidebarHubRoute
     }
     '/_appbar/_sidebar/hub/ar-customers': {
@@ -1336,6 +1356,7 @@ const AppbarSidebarCipherRouteWithChildren =
 
 interface AppbarSidebarHubRouteChildren {
   AppbarSidebarHubArCustomersRoute: typeof AppbarSidebarHubArCustomersRoute
+  AppbarSidebarHubArPaidReportRoute: typeof AppbarSidebarHubArPaidReportRoute
   AppbarSidebarHubCashManagementRoute: typeof AppbarSidebarHubCashManagementRoute
   AppbarSidebarHubCashRecRoute: typeof AppbarSidebarHubCashRecRoute
   AppbarSidebarHubCdnRoute: typeof AppbarSidebarHubCdnRoute
@@ -1348,6 +1369,7 @@ interface AppbarSidebarHubRouteChildren {
 
 const AppbarSidebarHubRouteChildren: AppbarSidebarHubRouteChildren = {
   AppbarSidebarHubArCustomersRoute: AppbarSidebarHubArCustomersRoute,
+  AppbarSidebarHubArPaidReportRoute: AppbarSidebarHubArPaidReportRoute,
   AppbarSidebarHubCashManagementRoute: AppbarSidebarHubCashManagementRoute,
   AppbarSidebarHubCashRecRoute: AppbarSidebarHubCashRecRoute,
   AppbarSidebarHubCdnRoute: AppbarSidebarHubCdnRoute,

@@ -70,6 +70,9 @@ interface CashRecResponse {
       canadian_cash_collected?: number
       couponsAccepted?: number
       giftCertificates?: number
+      cashOffCoupons?: number
+      gasolineCoupons?: number
+      otherCoupons?: number
     }
     handheldDebit?: number
     unsettledPrepays?: number
@@ -184,6 +187,9 @@ function sumResponses(arr: Array<CashRecResponse>): CashRecResponse {
         ),
         couponsAccepted: sumNum((r) => r.cashSummary?.totals.couponsAccepted),
         giftCertificates: sumNum((r) => r.cashSummary?.totals.giftCertificates),
+        cashOffCoupons: sumNum((r) => r.cashSummary?.totals.cashOffCoupons),
+        gasolineCoupons: sumNum((r) => r.cashSummary?.totals.gasolineCoupons),
+        otherCoupons: sumNum((r) => r.cashSummary?.totals.otherCoupons),
       },
       handheldDebit: sumNum((r) => r.cashSummary?.handheldDebit),
     },
@@ -430,13 +436,23 @@ function RouteComponent() {
   )
   const couponsAccepted = num(data?.cashSummary?.totals.couponsAccepted)
   const giftCertificates = num(data?.cashSummary?.totals.giftCertificates)
+  const cashOffCoupons = num(data?.cashSummary?.totals.cashOffCoupons)
+  const gasolineCoupons = num(data?.cashSummary?.totals.gasolineCoupons)
+  const otherCoupons = num(data?.cashSummary?.totals.otherCoupons)
 
   const gblSales = totalSales - itemSales - reportedCanadianCash - missedCpl
   const cashSales = reportedCanadianCash
   const storeSales = itemSales
   const safeDep = canadianCashCollected
   const gcRedemption = afdGiftCard + kioskGiftCard
-  const loyalty = couponsAccepted + giftCertificates
+  // Mirrors Hub's Coupons column (cash-rec entries.tsx / index.tsx) — every
+  // coupon component must be included here or Desk and Hub disagree.
+  const loyalty =
+    couponsAccepted +
+    giftCertificates +
+    cashOffCoupons +
+    gasolineCoupons +
+    otherCoupons
 
   // ── Holiday toggle ──────────────────────────────────────────────────────────
 
@@ -548,6 +564,11 @@ function RouteComponent() {
       const d_giftCertificates = rn(
         dayEntry?.cashSummary?.totals.giftCertificates,
       )
+      const d_cashOffCoupons = rn(dayEntry?.cashSummary?.totals.cashOffCoupons)
+      const d_gasolineCoupons = rn(
+        dayEntry?.cashSummary?.totals.gasolineCoupons,
+      )
+      const d_otherCoupons = rn(dayEntry?.cashSummary?.totals.otherCoupons)
 
       const d_bankCrBal =
         d_miscCreditsTotal +
@@ -565,7 +586,12 @@ function RouteComponent() {
         d_gblCreditsFiltered - (d_kardpollSales - d_kardpollAr)
       const d_gblValue = d_bankCrBal - d_bankPosRec
       const d_gcRedemption = d_afdGiftCard + d_kioskGiftCard
-      const d_loyalty = d_couponsAccepted + d_giftCertificates
+      const d_loyalty =
+        d_couponsAccepted +
+        d_giftCertificates +
+        d_cashOffCoupons +
+        d_gasolineCoupons +
+        d_otherCoupons
 
       const [poRes, kardpollRes] = await Promise.all([
         fetch(
