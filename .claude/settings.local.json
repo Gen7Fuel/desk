@@ -106,7 +106,8 @@
       "Bash(docker info *)",
       "Bash(docker run *)",
       "Bash(MSYS_NO_PATHCONV=1 docker run --rm -v \"C:/Users/MohammadHasan/workspace/desk\":/w -w /w node:22 node scripts/audit-ci.mjs)",
-      "Bash(MSYS_NO_PATHCONV=1 docker run *)"
+      "Bash(MSYS_NO_PATHCONV=1 docker run *)",
+      "PowerShell(docker version *)"
     ]
   }
 }
