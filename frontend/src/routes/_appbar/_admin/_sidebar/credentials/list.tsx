@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { getCredentialCategories } from '@/lib/credential-category-api'
 import {
@@ -322,7 +323,7 @@ function RouteComponent() {
                 {selectedCredential.notes && (
                   <TableRow>
                     <TableCell className="font-medium">Notes</TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="whitespace-pre-wrap text-muted-foreground">
                       {selectedCredential.notes}
                     </TableCell>
                   </TableRow>
@@ -385,12 +386,12 @@ function RouteComponent() {
             />
             <Input
               placeholder="Password"
-              type="password"
               value={formPassword}
               onChange={(e) => setFormPassword(e.target.value)}
             />
-            <Input
+            <Textarea
               placeholder="Notes (optional)"
+              rows={4}
               value={formNotes}
               onChange={(e) => setFormNotes(e.target.value)}
             />

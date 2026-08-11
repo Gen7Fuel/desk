@@ -29,22 +29,6 @@ const targets = arg ? [arg] : ['frontend', 'backend']
 // ---------------------------------------------------------------------------
 const ALLOWLIST = [
   {
-    ghsa: 'GHSA-mh99-v99m-4gvg',
-    package: 'brace-expansion',
-    reason:
-      'False positive. The advisory range is `<=5.0.7`, which sweeps in the ' +
-      'entire 1.x and 2.x lines — but the versions we resolve (1.1.18 and ' +
-      '2.1.4) are the maintenance backports that already contain the ' +
-      'CVE-2026-14257 fix (verified: both ship EXPANSION_MAX_LENGTH). ' +
-      'There is no 1.x/2.x release above 5.0.7 to upgrade to, and forcing ' +
-      '5.x breaks the tree: 5.x changed the CommonJS export from a callable ' +
-      '`module.exports = expandTop` to a named `exports.expand`, so ' +
-      'minimatch 3.x/5.x (pulled in by exceljs -> archiver) dies with ' +
-      '"expand is not a function". Floors are pinned via `overrides` in ' +
-      'frontend/package.json. Revisit if the advisory range is corrected ' +
-      'upstream or exceljs moves off archiver 5.',
-  },
-  {
     ghsa: 'GHSA-4r6h-8v6p-xvw6',
     package: 'xlsx',
     reason:
