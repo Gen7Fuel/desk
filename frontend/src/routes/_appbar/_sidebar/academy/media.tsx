@@ -268,7 +268,11 @@ function RouteComponent() {
   )
   const [search, setSearch] = useState('')
   const [uploading, setUploading] = useState(false)
-  const [processing, setProcessing] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [processingStatus, setProcessingStatus] = useState<{
+    phase?: 'transcoding' | 'uploading'
+    percent?: number
+  } | null>(null)
   const [uploadError, setUploadError] = useState('')
 
   const { data, isLoading, error } = useQuery({
@@ -285,9 +289,10 @@ function RouteComponent() {
     if (!file) return
     e.target.value = ''
     setUploading(true)
+    setUploadProgress(0)
     setUploadError('')
     try {
-      const result = await uploadAcademyMedia(file)
+      const result = await uploadAcademyMedia(file, undefined, undefined, setUploadProgress)
       if (result.type === 'immediate') {
         await queryClient.invalidateQueries({ queryKey: ['academy-media'] })
         setUploading(false)
@@ -296,7 +301,7 @@ function RouteComponent() {
 
       // Async video transcoding — poll until ready
       setUploading(false)
-      setProcessing(true)
+      setProcessingStatus({})
       const { videoId } = result
 
       const poll = setInterval(async () => {
@@ -304,12 +309,14 @@ function RouteComponent() {
           const status = await getVideoStatus(videoId)
           if (status.status === 'ready') {
             clearInterval(poll)
-            setProcessing(false)
+            setProcessingStatus(null)
             await queryClient.invalidateQueries({ queryKey: ['academy-media'] })
           } else if (status.status === 'error') {
             clearInterval(poll)
-            setProcessing(false)
+            setProcessingStatus(null)
             setUploadError(status.message ?? 'Video processing failed')
+          } else {
+            setProcessingStatus({ phase: status.phase, percent: status.percent })
           }
         } catch {
           // network blip — keep polling
@@ -321,11 +328,18 @@ function RouteComponent() {
     }
   }
 
+  const processing = !!processingStatus
   const busy = uploading || processing
+  const processingLabel =
+    processingStatus?.phase === 'uploading'
+      ? `Uploading to storage… ${processingStatus.percent ?? 0}%`
+      : processingStatus?.phase === 'transcoding'
+        ? `Transcoding… ${processingStatus.percent ?? 0}%`
+        : 'Processing…'
   const uploadLabel = uploading
-    ? 'Uploading…'
+    ? `Uploading… ${uploadProgress}%`
     : processing
-      ? 'Processing…'
+      ? processingLabel
       : 'Upload'
 
   return (
@@ -357,14 +371,25 @@ function RouteComponent() {
           </div>
         </div>
 
+        {(uploading || processing) && (
+          <div className="mx-6 mb-2 h-1.5 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-150"
+              style={{ width: `${uploading ? uploadProgress : (processingStatus?.percent ?? 0)}%` }}
+            />
+          </div>
+        )}
+
         {uploadError && (
           <p className="mx-6 mb-2 text-sm text-destructive">{uploadError}</p>
         )}
 
         {processing && (
           <p className="mx-6 mb-2 text-sm text-muted-foreground">
-            Video is being transcoded for adaptive streaming. This may take a
-            few minutes…
+            {processingStatus?.phase === 'uploading'
+              ? 'Uploading to storage for adaptive streaming…'
+              : 'Transcoding for adaptive streaming…'}{' '}
+            This may take a few minutes…
           </p>
         )}
 

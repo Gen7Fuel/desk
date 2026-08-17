@@ -69,12 +69,23 @@ function probeVideo(filePath) {
       resolve({
         height: videoStream?.height ?? 0,
         hasAudio: !!audioStream,
+        duration: Number(metadata.format?.duration) || 0,
       })
     })
   })
 }
 
-function transcodeRendition(inputPath, qualityDir, rendition, hasAudio) {
+// fluent-ffmpeg's progress event already includes a `percent` field it
+// derives from the "Duration:" line it parses out of ffmpeg's own stderr,
+// but that parse occasionally fails for odd containers. Fall back to
+// computing it ourselves from the timemark + probed duration when it does.
+function timemarkToSeconds(timemark) {
+  const [h, m, s] = String(timemark).split(':').map(Number)
+  if ([h, m, s].some((n) => Number.isNaN(n))) return null
+  return h * 3600 + m * 60 + s
+}
+
+function transcodeRendition(inputPath, qualityDir, rendition, hasAudio, durationSeconds, onProgress) {
   return new Promise((resolve, reject) => {
     fs.mkdirSync(qualityDir, { recursive: true })
     const cmd = ffmpeg(inputPath)
@@ -95,6 +106,19 @@ function transcodeRendition(inputPath, qualityDir, rendition, hasAudio) {
       cmd.outputOptions(['-an'])
     }
 
+    if (onProgress) {
+      cmd.on('progress', (progress) => {
+        let percent = typeof progress.percent === 'number' && isFinite(progress.percent)
+          ? progress.percent
+          : null
+        if (percent === null && durationSeconds > 0 && progress.timemark) {
+          const seconds = timemarkToSeconds(progress.timemark)
+          if (seconds !== null) percent = (seconds / durationSeconds) * 100
+        }
+        if (percent !== null) onProgress(Math.min(100, Math.max(0, percent)))
+      })
+    }
+
     cmd
       .output(path.join(qualityDir, 'index.m3u8'))
       .on('end', resolve)
@@ -103,9 +127,14 @@ function transcodeRendition(inputPath, qualityDir, rendition, hasAudio) {
   })
 }
 
-async function uploadInBatches(items, batchSize, fn) {
+async function uploadInBatches(items, batchSize, fn, onItemDone) {
   for (let i = 0; i < items.length; i += batchSize) {
-    await Promise.all(items.slice(i, i + batchSize).map(fn))
+    await Promise.all(
+      items.slice(i, i + batchSize).map(async (item) => {
+        await fn(item)
+        onItemDone?.()
+      }),
+    )
   }
 }
 
@@ -117,41 +146,70 @@ async function transcodeToHls(jobId, videoId, tempFilePath, originalName, folder
     const containerClient = getContainerClient()
 
     // Probe source video
-    const { height: sourceHeight, hasAudio } = await probeVideo(tempFilePath)
+    const { height: sourceHeight, hasAudio, duration } = await probeVideo(tempFilePath)
     const renditions = RENDITIONS.filter((r) => r.height <= sourceHeight)
     if (renditions.length === 0) renditions.push(RENDITIONS[0])
 
-    // Transcode each rendition sequentially (FFmpeg is multi-threaded internally)
-    for (const rendition of renditions) {
+    // Transcode each rendition sequentially (FFmpeg is multi-threaded internally),
+    // reporting overall progress across all renditions combined.
+    const renditionWeight = 100 / renditions.length
+    for (let i = 0; i < renditions.length; i++) {
+      const rendition = renditions[i]
       const qualityDir = path.join(outputDir, `${rendition.height}p`)
-      await transcodeRendition(tempFilePath, qualityDir, rendition, hasAudio)
+      const basePercent = i * renditionWeight
+      await transcodeRendition(tempFilePath, qualityDir, rendition, hasAudio, duration, (renditionPercent) => {
+        const overall = basePercent + (renditionPercent / 100) * renditionWeight
+        jobs.set(videoId, {
+          status: 'processing',
+          phase: 'transcoding',
+          percent: Math.min(99, Math.round(overall)),
+        })
+      })
     }
 
-    // Upload segments for each rendition and rewrite quality playlists
+    // Upload segments for each rendition and rewrite quality playlists.
+    // List every file up front so overall upload progress can be reported
+    // as a single running percentage rather than resetting per rendition.
     const qualitySasUrls = {}
-
-    for (const rendition of renditions) {
+    const renditionFiles = renditions.map((rendition) => {
       const qualityLabel = `${rendition.height}p`
       const qualityDir = path.join(outputDir, qualityLabel)
-      const blobPrefix = `academy/${folder}/videos/${videoId}/${qualityLabel}`
-
-      // Collect segment files
       const segFiles = fs
         .readdirSync(qualityDir)
         .filter((f) => f.endsWith('.ts'))
         .sort()
+      return { rendition, qualityLabel, qualityDir, segFiles }
+    })
+    const totalUploads = renditionFiles.reduce((sum, r) => sum + r.segFiles.length + 1, 0) + 1 // +1 quality playlist each, +1 master
+    let uploadedCount = 0
+    function reportUploadProgress() {
+      uploadedCount += 1
+      jobs.set(videoId, {
+        status: 'processing',
+        phase: 'uploading',
+        percent: Math.min(99, Math.round((uploadedCount / totalUploads) * 100)),
+      })
+    }
+
+    for (const { qualityLabel, qualityDir, segFiles } of renditionFiles) {
+      const blobPrefix = `academy/${folder}/videos/${videoId}/${qualityLabel}`
 
       // Upload segments in batches, collect SAS URLs keyed by filename
       const segSasMap = {}
-      await uploadInBatches(segFiles, 10, async (segFile) => {
-        const blobName = `${blobPrefix}/${segFile}`
-        const blockBlobClient = containerClient.getBlockBlobClient(blobName)
-        await blockBlobClient.uploadFile(path.join(qualityDir, segFile), {
-          blobHTTPHeaders: { blobContentType: 'video/MP2T' },
-          overwrite: true,
-        })
-        segSasMap[segFile] = await generateSasUrl(blockBlobClient, TEN_YEARS_MS)
-      })
+      await uploadInBatches(
+        segFiles,
+        10,
+        async (segFile) => {
+          const blobName = `${blobPrefix}/${segFile}`
+          const blockBlobClient = containerClient.getBlockBlobClient(blobName)
+          await blockBlobClient.uploadFile(path.join(qualityDir, segFile), {
+            blobHTTPHeaders: { blobContentType: 'video/MP2T' },
+            overwrite: true,
+          })
+          segSasMap[segFile] = await generateSasUrl(blockBlobClient, TEN_YEARS_MS)
+        },
+        reportUploadProgress,
+      )
 
       // Rewrite quality playlist: replace segment filenames with absolute SAS URLs
       const playlistPath = path.join(qualityDir, 'index.m3u8')
@@ -172,6 +230,7 @@ async function transcodeToHls(jobId, videoId, tempFilePath, originalName, folder
         blobHTTPHeaders: { blobContentType: 'application/vnd.apple.mpegurl' },
         overwrite: true,
       })
+      reportUploadProgress()
       qualitySasUrls[qualityLabel] = await generateSasUrl(playlistBlobClient, TEN_YEARS_MS)
     }
 
@@ -191,6 +250,7 @@ async function transcodeToHls(jobId, videoId, tempFilePath, originalName, folder
       blobHTTPHeaders: { blobContentType: 'application/vnd.apple.mpegurl' },
       overwrite: true,
     })
+    reportUploadProgress()
     const masterSasUrl = await generateSasUrl(masterBlobClient, TEN_YEARS_MS)
 
     jobs.set(videoId, {
