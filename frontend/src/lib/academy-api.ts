@@ -153,6 +153,8 @@ export interface AcademyMediaFile {
 
 export interface VideoJobStatus {
   status: 'processing' | 'ready' | 'error'
+  phase?: 'transcoding' | 'uploading'
+  percent?: number
   file?: AcademyMediaFile
   message?: string
 }
@@ -191,31 +193,56 @@ export async function getVideoStatus(
   return res.json()
 }
 
-export async function uploadAcademyMedia(
+// Uses XMLHttpRequest rather than fetch — fetch has no reliable, widely
+// supported way to report upload progress, while xhr.upload.onprogress does.
+export function uploadAcademyMedia(
   file: File,
   courseId?: string,
   courseTitle?: string,
+  onProgress?: (percent: number) => void,
 ): Promise<AcademyUploadResult> {
   const form = new FormData()
   form.append('file', file)
   if (courseId) form.append('courseId', courseId)
   if (courseTitle) form.append('courseTitle', courseTitle)
-  const res = await apiFetch('/api/academy/media/upload', {
-    method: 'POST',
-    body: form,
-  })
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    throw new Error((body as { message?: string }).message ?? 'Upload failed')
-  }
-  const data = await res.json()
-  if ((data as { status?: string }).status === 'processing') {
-    return {
-      type: 'processing',
-      videoId: (data as { videoId: string }).videoId,
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', '/api/academy/media/upload')
+
+    const token = localStorage.getItem('token')
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+
+    xhr.upload.onprogress = (e) => {
+      if (onProgress && e.lengthComputable) {
+        onProgress(Math.round((e.loaded / e.total) * 100))
+      }
     }
-  }
-  return { type: 'immediate', file: data as AcademyMediaFile }
+
+    xhr.onload = () => {
+      let data: unknown = {}
+      try {
+        data = JSON.parse(xhr.responseText)
+      } catch {
+        // non-JSON response body — fall through to status check below
+      }
+
+      if (xhr.status < 200 || xhr.status >= 300) {
+        reject(new Error((data as { message?: string }).message ?? 'Upload failed'))
+        return
+      }
+
+      if ((data as { status?: string }).status === 'processing') {
+        resolve({ type: 'processing', videoId: (data as { videoId: string }).videoId })
+      } else {
+        resolve({ type: 'immediate', file: data as AcademyMediaFile })
+      }
+    }
+
+    xhr.onerror = () => reject(new Error('Upload failed'))
+
+    xhr.send(form)
+  })
 }
 
 export async function uploadAcademyAsset(file: File): Promise<{ url: string }> {

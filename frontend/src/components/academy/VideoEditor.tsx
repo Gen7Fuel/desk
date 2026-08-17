@@ -54,7 +54,11 @@ function MediaPicker({
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const [selecting, setSelecting] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
-  const [processing, setProcessing] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [processingStatus, setProcessingStatus] = useState<{
+    phase?: 'transcoding' | 'uploading'
+    percent?: number
+  } | null>(null)
   const [uploadError, setUploadError] = useState('')
 
   const { data, isLoading } = useQuery({
@@ -81,9 +85,10 @@ function MediaPicker({
     if (!file) return
     e.target.value = ''
     setUploading(true)
+    setUploadProgress(0)
     setUploadError('')
     try {
-      const result = await uploadAcademyMedia(file, courseId, courseTitle)
+      const result = await uploadAcademyMedia(file, courseId, courseTitle, setUploadProgress)
 
       if (result.type === 'immediate') {
         await queryClient.invalidateQueries({ queryKey: ['academy-media'] })
@@ -94,7 +99,7 @@ function MediaPicker({
 
       // Video is being transcoded — poll until ready then auto-select
       setUploading(false)
-      setProcessing(true)
+      setProcessingStatus({})
       const { videoId } = result
 
       const poll = setInterval(async () => {
@@ -102,13 +107,15 @@ function MediaPicker({
           const status = await getVideoStatus(videoId, courseId, courseTitle)
           if (status.status === 'ready' && status.file) {
             clearInterval(poll)
-            setProcessing(false)
+            setProcessingStatus(null)
             await queryClient.invalidateQueries({ queryKey: ['academy-media'] })
             await handleSelect(status.file.fullPath)
           } else if (status.status === 'error') {
             clearInterval(poll)
-            setProcessing(false)
+            setProcessingStatus(null)
             setUploadError(status.message ?? 'Video processing failed')
+          } else {
+            setProcessingStatus({ phase: status.phase, percent: status.percent })
           }
         } catch {
           // network blip — keep polling
@@ -116,16 +123,23 @@ function MediaPicker({
       }, 3000)
     } catch (err) {
       setUploading(false)
-      setProcessing(false)
+      setProcessingStatus(null)
       setUploadError(err instanceof Error ? err.message : 'Upload failed')
     }
   }
 
+  const processing = !!processingStatus
   const busy = uploading || processing || !!selecting
+  const processingLabel =
+    processingStatus?.phase === 'uploading'
+      ? `Uploading to storage… ${processingStatus.percent ?? 0}%`
+      : processingStatus?.phase === 'transcoding'
+        ? `Transcoding… ${processingStatus.percent ?? 0}%`
+        : 'Processing…'
   const uploadLabel = uploading
-    ? 'Uploading…'
+    ? `Uploading… ${uploadProgress}%`
     : processing
-      ? 'Processing…'
+      ? processingLabel
       : 'Upload Video'
 
   return (
@@ -141,7 +155,9 @@ function MediaPicker({
           )}
           {processing && !uploadError && (
             <p className="text-sm text-muted-foreground">
-              Transcoding for adaptive streaming…
+              {processingStatus.phase === 'uploading'
+                ? 'Uploading to storage for adaptive streaming…'
+                : 'Transcoding for adaptive streaming…'}
             </p>
           )}
           <div className="ml-auto">
@@ -163,6 +179,15 @@ function MediaPicker({
             </Button>
           </div>
         </div>
+
+        {(uploading || processing) && (
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-150"
+              style={{ width: `${uploading ? uploadProgress : (processingStatus?.percent ?? 0)}%` }}
+            />
+          </div>
+        )}
 
         {isLoading && (
           <p className="text-sm text-muted-foreground">Loading media…</p>
