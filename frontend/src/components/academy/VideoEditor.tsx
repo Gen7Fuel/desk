@@ -155,7 +155,7 @@ function MediaPicker({
           )}
           {processing && !uploadError && (
             <p className="text-sm text-muted-foreground">
-              {processingStatus?.phase === 'uploading'
+              {processingStatus.phase === 'uploading'
                 ? 'Uploading to storage for adaptive streaming…'
                 : 'Transcoding for adaptive streaming…'}
             </p>

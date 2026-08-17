@@ -386,7 +386,7 @@ function RouteComponent() {
 
         {processing && (
           <p className="mx-6 mb-2 text-sm text-muted-foreground">
-            {processingStatus?.phase === 'uploading'
+            {processingStatus.phase === 'uploading'
               ? 'Uploading to storage for adaptive streaming…'
               : 'Transcoding for adaptive streaming…'}{' '}
             This may take a few minutes…
