@@ -177,17 +177,29 @@ export async function getAcademyMediaSasUrl(path: string): Promise<string> {
   return (data as { url: string }).url
 }
 
-export async function getVideoStatus(videoId: string): Promise<VideoJobStatus> {
-  const res = await apiFetch(`/api/academy/videos/${videoId}/status`)
+export async function getVideoStatus(
+  videoId: string,
+  courseId?: string,
+  courseTitle?: string,
+): Promise<VideoJobStatus> {
+  const params = new URLSearchParams()
+  if (courseId) params.set('courseId', courseId)
+  if (courseTitle) params.set('courseTitle', courseTitle)
+  const qs = params.toString()
+  const res = await apiFetch(`/api/academy/videos/${videoId}/status${qs ? `?${qs}` : ''}`)
   if (!res.ok) throw new Error('Failed to get video status')
   return res.json()
 }
 
 export async function uploadAcademyMedia(
   file: File,
+  courseId?: string,
+  courseTitle?: string,
 ): Promise<AcademyUploadResult> {
   const form = new FormData()
   form.append('file', file)
+  if (courseId) form.append('courseId', courseId)
+  if (courseTitle) form.append('courseTitle', courseTitle)
   const res = await apiFetch('/api/academy/media/upload', {
     method: 'POST',
     body: form,

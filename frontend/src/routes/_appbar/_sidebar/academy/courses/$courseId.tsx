@@ -729,6 +729,8 @@ function RouteComponent() {
         item={editingItem}
         onSave={handleItemSave}
         onClose={() => setSheetOpen(false)}
+        courseId={isNew ? undefined : courseId}
+        courseTitle={title}
       />
     </div>
   )

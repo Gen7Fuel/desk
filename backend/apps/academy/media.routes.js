@@ -6,6 +6,7 @@ const ffmpeg = require('fluent-ffmpeg')
 const { BlobServiceClient, BlobSASPermissions } = require('@azure/storage-blob')
 const { authenticate, requirePermission } = require('../../middleware/auth')
 const { jobs } = require('./video-jobs')
+const { courseFolder } = require('./course-folder')
 
 const router = express.Router()
 
@@ -108,7 +109,7 @@ async function uploadInBatches(items, batchSize, fn) {
   }
 }
 
-async function transcodeToHls(jobId, videoId, tempFilePath, originalName) {
+async function transcodeToHls(jobId, videoId, tempFilePath, originalName, folder) {
   const outputDir = path.join('/app', 'hls-tmp', jobId)
   try {
     fs.mkdirSync(outputDir, { recursive: true })
@@ -132,7 +133,7 @@ async function transcodeToHls(jobId, videoId, tempFilePath, originalName) {
     for (const rendition of renditions) {
       const qualityLabel = `${rendition.height}p`
       const qualityDir = path.join(outputDir, qualityLabel)
-      const blobPrefix = `academy/videos/${videoId}/${qualityLabel}`
+      const blobPrefix = `academy/${folder}/videos/${videoId}/${qualityLabel}`
 
       // Collect segment files
       const segFiles = fs
@@ -184,7 +185,7 @@ async function transcodeToHls(jobId, videoId, tempFilePath, originalName) {
     }
     const masterContent = masterLines.join('\n') + '\n'
 
-    const masterBlobName = `academy/videos/${videoId}/master.m3u8`
+    const masterBlobName = `academy/${folder}/videos/${videoId}/master.m3u8`
     const masterBlobClient = containerClient.getBlockBlobClient(masterBlobName)
     await masterBlobClient.uploadData(Buffer.from(masterContent), {
       blobHTTPHeaders: { blobContentType: 'application/vnd.apple.mpegurl' },
@@ -215,8 +216,10 @@ async function transcodeToHls(jobId, videoId, tempFilePath, originalName) {
 
 // ── GET /media ────────────────────────────────────────────────────────────────
 
-const HLS_SUBPATH_RE = /^academy\/videos\/([^/]+)\//
-const HLS_MASTER_RE = /^academy\/videos\/([^/]+)\/master\.m3u8$/
+// Matches both the legacy flat layout (academy/videos/{id}/...) and the
+// per-course layout (academy/{courseFolder}/videos/{id}/...).
+const HLS_SUBPATH_RE = /^academy\/(?:[^/]+\/)?videos\/([^/]+)\//
+const HLS_MASTER_RE = /^academy\/(?:[^/]+\/)?videos\/([^/]+)\/master\.m3u8$/
 
 router.get('/media', authenticate, requirePermission('academy.courses', 'read'), async (req, res) => {
   try {
@@ -288,6 +291,7 @@ router.post(
 
     const tempFilePath = req.file.path
     const mime = req.file.mimetype
+    const folder = courseFolder(req.body.courseId, req.body.courseTitle)
 
     if (VIDEO_MIMES.has(mime)) {
       // Async HLS transcoding path
@@ -300,12 +304,12 @@ router.post(
       res.json({ jobId: videoId, videoId, status: 'processing' })
 
       // Fire and forget — transcodeToHls handles all cleanup
-      transcodeToHls(videoId, videoId, tempFilePath, req.file.originalname)
+      transcodeToHls(videoId, videoId, tempFilePath, req.file.originalname, folder)
     } else {
       // Synchronous path for non-video files (images, PDFs, etc.)
       try {
         const containerClient = getContainerClient()
-        const blobName = `academy/${req.file.originalname}`
+        const blobName = `academy/${folder}/${req.file.originalname}`
         const blockBlobClient = containerClient.getBlockBlobClient(blobName)
 
         const buffer = await fs.promises.readFile(tempFilePath)

@@ -27,6 +27,8 @@ export interface VideoContent {
 interface Props {
   content: VideoContent
   onChange: (content: VideoContent) => void
+  courseId?: string
+  courseTitle?: string
 }
 
 const VIDEO_EXTS = new Set(['mp4', 'webm', 'ogg', 'mov', 'm3u8'])
@@ -39,10 +41,14 @@ function MediaPicker({
   open,
   onClose,
   onSelect,
+  courseId,
+  courseTitle,
 }: {
   open: boolean
   onClose: () => void
   onSelect: (fullPath: string) => Promise<void>
+  courseId?: string
+  courseTitle?: string
 }) {
   const queryClient = useQueryClient()
   const uploadInputRef = useRef<HTMLInputElement>(null)
@@ -77,7 +83,7 @@ function MediaPicker({
     setUploading(true)
     setUploadError('')
     try {
-      const result = await uploadAcademyMedia(file)
+      const result = await uploadAcademyMedia(file, courseId, courseTitle)
 
       if (result.type === 'immediate') {
         await queryClient.invalidateQueries({ queryKey: ['academy-media'] })
@@ -93,7 +99,7 @@ function MediaPicker({
 
       const poll = setInterval(async () => {
         try {
-          const status = await getVideoStatus(videoId)
+          const status = await getVideoStatus(videoId, courseId, courseTitle)
           if (status.status === 'ready' && status.file) {
             clearInterval(poll)
             setProcessing(false)
@@ -205,7 +211,7 @@ function deriveDisplayName(url: string): string {
   return filename
 }
 
-export function VideoEditor({ content, onChange }: Props) {
+export function VideoEditor({ content, onChange, courseId, courseTitle }: Props) {
   const [pickerOpen, setPickerOpen] = useState(false)
 
   const update = (patch: Partial<VideoContent>) =>
@@ -275,6 +281,8 @@ export function VideoEditor({ content, onChange }: Props) {
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
         onSelect={handleSelect}
+        courseId={courseId}
+        courseTitle={courseTitle}
       />
     </div>
   )

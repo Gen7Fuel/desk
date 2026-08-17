@@ -61,9 +61,11 @@ interface Props {
   item: AcademyItem | null
   onSave: (item: AcademyItem) => void
   onClose: () => void
+  courseId?: string
+  courseTitle?: string
 }
 
-export function ItemEditorSheet({ open, item, onSave, onClose }: Props) {
+export function ItemEditorSheet({ open, item, onSave, onClose, courseId, courseTitle }: Props) {
   const isNew = !item
   const [title, setTitle] = useState(item?.title ?? '')
   const [type, setType] = useState<AcademyItem['type']>(item?.type ?? 'video')
@@ -101,6 +103,8 @@ export function ItemEditorSheet({ open, item, onSave, onClose }: Props) {
             onChange={(c) =>
               setContent(c as unknown as Record<string, unknown>)
             }
+            courseId={courseId}
+            courseTitle={courseTitle}
           />
         )
       case 'mcq':
