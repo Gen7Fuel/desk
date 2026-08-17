@@ -2,6 +2,7 @@ const express = require('express')
 const { BlobServiceClient, BlobSASPermissions } = require('@azure/storage-blob')
 const { authenticate, requirePermission } = require('../../middleware/auth')
 const { jobs } = require('./video-jobs')
+const { courseFolder } = require('./course-folder')
 
 const router = express.Router()
 
@@ -27,7 +28,8 @@ router.get('/videos/:videoId/status', authenticate, requirePermission('academy.c
   try {
     const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString)
     const containerClient = blobServiceClient.getContainerClient(containerName)
-    const masterBlobName = `academy/videos/${videoId}/master.m3u8`
+    const folder = courseFolder(req.query.courseId, req.query.courseTitle)
+    const masterBlobName = `academy/${folder}/videos/${videoId}/master.m3u8`
     const masterBlobClient = containerClient.getBlockBlobClient(masterBlobName)
 
     const exists = await masterBlobClient.exists()
