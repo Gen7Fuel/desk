@@ -273,7 +273,9 @@ function RouteComponent() {
     phase?: 'transcoding' | 'uploading'
     percent?: number
   } | null>(null)
-  const [uploadError, setUploadError] = useState('')
+  const [batchIndex, setBatchIndex] = useState(0)
+  const [batchTotal, setBatchTotal] = useState(0)
+  const [uploadFailures, setUploadFailures] = useState<Array<string>>([])
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['academy-media'],
@@ -284,37 +286,19 @@ function RouteComponent() {
     f.name.toLowerCase().includes(search.toLowerCase()),
   )
 
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    e.target.value = ''
-    setUploading(true)
-    setUploadProgress(0)
-    setUploadError('')
-    try {
-      const result = await uploadAcademyMedia(file, undefined, undefined, setUploadProgress)
-      if (result.type === 'immediate') {
-        await queryClient.invalidateQueries({ queryKey: ['academy-media'] })
-        setUploading(false)
-        return
-      }
-
-      // Async video transcoding — poll until ready
-      setUploading(false)
-      setProcessingStatus({})
-      const { videoId } = result
-
+  // Awaits one video's transcode job to completion (or failure) by polling,
+  // resolving either way so the batch loop can move on to the next file.
+  function waitForVideoReady(videoId: string): Promise<{ ok: true } | { ok: false; message: string }> {
+    return new Promise((resolve) => {
       const poll = setInterval(async () => {
         try {
           const status = await getVideoStatus(videoId)
           if (status.status === 'ready') {
             clearInterval(poll)
-            setProcessingStatus(null)
-            await queryClient.invalidateQueries({ queryKey: ['academy-media'] })
+            resolve({ ok: true })
           } else if (status.status === 'error') {
             clearInterval(poll)
-            setProcessingStatus(null)
-            setUploadError(status.message ?? 'Video processing failed')
+            resolve({ ok: false, message: status.message ?? 'Video processing failed' })
           } else {
             setProcessingStatus({ phase: status.phase, percent: status.percent })
           }
@@ -322,22 +306,68 @@ function RouteComponent() {
           // network blip — keep polling
         }
       }, 3000)
-    } catch (err) {
-      setUploading(false)
-      setUploadError(err instanceof Error ? err.message : 'Upload failed')
+    })
+  }
+
+  // Uploads files one at a time (sequential — the backend transcodes video
+  // with ffmpeg, which is CPU-heavy, so we avoid piling up parallel jobs).
+  // A failed file is recorded and the batch continues with the rest.
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = Array.from(e.target.files ?? [])
+    if (selectedFiles.length === 0) return
+    e.target.value = ''
+    setUploadFailures([])
+    setBatchTotal(selectedFiles.length)
+
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i]
+      setBatchIndex(i + 1)
+      setUploading(true)
+      setUploadProgress(0)
+
+      try {
+        const result = await uploadAcademyMedia(file, undefined, undefined, setUploadProgress)
+        setUploading(false)
+
+        if (result.type === 'immediate') {
+          await queryClient.invalidateQueries({ queryKey: ['academy-media'] })
+          continue
+        }
+
+        // Async video transcoding — poll until ready before moving on
+        setProcessingStatus({})
+        const outcome = await waitForVideoReady(result.videoId)
+        setProcessingStatus(null)
+        if (outcome.ok) {
+          await queryClient.invalidateQueries({ queryKey: ['academy-media'] })
+        } else {
+          setUploadFailures((prev) => [...prev, `${file.name}: ${outcome.message}`])
+        }
+      } catch (err) {
+        setUploading(false)
+        setProcessingStatus(null)
+        setUploadFailures((prev) => [
+          ...prev,
+          `${file.name}: ${err instanceof Error ? err.message : 'Upload failed'}`,
+        ])
+      }
     }
+
+    setBatchIndex(0)
+    setBatchTotal(0)
   }
 
   const processing = !!processingStatus
   const busy = uploading || processing
+  const batchPrefix = batchTotal > 1 ? `File ${batchIndex} of ${batchTotal} — ` : ''
   const processingLabel =
     processingStatus?.phase === 'uploading'
-      ? `Uploading to storage… ${processingStatus.percent ?? 0}%`
+      ? `${batchPrefix}Uploading to storage… ${processingStatus.percent ?? 0}%`
       : processingStatus?.phase === 'transcoding'
-        ? `Transcoding… ${processingStatus.percent ?? 0}%`
-        : 'Processing…'
+        ? `${batchPrefix}Transcoding… ${processingStatus.percent ?? 0}%`
+        : `${batchPrefix}Processing…`
   const uploadLabel = uploading
-    ? `Uploading… ${uploadProgress}%`
+    ? `${batchPrefix}Uploading… ${uploadProgress}%`
     : processing
       ? processingLabel
       : 'Upload'
@@ -356,6 +386,7 @@ function RouteComponent() {
             <input
               ref={fileInputRef}
               type="file"
+              multiple
               className="hidden"
               onChange={handleFileChange}
             />
@@ -380,8 +411,26 @@ function RouteComponent() {
           </div>
         )}
 
-        {uploadError && (
-          <p className="mx-6 mb-2 text-sm text-destructive">{uploadError}</p>
+        {uploadFailures.length > 0 && (
+          <div className="mx-6 mb-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-medium text-destructive">
+                {uploadFailures.length} file
+                {uploadFailures.length !== 1 ? 's' : ''} failed to upload
+              </p>
+              <button
+                onClick={() => setUploadFailures([])}
+                className="shrink-0 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <ul className="mt-1 list-disc space-y-0.5 pl-4 text-destructive/90">
+              {uploadFailures.map((message, i) => (
+                <li key={i}>{message}</li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {processing && (

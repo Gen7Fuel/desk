@@ -2,6 +2,13 @@ import { useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { FileVideo, Upload } from 'lucide-react'
 import {
+  differenceInCalendarDays,
+  format,
+  isToday,
+  isYesterday,
+} from 'date-fns'
+import type { AcademyMediaFile } from '@/lib/academy-api'
+import {
   getAcademyMedia,
   getAcademyMediaSasUrl,
   getVideoStatus,
@@ -37,6 +44,48 @@ function getExt(name: string): string {
   return name.split('.').pop()?.toLowerCase() ?? ''
 }
 
+interface MediaGroup {
+  label: string
+  files: Array<AcademyMediaFile>
+}
+
+// Buckets files into relative-date groups (newest first, both across and
+// within groups) so the most recently uploaded file is always easiest to spot.
+function groupByUploadDate(files: Array<AcademyMediaFile>): Array<MediaGroup> {
+  const sorted = [...files].sort((a, b) => {
+    if (!a.lastModified) return 1
+    if (!b.lastModified) return -1
+    return (
+      new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime()
+    )
+  })
+
+  const buckets = new Map<string, Array<AcademyMediaFile>>()
+  const order: Array<string> = []
+
+  function bucketFor(file: AcademyMediaFile): string {
+    if (!file.lastModified) return 'Unknown Date'
+    const date = new Date(file.lastModified)
+    if (isToday(date)) return 'Today'
+    if (isYesterday(date)) return 'Yesterday'
+    const days = differenceInCalendarDays(new Date(), date)
+    if (days <= 7) return 'Last 7 Days'
+    if (days <= 30) return 'Last 30 Days'
+    return 'Older'
+  }
+
+  for (const file of sorted) {
+    const label = bucketFor(file)
+    if (!buckets.has(label)) {
+      buckets.set(label, [])
+      order.push(label)
+    }
+    buckets.get(label)!.push(file)
+  }
+
+  return order.map((label) => ({ label, files: buckets.get(label)! }))
+}
+
 function MediaPicker({
   open,
   onClose,
@@ -70,6 +119,7 @@ function MediaPicker({
   const videoFiles = (data ?? []).filter(
     (f) => f.isHls === true || VIDEO_EXTS.has(getExt(f.name)),
   )
+  const videoGroups = groupByUploadDate(videoFiles)
 
   async function handleSelect(fullPath: string) {
     setSelecting(fullPath)
@@ -199,25 +249,46 @@ function MediaPicker({
           </p>
         )}
 
-        <div className="max-h-[50vh] space-y-1 overflow-y-auto">
-          {videoFiles.map((file) => (
-            <button
-              key={file.fullPath}
-              disabled={busy}
-              onClick={() => void handleSelect(file.fullPath)}
-              className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm hover:bg-muted disabled:opacity-50"
-            >
-              <FileVideo className="h-4 w-4 shrink-0 text-blue-500" />
-              <span className="flex-1 truncate font-mono">{file.name}</span>
-              {file.isHls && (
-                <span className="rounded bg-blue-100 px-1 py-0.5 text-xs text-blue-700">
-                  HLS
-                </span>
-              )}
-              {selecting === file.fullPath && (
-                <span className="text-xs text-muted-foreground">Loading…</span>
-              )}
-            </button>
+        <div className="max-h-[50vh] space-y-3 overflow-y-auto">
+          {videoGroups.map((group) => (
+            <div key={group.label}>
+              <p className="sticky top-0 bg-background px-3 py-1 text-xs font-medium text-muted-foreground">
+                {group.label}
+              </p>
+              <div className="space-y-1">
+                {group.files.map((file) => (
+                  <button
+                    key={file.fullPath}
+                    disabled={busy}
+                    onClick={() => void handleSelect(file.fullPath)}
+                    className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm hover:bg-muted disabled:opacity-50"
+                  >
+                    <FileVideo className="h-4 w-4 shrink-0 text-blue-500" />
+                    <span className="flex-1 truncate font-mono">
+                      {file.name}
+                    </span>
+                    {file.isHls && (
+                      <span className="rounded bg-blue-100 px-1 py-0.5 text-xs text-blue-700">
+                        HLS
+                      </span>
+                    )}
+                    {file.lastModified && (
+                      <span
+                        className="shrink-0 text-xs text-muted-foreground"
+                        title={format(new Date(file.lastModified), 'PPpp')}
+                      >
+                        {format(new Date(file.lastModified), 'MMM d, h:mm a')}
+                      </span>
+                    )}
+                    {selecting === file.fullPath && (
+                      <span className="text-xs text-muted-foreground">
+                        Loading…
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </DialogContent>
