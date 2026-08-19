@@ -1,11 +1,17 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Copy, Plus, Trash2 } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, Copy, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import type { AcademyCompletion, AcademyEmployee } from '@/lib/academy-api'
 import { can } from '@/lib/permissions'
-import { createEmployee, deleteEmployee, getEmployees } from '@/lib/academy-api'
+import {
+  createEmployee,
+  deleteEmployee,
+  getCompletions,
+  getEmployees,
+} from '@/lib/academy-api'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -41,11 +47,33 @@ function RouteComponent() {
   const [nameInput, setNameInput] = useState('')
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   const { data: employees = [], isLoading } = useQuery({
     queryKey: ['academy', 'employees'],
     queryFn: getEmployees,
   })
+
+  const { data: completions = [] } = useQuery({
+    queryKey: ['academy', 'completions'],
+    queryFn: () => getCompletions(),
+  })
+
+  const completionsByCode = completions.reduce<
+    Record<string, Array<AcademyCompletion>>
+  >((acc, c) => {
+    ;(acc[c.employeeCode] ??= []).push(c)
+    return acc
+  }, {})
+
+  function toggleExpanded(id: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   const createMutation = useMutation({
     mutationFn: () => createEmployee(nameInput.trim()),
@@ -94,48 +122,31 @@ function RouteComponent() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-8" />
               <TableHead>Name</TableHead>
               <TableHead>Code</TableHead>
+              <TableHead>Completions</TableHead>
               <TableHead>Added</TableHead>
               <TableHead className="w-[80px]" />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {employees.map((emp) => (
-              <TableRow key={emp._id}>
-                <TableCell className="font-medium">{emp.name}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm">{emp.code}</span>
-                    <button
-                      onClick={() => copyCode(emp._id, emp.code)}
-                      className="text-muted-foreground hover:text-foreground"
-                      title="Copy code"
-                    >
-                      {copiedId === emp._id ? (
-                        <Check className="h-3.5 w-3.5 text-green-500" />
-                      ) : (
-                        <Copy className="h-3.5 w-3.5" />
-                      )}
-                    </button>
-                  </div>
-                </TableCell>
-                <TableCell className="text-sm">
-                  {format(new Date(emp.createdAt), 'MMM d, yyyy')}
-                </TableCell>
-                <TableCell>
-                  {can('academy.employees', 'delete') && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setPendingDelete(emp._id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
+            {employees.map((emp) => {
+              const empCompletions = completionsByCode[emp.code] ?? []
+              const isOpen = expanded.has(emp._id)
+              return (
+                <EmployeeRows
+                  key={emp._id}
+                  employee={emp}
+                  completions={empCompletions}
+                  isOpen={isOpen}
+                  onToggle={() => toggleExpanded(emp._id)}
+                  copiedId={copiedId}
+                  onCopyCode={copyCode}
+                  onDelete={() => setPendingDelete(emp._id)}
+                />
+              )
+            })}
           </TableBody>
         </Table>
       )}
@@ -223,5 +234,118 @@ function RouteComponent() {
         </DialogPortal>
       </Dialog>
     </div>
+  )
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+// One employee's main row plus, when expanded, a nested row listing every
+// course they've completed (title + completion date).
+function EmployeeRows({
+  employee,
+  completions,
+  isOpen,
+  onToggle,
+  copiedId,
+  onCopyCode,
+  onDelete,
+}: {
+  employee: AcademyEmployee
+  completions: Array<AcademyCompletion>
+  isOpen: boolean
+  onToggle: () => void
+  copiedId: string | null
+  onCopyCode: (id: string, code: string) => void
+  onDelete: () => void
+}) {
+  return (
+    <>
+      <TableRow
+        className="cursor-pointer"
+        onClick={onToggle}
+      >
+        <TableCell>
+          {isOpen ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          )}
+        </TableCell>
+        <TableCell className="font-medium">{employee.name}</TableCell>
+        <TableCell>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-sm">{employee.code}</span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onCopyCode(employee._id, employee.code)
+              }}
+              className="text-muted-foreground hover:text-foreground"
+              title="Copy code"
+            >
+              {copiedId === employee._id ? (
+                <Check className="h-3.5 w-3.5 text-green-500" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+            </button>
+          </div>
+        </TableCell>
+        <TableCell className="text-sm">
+          {completions.length} course{completions.length !== 1 ? 's' : ''}
+        </TableCell>
+        <TableCell className="text-sm">
+          {format(new Date(employee.createdAt), 'MMM d, yyyy')}
+        </TableCell>
+        <TableCell>
+          {can('academy.employees', 'delete') && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete()
+              }}
+            >
+              <Trash2 className="h-4 w-4 text-red-500" />
+            </Button>
+          )}
+        </TableCell>
+      </TableRow>
+
+      {isOpen && (
+        <TableRow className="bg-muted/30 hover:bg-muted/30">
+          <TableCell />
+          <TableCell colSpan={5} className="py-2">
+            {completions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No completions yet.
+              </p>
+            ) : (
+              <div className="space-y-1">
+                {completions
+                  .slice()
+                  .sort(
+                    (a, b) =>
+                      new Date(b.completedAt).getTime() -
+                      new Date(a.completedAt).getTime(),
+                  )
+                  .map((c) => (
+                    <div
+                      key={c._id}
+                      className="flex items-center justify-between gap-4 text-sm"
+                    >
+                      <span>{c.courseTitle}</span>
+                      <span className="text-muted-foreground">
+                        {format(new Date(c.completedAt), 'MMM d, yyyy HH:mm')}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </TableCell>
+        </TableRow>
+      )}
+    </>
   )
 }
