@@ -339,6 +339,39 @@ router.get('/media/sas', authenticate, requirePermission('academy.courses', 'upd
   }
 })
 
+// ── DELETE /media ─────────────────────────────────────────────────────────────
+
+// `path` is the fullPath shown in the media list. For a plain file that's a
+// single blob delete. For an HLS video it's the master.m3u8 blob — deleting
+// it alone would orphan every per-rendition index.m3u8 and .ts segment, so
+// instead we delete every blob under that video's shared prefix
+// (academy/{folder}/videos/{videoId}/), i.e. the whole transcoded group.
+router.delete('/media', authenticate, requirePermission('academy.courses', 'delete'), async (req, res) => {
+  const blobPath = String(req.query.path || '').trim()
+  if (!blobPath) return res.status(400).json({ message: 'path is required' })
+
+  try {
+    const containerClient = getContainerClient()
+    const masterMatch = blobPath.match(HLS_MASTER_RE)
+
+    if (masterMatch) {
+      const videoId = masterMatch[1]
+      const prefix = blobPath.slice(0, -'master.m3u8'.length)
+      for await (const blob of containerClient.listBlobsFlat({ prefix })) {
+        await containerClient.getBlockBlobClient(blob.name).deleteIfExists()
+      }
+      jobs.delete(videoId)
+    } else {
+      await containerClient.getBlockBlobClient(blobPath).deleteIfExists()
+    }
+
+    res.json({ message: 'Deleted' })
+  } catch (err) {
+    console.error('[academy/media] delete error:', err)
+    res.status(500).json({ message: 'Failed to delete media', error: err.message })
+  }
+})
+
 // ── POST /media/upload ────────────────────────────────────────────────────────
 
 router.post(
