@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Hls from 'hls.js'
 import {
   FileVideo,
@@ -9,11 +9,14 @@ import {
   Play,
   Search,
   Square,
+  Trash2,
   Upload,
   X,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import type { AcademyMediaFile } from '@/lib/academy-api'
 import {
+  deleteAcademyMedia,
   getAcademyMedia,
   getVideoStatus,
   uploadAcademyMedia,
@@ -286,6 +289,21 @@ function RouteComponent() {
     f.name.toLowerCase().includes(search.toLowerCase()),
   )
 
+  // For HLS videos this deletes the whole rendition/segment group in one
+  // call — the backend resolves the master.m3u8 path to its shared blob
+  // prefix, so there's nothing left to orphan.
+  const deleteMutation = useMutation({
+    mutationFn: (file: AcademyMediaFile) => deleteAcademyMedia(file.fullPath),
+    onSuccess: (_, file) => {
+      queryClient.invalidateQueries({ queryKey: ['academy-media'] })
+      setSelectedFile((prev) =>
+        prev?.fullPath === file.fullPath ? null : prev,
+      )
+      toast.success('File deleted')
+    },
+    onError: () => toast.error('Failed to delete file'),
+  })
+
   // Awaits one video's transcode job to completion (or failure) by polling,
   // resolving either way so the batch loop can move on to the next file.
   function waitForVideoReady(videoId: string): Promise<{ ok: true } | { ok: false; message: string }> {
@@ -478,13 +496,14 @@ function RouteComponent() {
                   <TableHead>Name</TableHead>
                   <TableHead>Size</TableHead>
                   <TableHead>Last Modified</TableHead>
+                  <TableHead className="w-8" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {files.length === 0 && (
                   <TableRow>
                     <TableCell
-                      colSpan={4}
+                      colSpan={5}
                       className="text-center text-sm text-muted-foreground"
                     >
                       No files found.
@@ -515,6 +534,31 @@ function RouteComponent() {
                       {file.lastModified
                         ? new Date(file.lastModified).toLocaleString()
                         : '—'}
+                    </TableCell>
+                    <TableCell>
+                      {can('academy.courses', 'delete') && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title={
+                            file.isHls
+                              ? 'Delete video and all its renditions'
+                              : 'Delete file'
+                          }
+                          disabled={deleteMutation.isPending}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const message = file.isHls
+                              ? `Delete "${file.name}"? This removes the video and all its transcoded renditions.`
+                              : `Delete "${file.name}"?`
+                            if (confirm(message)) {
+                              deleteMutation.mutate(file)
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
