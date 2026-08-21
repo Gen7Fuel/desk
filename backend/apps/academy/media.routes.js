@@ -280,6 +280,12 @@ async function transcodeToHls(jobId, videoId, tempFilePath, originalName, folder
 // per-course layout (academy/{courseFolder}/videos/{id}/...).
 const HLS_SUBPATH_RE = /^academy\/(?:[^/]+\/)?videos\/([^/]+)\//
 const HLS_MASTER_RE = /^academy\/(?:[^/]+\/)?videos\/([^/]+)\/master\.m3u8$/
+// On a storage account with Hierarchical Namespace enabled, the videoId
+// "folder" itself is a real, zero-length blob object (not just a naming
+// prefix) and shows up in a flat listing alongside its contents. It never
+// holds content of its own, so it isn't caught by HLS_SUBPATH_RE (which
+// requires a path segment *after* the videoId) — filter it separately.
+const HLS_VIDEO_DIR_RE = /^academy\/(?:[^/]+\/)?videos\/[^/]+$/
 
 router.get('/media', authenticate, requirePermission('academy.courses', 'read'), async (req, res) => {
   try {
@@ -289,6 +295,9 @@ router.get('/media', authenticate, requirePermission('academy.courses', 'read'),
 
     for await (const blob of containerClient.listBlobsFlat({ prefix: 'academy/' })) {
       const blobName = blob.name
+
+      // Skip the HNS directory placeholder for the video itself
+      if (HLS_VIDEO_DIR_RE.test(blobName)) continue
 
       // Skip HLS sub-files (segments and quality playlists) — only show master.m3u8
       if (HLS_SUBPATH_RE.test(blobName) && !HLS_MASTER_RE.test(blobName)) continue
@@ -356,10 +365,30 @@ router.delete('/media', authenticate, requirePermission('academy.courses', 'dele
 
     if (masterMatch) {
       const videoId = masterMatch[1]
-      const prefix = blobPath.slice(0, -'master.m3u8'.length)
-      for await (const blob of containerClient.listBlobsFlat({ prefix })) {
-        await containerClient.getBlockBlobClient(blob.name).deleteIfExists()
+      // blobPath is ".../videos/{videoId}/master.m3u8" — videoDir is the
+      // directory one level up, whose contents (master + quality dirs +
+      // playlists + segments) all share this prefix.
+      const videoDir = blobPath.slice(0, -'/master.m3u8'.length)
+      const childPrefix = `${videoDir}/`
+
+      const childNames = []
+      for await (const blob of containerClient.listBlobsFlat({ prefix: childPrefix })) {
+        childNames.push(blob.name)
       }
+      // On a Hierarchical Namespace account, each quality-dir (e.g. .../240p)
+      // is itself a real, zero-length blob alongside its segment files, and
+      // the delete API refuses to remove a directory that still has
+      // children. listBlobsFlat returns them in lexicographic order, which
+      // puts a directory *before* its contents (a prefix sorts first), so
+      // delete deepest paths first to guarantee children are gone before
+      // their containing directory placeholder is attempted.
+      childNames.sort((a, b) => b.length - a.length)
+      for (const name of childNames) {
+        await containerClient.getBlockBlobClient(name).deleteIfExists()
+      }
+      // Finally the videoId directory placeholder itself, if this account
+      // has Hierarchical Namespace enabled — harmless no-op otherwise.
+      await containerClient.getBlockBlobClient(videoDir).deleteIfExists()
       jobs.delete(videoId)
     } else {
       await containerClient.getBlockBlobClient(blobPath).deleteIfExists()
