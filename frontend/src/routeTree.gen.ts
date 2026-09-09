@@ -32,6 +32,7 @@ import { Route as AppbarSidebarSettingsRolesRouteImport } from './routes/_appbar
 import { Route as AppbarSidebarSettingsLogsRouteImport } from './routes/_appbar/_sidebar/settings/logs'
 import { Route as AppbarSidebarReportsNarrativeRouteImport } from './routes/_appbar/_sidebar/reports/narrative'
 import { Route as AppbarSidebarProjectsIdRouteImport } from './routes/_appbar/_sidebar/projects/$id'
+import { Route as AppbarSidebarHubShiftsRouteImport } from './routes/_appbar/_sidebar/hub/shifts'
 import { Route as AppbarSidebarHubReceivablesRouteImport } from './routes/_appbar/_sidebar/hub/receivables'
 import { Route as AppbarSidebarHubPayablesRouteImport } from './routes/_appbar/_sidebar/hub/payables'
 import { Route as AppbarSidebarHubFleetCustomersRouteImport } from './routes/_appbar/_sidebar/hub/fleet-customers'
@@ -184,6 +185,11 @@ const AppbarSidebarProjectsIdRoute = AppbarSidebarProjectsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => AppbarSidebarProjectsRoute,
+} as any)
+const AppbarSidebarHubShiftsRoute = AppbarSidebarHubShiftsRouteImport.update({
+  id: '/shifts',
+  path: '/shifts',
+  getParentRoute: () => AppbarSidebarHubRoute,
 } as any)
 const AppbarSidebarHubReceivablesRoute =
   AppbarSidebarHubReceivablesRouteImport.update({
@@ -439,6 +445,7 @@ export interface FileRoutesByFullPath {
   '/hub/fleet-customers': typeof AppbarSidebarHubFleetCustomersRoute
   '/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
+  '/hub/shifts': typeof AppbarSidebarHubShiftsRoute
   '/projects/$id': typeof AppbarSidebarProjectsIdRoute
   '/reports/narrative': typeof AppbarSidebarReportsNarrativeRoute
   '/settings/logs': typeof AppbarSidebarSettingsLogsRoute
@@ -491,6 +498,7 @@ export interface FileRoutesByTo {
   '/hub/fleet-customers': typeof AppbarSidebarHubFleetCustomersRoute
   '/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
+  '/hub/shifts': typeof AppbarSidebarHubShiftsRoute
   '/projects/$id': typeof AppbarSidebarProjectsIdRoute
   '/reports/narrative': typeof AppbarSidebarReportsNarrativeRoute
   '/settings/logs': typeof AppbarSidebarSettingsLogsRoute
@@ -554,6 +562,7 @@ export interface FileRoutesById {
   '/_appbar/_sidebar/hub/fleet-customers': typeof AppbarSidebarHubFleetCustomersRoute
   '/_appbar/_sidebar/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/_appbar/_sidebar/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
+  '/_appbar/_sidebar/hub/shifts': typeof AppbarSidebarHubShiftsRoute
   '/_appbar/_sidebar/projects/$id': typeof AppbarSidebarProjectsIdRoute
   '/_appbar/_sidebar/reports/narrative': typeof AppbarSidebarReportsNarrativeRoute
   '/_appbar/_sidebar/settings/logs': typeof AppbarSidebarSettingsLogsRoute
@@ -612,6 +621,7 @@ export interface FileRouteTypes {
     | '/hub/fleet-customers'
     | '/hub/payables'
     | '/hub/receivables'
+    | '/hub/shifts'
     | '/projects/$id'
     | '/reports/narrative'
     | '/settings/logs'
@@ -664,6 +674,7 @@ export interface FileRouteTypes {
     | '/hub/fleet-customers'
     | '/hub/payables'
     | '/hub/receivables'
+    | '/hub/shifts'
     | '/projects/$id'
     | '/reports/narrative'
     | '/settings/logs'
@@ -726,6 +737,7 @@ export interface FileRouteTypes {
     | '/_appbar/_sidebar/hub/fleet-customers'
     | '/_appbar/_sidebar/hub/payables'
     | '/_appbar/_sidebar/hub/receivables'
+    | '/_appbar/_sidebar/hub/shifts'
     | '/_appbar/_sidebar/projects/$id'
     | '/_appbar/_sidebar/reports/narrative'
     | '/_appbar/_sidebar/settings/logs'
@@ -916,6 +928,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/projects/$id'
       preLoaderRoute: typeof AppbarSidebarProjectsIdRouteImport
       parentRoute: typeof AppbarSidebarProjectsRoute
+    }
+    '/_appbar/_sidebar/hub/shifts': {
+      id: '/_appbar/_sidebar/hub/shifts'
+      path: '/shifts'
+      fullPath: '/hub/shifts'
+      preLoaderRoute: typeof AppbarSidebarHubShiftsRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
     }
     '/_appbar/_sidebar/hub/receivables': {
       id: '/_appbar/_sidebar/hub/receivables'
@@ -1365,6 +1384,7 @@ interface AppbarSidebarHubRouteChildren {
   AppbarSidebarHubFleetCustomersRoute: typeof AppbarSidebarHubFleetCustomersRoute
   AppbarSidebarHubPayablesRoute: typeof AppbarSidebarHubPayablesRoute
   AppbarSidebarHubReceivablesRoute: typeof AppbarSidebarHubReceivablesRoute
+  AppbarSidebarHubShiftsRoute: typeof AppbarSidebarHubShiftsRoute
 }
 
 const AppbarSidebarHubRouteChildren: AppbarSidebarHubRouteChildren = {
@@ -1379,6 +1399,7 @@ const AppbarSidebarHubRouteChildren: AppbarSidebarHubRouteChildren = {
   AppbarSidebarHubFleetCustomersRoute: AppbarSidebarHubFleetCustomersRoute,
   AppbarSidebarHubPayablesRoute: AppbarSidebarHubPayablesRoute,
   AppbarSidebarHubReceivablesRoute: AppbarSidebarHubReceivablesRoute,
+  AppbarSidebarHubShiftsRoute: AppbarSidebarHubShiftsRoute,
 }
 
 const AppbarSidebarHubRouteWithChildren =
