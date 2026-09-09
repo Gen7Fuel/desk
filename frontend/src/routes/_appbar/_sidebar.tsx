@@ -62,6 +62,11 @@ const sidebarLinks: Record<
       path: '/hub/ar-paid-report',
       permission: 'hub.arPaidReport',
     },
+    {
+      label: 'Shifts',
+      path: '/hub/shifts',
+      permission: 'hub.shifts',
+    },
   ],
   academy: [
     {
