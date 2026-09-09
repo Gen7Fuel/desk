@@ -73,7 +73,13 @@ export function SitePicker({
   return (
     <Select value={value} onValueChange={onValueChange}>
       <SelectTrigger className={className}>
-        <SelectValue placeholder={placeholder} />
+        {/* Radix doesn't resolve the displayed label for a value that was
+            set programmatically (e.g. pre-filling an edit form) until the
+            matching SelectItem has actually rendered once — pass the label
+            explicitly instead of relying on its auto-lookup. */}
+        <SelectValue placeholder={placeholder}>
+          {value || undefined}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
