@@ -2,14 +2,13 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Pencil, Tag, Trash2 } from 'lucide-react'
-import type { AttributeType, Shift, ShiftInput } from '@/lib/shifts-api'
+import { Tag, Trash2 } from 'lucide-react'
+import type { AttributeType, Shift } from '@/lib/shifts-api'
 import {
   getCustomAttributes,
   listShifts,
   removeShiftAttribute,
   setShiftAttribute,
-  updateShift,
 } from '@/lib/shifts-api'
 import { can } from '@/lib/permissions'
 import { SitePicker } from '@/components/custom/SitePicker'
@@ -56,12 +55,6 @@ export const Route = createFileRoute('/_appbar/_sidebar/hub/shifts')({
   },
 })
 
-function toDateInputValue(date: string): string {
-  const d = new Date(date)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toISOString().slice(0, 10)
-}
-
 function formatDate(date: string): string {
   const d = new Date(date)
   if (Number.isNaN(d.getTime())) return '—'
@@ -74,203 +67,6 @@ function formatNumber(value: number | undefined): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
-}
-
-// ---------------------------------------------------------------------------
-// Add / edit dialog
-// ---------------------------------------------------------------------------
-
-type ShiftFormState = {
-  site: string
-  shift_number: string
-  date: string
-  canadian_cash_collected: string
-  cash_back: string
-  loyalty: string
-  exempted_tax: string
-  chequesCashedOut: string
-  pinpadTotal: string
-}
-
-function formFromShift(shift: Shift): ShiftFormState {
-  return {
-    site: shift.site,
-    shift_number: shift.shift_number,
-    date: toDateInputValue(shift.date),
-    canadian_cash_collected:
-      shift.canadian_cash_collected !== undefined
-        ? String(shift.canadian_cash_collected)
-        : '',
-    cash_back: shift.cash_back !== undefined ? String(shift.cash_back) : '',
-    loyalty: shift.loyalty !== undefined ? String(shift.loyalty) : '',
-    exempted_tax:
-      shift.exempted_tax !== undefined ? String(shift.exempted_tax) : '',
-    chequesCashedOut:
-      shift.chequesCashedOut !== undefined
-        ? String(shift.chequesCashedOut)
-        : '',
-    pinpadTotal:
-      shift.pinpadTotal !== undefined ? String(shift.pinpadTotal) : '',
-  }
-}
-
-// Blank optional numeric fields are omitted; canadian_cash_collected is
-// always sent (defaults to 0) since Hub's update route has no
-// fallback-to-existing-value for that one field.
-function toShiftInput(form: ShiftFormState): ShiftInput {
-  const num = (raw: string): number | undefined => {
-    const trimmed = raw.trim()
-    if (trimmed === '') return undefined
-    const n = Number(trimmed)
-    return Number.isNaN(n) ? undefined : n
-  }
-  return {
-    site: form.site,
-    shift_number: form.shift_number.trim(),
-    date: form.date,
-    canadian_cash_collected: num(form.canadian_cash_collected) ?? 0,
-    cash_back: num(form.cash_back),
-    loyalty: num(form.loyalty),
-    exempted_tax: num(form.exempted_tax),
-    chequesCashedOut: num(form.chequesCashedOut),
-    pinpadTotal: num(form.pinpadTotal),
-  }
-}
-
-function ShiftForm({
-  title,
-  initial,
-  onSubmit,
-  onClose,
-  isPending,
-}: {
-  title: string
-  initial: ShiftFormState
-  onSubmit: (data: ShiftInput) => void
-  onClose: () => void
-  isPending: boolean
-}) {
-  const [form, setForm] = useState<ShiftFormState>(initial)
-
-  function set(field: keyof ShiftFormState, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }))
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.site || !form.shift_number.trim() || !form.date) return
-    onSubmit(toShiftInput(form))
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <DialogHeader>
-        <DialogTitle>{title}</DialogTitle>
-      </DialogHeader>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label>Site</Label>
-          <SitePicker
-            value={form.site}
-            onValueChange={(v) => set('site', v)}
-            className="w-full"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="shift_number">Shift Number</Label>
-          <Input
-            id="shift_number"
-            value={form.shift_number}
-            onChange={(e) => set('shift_number', e.target.value)}
-            required
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="date">Date</Label>
-          <Input
-            id="date"
-            type="date"
-            value={form.date}
-            onChange={(e) => set('date', e.target.value)}
-            required
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="canadian_cash_collected">
-            Canadian Cash Collected
-          </Label>
-          <Input
-            id="canadian_cash_collected"
-            type="number"
-            step="0.01"
-            value={form.canadian_cash_collected}
-            onChange={(e) => set('canadian_cash_collected', e.target.value)}
-            required
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="cash_back">Cash Back</Label>
-          <Input
-            id="cash_back"
-            type="number"
-            step="0.01"
-            value={form.cash_back}
-            onChange={(e) => set('cash_back', e.target.value)}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="loyalty">Loyalty</Label>
-          <Input
-            id="loyalty"
-            type="number"
-            step="0.01"
-            value={form.loyalty}
-            onChange={(e) => set('loyalty', e.target.value)}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="exempted_tax">Exempted Tax</Label>
-          <Input
-            id="exempted_tax"
-            type="number"
-            step="0.01"
-            value={form.exempted_tax}
-            onChange={(e) => set('exempted_tax', e.target.value)}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="chequesCashedOut">Cheques Cashed Out</Label>
-          <Input
-            id="chequesCashedOut"
-            type="number"
-            step="0.01"
-            value={form.chequesCashedOut}
-            onChange={(e) => set('chequesCashedOut', e.target.value)}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="pinpadTotal">Pinpad Total</Label>
-          <Input
-            id="pinpadTotal"
-            type="number"
-            step="0.01"
-            value={form.pinpadTotal}
-            onChange={(e) => set('pinpadTotal', e.target.value)}
-          />
-        </div>
-      </div>
-
-      <DialogFooter>
-        <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button type="submit" size="sm" disabled={isPending}>
-          {isPending ? 'Saving…' : 'Save'}
-        </Button>
-      </DialogFooter>
-    </form>
-  )
 }
 
 // ---------------------------------------------------------------------------
@@ -486,7 +282,6 @@ function RouteComponent() {
   const queryClient = useQueryClient()
   const [site, setSite] = useState('')
   const [shiftNumberFilter, setShiftNumberFilter] = useState('')
-  const [editShift, setEditShift] = useState<Shift | null>(null)
   const [attributesShift, setAttributesShift] = useState<Shift | null>(null)
 
   const {
@@ -512,20 +307,6 @@ function RouteComponent() {
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ['shifts', site] })
   }
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: ShiftInput }) =>
-      updateShift(id, data),
-    onSuccess: () => {
-      invalidate()
-      setEditShift(null)
-      toast.success('Shift updated')
-    },
-    onError: (err) =>
-      toast.error(
-        err instanceof Error ? err.message : 'Failed to update shift',
-      ),
-  })
 
   return (
     <div className="p-6">
@@ -574,7 +355,7 @@ function RouteComponent() {
               <TableHead>Cheques Cashed Out</TableHead>
               <TableHead>Pinpad Total</TableHead>
               <TableHead>Attributes</TableHead>
-              <TableHead className="w-24"></TableHead>
+              <TableHead className="w-16"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -647,55 +428,21 @@ function RouteComponent() {
                   })()}
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-1">
-                    {can('hub.shifts', 'update') && !shift.isChickenDelight && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditShift(shift)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {can('hub.shifts', 'update') && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setAttributesShift(shift)}
-                      >
-                        <Tag className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
+                  {can('hub.shifts', 'update') && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAttributesShift(shift)}
+                    >
+                      <Tag className="h-4 w-4" />
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       )}
-
-      {/* Edit dialog */}
-      <Dialog
-        open={!!editShift}
-        onOpenChange={(open) => !open && setEditShift(null)}
-      >
-        <DialogPortal>
-          <DialogOverlay className="fixed inset-0 z-50 bg-black/50" />
-          <DialogContent className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 max-w-lg w-full rounded-lg border bg-background p-6 shadow-lg">
-            {editShift && (
-              <ShiftForm
-                title="Edit Shift"
-                initial={formFromShift(editShift)}
-                onSubmit={(data) =>
-                  updateMutation.mutate({ id: editShift._id, data })
-                }
-                onClose={() => setEditShift(null)}
-                isPending={updateMutation.isPending}
-              />
-            )}
-          </DialogContent>
-        </DialogPortal>
-      </Dialog>
 
       {/* Attributes dialog */}
       <Dialog

@@ -19,10 +19,9 @@ async function hubFetch(
   return fetch(HUB + path, { ...init, headers })
 }
 
-// Cash summary ("shift") records in Hub's cashsummaries collection. Most of
-// the ~60 fields on this collection are populated automatically every few
-// hours by Hub's SFT ingestion cron — the fields below are the subset the
-// cron never touches, so a manual edit here persists.
+// Cash summary ("shift") records in Hub's cashsummaries collection. These
+// fields (a subset of the ~60 on the schema) are shown read-only in the
+// Shifts table — editing happens only through custom attributes, below.
 export interface Shift {
   _id: string
   site: string
@@ -34,29 +33,12 @@ export interface Shift {
   exempted_tax?: number
   chequesCashedOut?: number
   pinpadTotal?: number
-  // Read-only: Hub's cron may flag a shift as Chicken Delight, which
-  // repurposes exempted_tax/chequesCashedOut/pinpadTotal on Hub's side and
-  // can't be un-set through the update route. Shifts flagged this way are
-  // shown read-only rather than edited here.
+  // Hub's cron may flag a shift as Chicken Delight, which repurposes
+  // exempted_tax/chequesCashedOut/pinpadTotal on Hub's side — shown
+  // distinctly in the table rather than as those (not-applicable) fields.
   isChickenDelight?: boolean
   createdAt?: string
   updatedAt?: string
-}
-
-// canadian_cash_collected is deliberately required (not optional): Hub's
-// PUT /:id has no fallback-to-existing-value for this one field, unlike
-// every other field here, so it must always be sent explicitly or a save
-// will wipe it out.
-export interface ShiftInput {
-  site: string
-  shift_number: string
-  date: string
-  canadian_cash_collected: number
-  cash_back?: number
-  loyalty?: number
-  exempted_tax?: number
-  chequesCashedOut?: number
-  pinpadTotal?: number
 }
 
 export async function listShifts(site: string): Promise<Array<Shift>> {
@@ -65,22 +47,6 @@ export async function listShifts(site: string): Promise<Array<Shift>> {
   )
   if (!res.ok) throw new Error('Failed to fetch shifts')
   return res.json()
-}
-
-export async function updateShift(
-  id: string,
-  data: ShiftInput,
-): Promise<Shift> {
-  const res = await hubFetch(`/api/cash-summary/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  })
-  const body = await res.json()
-  if (!res.ok)
-    throw new Error(
-      (body as { error?: string }).error ?? 'Failed to update shift',
-    )
-  return body
 }
 
 // ---------------------------------------------------------------------------
