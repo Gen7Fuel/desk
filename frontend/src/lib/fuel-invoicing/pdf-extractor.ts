@@ -37,90 +37,128 @@ function extractFromRect(
   return inRect.length ? inRect.map((i) => i.text).join(' ') : null
 }
 
-function filterRegion(
-  items: Array<PdfItem>,
-  xMin: number,
-  xMax: number,
-  yMin: number,
-  yMax: number,
-): Array<string> {
-  return items
-    .filter(
-      (item) =>
-        item.x >= xMin &&
-        item.x <= xMax &&
-        item.y >= yMin &&
-        item.y <= yMax &&
-        item.text.length > 0,
-    )
-    .map((item) => item.text)
-}
+// Table body: below the column headers (y < ~499), above the "Total Product
+// Ordered" summary line (y > ~124).
+const TABLE_Y_MIN = 127
+const TABLE_Y_MAX = 496
 
-function buildTableEntries(
-  productColumnValues: Array<string>,
-  qtyNetValues: Array<string>,
-  qtyGrossValues: Array<string>,
-  freightValues: Array<string>,
-  rateTaxRaw: Array<string>,
-  totalTaxRaw: Array<string>,
-): Array<TableEntry> {
-  const maxLen = Math.max(
-    productColumnValues.length,
-    qtyNetValues.length,
-    qtyGrossValues.length,
-    Math.floor(freightValues.length / 2),
+// x-bands for each column, measured from the BookWorks invoice template.
+// A per-line item is matched to a row by y-proximity (ROW_Y_TOL), not by
+// position in a flattened list — the old approach assumed a fixed number of
+// values per row based on the product code, which broke whenever a row's
+// actual tax-line count didn't match that guess.
+const PRODUCT_CODE_X: [number, number] = [20, 55]
+const DESCRIPTION_X: [number, number] = [170, 260]
+const QTY_ORDERED_X: [number, number] = [285, 325]
+const QTY_DELIVERED_X: [number, number] = [340, 380]
+const PRICE_AMT_X: [number, number] = [412, 435]
+const FREIGHT_RATE_X: [number, number] = [500, 515]
+const FREIGHT_TOTAL_X: [number, number] = [455, 495]
+const TOTAL_X: [number, number] = [540, 575] // product total AND tax totals
+const TAX_LABEL_X: [number, number] = [100, 300]
+const TAX_RATE_X: [number, number] = [375, 405]
+
+const ROW_Y_TOL = 3
+const BLOCK_PAD = 3
+
+function buildTableEntries(items: Array<PdfItem>): Array<TableEntry> {
+  const bodyItems = items.filter(
+    (item) =>
+      item.y >= TABLE_Y_MIN && item.y <= TABLE_Y_MAX && item.text.length > 0,
   )
-  const entries: Array<TableEntry> = []
-  let rateTaxIdx = 0
-  let totalTaxIdx = 0
 
-  for (let i = 0; i < maxLen; i++) {
-    const product = productColumnValues[i] || ''
-    let productRate = '',
-      federalTaxRate = '',
-      provincialTaxRate = '',
-      pricePerUnit = ''
-    let productTotal = '',
+  const inBand = (item: PdfItem, [xMin, xMax]: [number, number]) =>
+    item.x >= xMin && item.x <= xMax
+
+  const productRows = bodyItems
+    .filter((item) => inBand(item, PRODUCT_CODE_X))
+    .sort((a, b) => b.y - a.y)
+
+  return productRows.map((row, i) => {
+    const blockTop = row.y + BLOCK_PAD
+    const blockBottom =
+      i + 1 < productRows.length
+        ? productRows[i + 1].y + BLOCK_PAD
+        : TABLE_Y_MIN - BLOCK_PAD
+    const block = bodyItems.filter(
+      (item) => item.y <= blockTop && item.y > blockBottom,
+    )
+
+    const atRow = (band: [number, number]) =>
+      block.find(
+        (item) => inBand(item, band) && Math.abs(item.y - row.y) <= ROW_Y_TOL,
+      )?.text ?? ''
+
+    const priceAmt = atRow(PRICE_AMT_X)
+
+    // Description can wrap onto a second line (e.g. "Premium Unleaded Gas" /
+    // "91 Octane") — join every fragment in the column, top to bottom.
+    const description = block
+      .filter((item) => inBand(item, DESCRIPTION_X))
+      .sort((a, b) => b.y - a.y)
+      .map((item) => item.text)
+      .join(' ')
+
+    let federalTaxRate = '',
       federalTaxTotal = '',
-      provincialTaxTotal = ''
+      federalTaxName = '',
+      provincialTaxRate = '',
+      provincialTaxTotal = '',
+      provincialTaxName = ''
 
-    if (product === 'ULSDD') {
-      productRate = rateTaxRaw[rateTaxIdx] || ''
-      federalTaxRate = rateTaxRaw[rateTaxIdx + 1] || ''
-      pricePerUnit = rateTaxRaw[rateTaxIdx + 2] || ''
-      rateTaxIdx += 3
-      productTotal = totalTaxRaw[totalTaxIdx] || ''
-      federalTaxTotal = totalTaxRaw[totalTaxIdx + 1] || ''
-      totalTaxIdx += 2
-    } else {
-      productRate = rateTaxRaw[rateTaxIdx] || ''
-      federalTaxRate = rateTaxRaw[rateTaxIdx + 1] || ''
-      provincialTaxRate = rateTaxRaw[rateTaxIdx + 2] || ''
-      pricePerUnit = rateTaxRaw[rateTaxIdx + 3] || ''
-      rateTaxIdx += 4
-      productTotal = totalTaxRaw[totalTaxIdx] || ''
-      federalTaxTotal = totalTaxRaw[totalTaxIdx + 1] || ''
-      provincialTaxTotal = totalTaxRaw[totalTaxIdx + 2] || ''
-      totalTaxIdx += 3
+    const taxLabels = block.filter(
+      (item) =>
+        inBand(item, TAX_LABEL_X) && item.text.toLowerCase().includes('tax'),
+    )
+    for (const label of taxLabels) {
+      const rate =
+        block.find(
+          (item) =>
+            inBand(item, TAX_RATE_X) &&
+            Math.abs(item.y - label.y) <= ROW_Y_TOL,
+        )?.text ?? ''
+      const total =
+        block.find(
+          (item) =>
+            inBand(item, TOTAL_X) && Math.abs(item.y - label.y) <= ROW_Y_TOL,
+        )?.text ?? ''
+      // The label includes a jurisdiction/fuel suffix the invoice doesn't
+      // need (e.g. "Provincial Gas Tax ON" -> "Provincial Gas Tax"), so keep
+      // only the part up to and including the word "Tax".
+      const name = (label.text.match(/^(.*?\bTax\b)/i)?.[1] ?? label.text).trim()
+      const lower = label.text.toLowerCase()
+      if (lower.includes('federal')) {
+        federalTaxRate = rate
+        federalTaxTotal = total
+        federalTaxName = name
+      } else if (lower.includes('provincial')) {
+        provincialTaxRate = rate
+        provincialTaxTotal = total
+        provincialTaxName = name
+      }
     }
 
-    entries.push({
-      product,
-      qtyNet: qtyNetValues[i] || '',
-      qtyGross: qtyGrossValues[i] || '',
-      productRate,
+    const freightTotal =
+      block.find((item) => inBand(item, FREIGHT_TOTAL_X))?.text ?? ''
+
+    return {
+      product: row.text,
+      description,
+      qtyNet: atRow(QTY_DELIVERED_X),
+      qtyGross: atRow(QTY_ORDERED_X),
+      productRate: priceAmt,
       federalTaxRate,
+      federalTaxName,
       provincialTaxRate,
-      pricePerUnit,
-      freightRate: freightValues[i * 2] || '',
-      totalFreight: freightValues[i * 2 + 1] || '',
-      productTotal,
+      provincialTaxName,
+      pricePerUnit: priceAmt,
+      freightRate: atRow(FREIGHT_RATE_X),
+      totalFreight: freightTotal,
+      productTotal: atRow(TOTAL_X),
       federalTaxTotal,
       provincialTaxTotal,
-    })
-  }
-
-  return entries
+    }
+  })
 }
 
 export async function extractFieldsFromRects(
@@ -142,13 +180,6 @@ export async function extractFieldsFromRects(
 
   const extract = (rect: (typeof RECTS)[keyof typeof RECTS]) =>
     extractFromRect(items, rect)
-
-  const totalTaxRaw = filterRegion(items, 545, 660, 127, 496)
-  const rateTaxRaw = filterRegion(items, 360, 430, 127, 496)
-  const productColumnValues = filterRegion(items, 22, 52, 127, 496)
-  const qtyNetValues = filterRegion(items, 230, 270, 127, 496)
-  const qtyGrossRaw = filterRegion(items, 290, 360, 127, 496)
-  const freightValues = filterRegion(items, 480, 530, 127, 496)
 
   // Match each label to its value by y-coordinate proximity
   const totalsArea = items.filter(
@@ -180,25 +211,7 @@ export async function extractFieldsFromRects(
     ? findValueAtY(surchargesLabelItem.y)
     : null
 
-  const qtyGrossValues = qtyGrossRaw
-
-  const freightCellValues: Array<string> = []
-  for (let i = 0; i < freightValues.length; i += 2) {
-    freightCellValues.push(
-      [freightValues[i] || '', freightValues[i + 1] || '']
-        .filter(Boolean)
-        .join('\n'),
-    )
-  }
-
-  const tableEntries = buildTableEntries(
-    productColumnValues,
-    qtyNetValues,
-    qtyGrossValues,
-    freightValues,
-    rateTaxRaw,
-    totalTaxRaw,
-  )
+  const tableEntries = buildTableEntries(items)
 
   return {
     shippingLocation: extract(RECTS.shippingLocation),
@@ -226,9 +239,6 @@ export async function extractFieldsFromRects(
     surcharges,
     taxFeeTotal: extract(RECTS.taxFeeTotal),
     totalInvoiceToRemit: extract(RECTS.totalInvoiceToRemit),
-    productColumnValues,
-    qtyNetValues,
-    freightCellValues,
     tableEntries,
   }
 }

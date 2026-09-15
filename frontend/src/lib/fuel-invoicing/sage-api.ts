@@ -246,12 +246,12 @@ export async function createInvoice(
   const manifest = fields.manifest ?? 'Unknown'
   const shipToLP = parseShipToLP(fields.shipTo)
   const customerId = resolveCustomerId(shipToLP)
-  const referenceNumber = `BOL # ${manifest} - ${shipToLP}`
+  const bolRef = `BOL#${manifest}-${shipToLP}`
+  const referenceNumber = bolRef
   const invoiceDate = toISODate(fields.billDate)
   const termDays = parseDueDays(fields.terms)
   const dueDate = addDays(invoiceDate, termDays)
 
-  // Product lines — one per table entry
   const invoiceTaxEntry = [
     {
       baseTaxAmount: '0',
@@ -261,35 +261,53 @@ export async function createInvoice(
     },
   ]
 
-  const productLines = fields.tableEntries.map((entry) => {
-    const amount =
-      parseCurrency(entry.productTotal) +
-      parseCurrency(entry.federalTaxTotal) +
-      parseCurrency(entry.provincialTaxTotal)
-    return {
-      txnAmount: amount.toFixed(2),
-      glAccount: { id: '40010' },
-      memo: entry.product,
-      dimensions: {
-        location: { id: LOCATION_ID },
-        customer: { id: customerId },
+  const sharedLineFields = {
+    dimensions: {
+      location: { id: LOCATION_ID },
+      customer: { id: customerId },
+    },
+    taxEntries: invoiceTaxEntry,
+  }
+
+  // One product line per table entry, immediately followed by one line per
+  // non-zero tax amount on that entry — Sage prints each as its own line
+  // item on the invoice, it isn't folded into the product's amount.
+  const entryLines = fields.tableEntries.flatMap((entry) => {
+    const lines = [
+      {
+        ...sharedLineFields,
+        txnAmount: parseCurrency(entry.productTotal).toFixed(2),
+        glAccount: { id: '40010' },
+        memo: entry.description || entry.product,
       },
-      taxEntries: invoiceTaxEntry,
+    ]
+
+    for (const [name, total] of [
+      [entry.federalTaxName, entry.federalTaxTotal],
+      [entry.provincialTaxName, entry.provincialTaxTotal],
+    ] as const) {
+      const amount = parseCurrency(total)
+      if (amount > 0) {
+        lines.push({
+          ...sharedLineFields,
+          txnAmount: amount.toFixed(2),
+          glAccount: { id: '40010' },
+          memo: `${name || 'Tax'} on ${bolRef}`,
+        })
+      }
     }
+
+    return lines
   })
 
   // Freight line
   const freightAmount =
     parseCurrency(fields.freightTotal) + parseCurrency(fields.surcharges)
   const freightLine = {
+    ...sharedLineFields,
     txnAmount: freightAmount.toFixed(2),
     glAccount: { id: '40700' },
-    memo: `Total Freight Charges on BOL # ${manifest} - ${shipToLP}`,
-    dimensions: {
-      location: { id: LOCATION_ID },
-      customer: { id: customerId },
-    },
-    taxEntries: invoiceTaxEntry,
+    memo: `Total Freight Charges on ${bolRef}`,
   }
 
   const body = {
@@ -309,7 +327,7 @@ export async function createInvoice(
     },
     attachment: { key: attachmentKey },
     state: 'draft',
-    lines: [...productLines, freightLine],
+    lines: [...entryLines, freightLine],
   }
 
   console.log('[sage] AR invoice request body:', body)
