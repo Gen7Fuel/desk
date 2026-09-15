@@ -1,10 +1,13 @@
 export type TableEntry = {
   product: string
+  description: string
   qtyNet: string
   qtyGross: string
   productRate: string
   federalTaxRate: string
+  federalTaxName: string
   provincialTaxRate: string
+  provincialTaxName: string
   pricePerUnit: string
   freightRate: string
   totalFreight: string
@@ -34,8 +37,5 @@ export type ExtractedFields = {
   surcharges: string | null
   taxFeeTotal: string | null
   totalInvoiceToRemit: string | null
-  productColumnValues: Array<string>
-  qtyNetValues: Array<string>
-  freightCellValues: Array<string>
   tableEntries: Array<TableEntry>
 }

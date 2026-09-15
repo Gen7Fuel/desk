@@ -93,6 +93,7 @@ const SUMMARY_LABELS: Array<{ key: keyof ExtractedFields; label: string }> = [
 
 const TABLE_COLS: Array<{ key: keyof TableEntry; label: string }> = [
   { key: 'product', label: 'Product' },
+  { key: 'description', label: 'Description' },
   { key: 'qtyNet', label: 'Qty Net' },
   { key: 'qtyGross', label: 'Qty Gross' },
   { key: 'productRate', label: 'Product Rate' },
