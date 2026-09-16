@@ -48,11 +48,23 @@ function addDays(isoDate: string, days: number): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-/** Extracts the portion of shipTo up to and including "LP", e.g. "Freddies Gen7 LP". */
-function parseShipToLP(shipTo: string | null | undefined): string {
+/**
+ * Extracts the customer/site name from the start of shipTo — which also has
+ * the delivery address concatenated right after it with no delimiter — by
+ * matching against the known names in CUSTOMER_ID_MAP (longest first, so no
+ * name can shadow another), e.g. "Freddies Gen7 LP" or "Sioux Valley
+ * GasMart". Falls back to the legacy "...LP" heuristic for a Gen7 LP site
+ * that hasn't been added to the map yet.
+ */
+function parseShipToSiteName(shipTo: string | null | undefined): string {
   if (!shipTo) return ''
-  const m = shipTo.match(/^(.*?LP)\b/)
-  return m ? m[1].trim() : shipTo
+  const trimmed = shipTo.trim()
+  const known = Object.keys(CUSTOMER_ID_MAP)
+    .sort((a, b) => b.length - a.length)
+    .find((name) => trimmed.startsWith(name))
+  if (known) return known
+  const m = trimmed.match(/^(.*?LP)\b/)
+  return m ? m[1].trim() : trimmed
 }
 
 /**
@@ -119,8 +131,8 @@ export async function createBill(
   sageToken: string,
 ): Promise<string> {
   const manifest = fields.manifest ?? 'Unknown'
-  const shipToLP = parseShipToLP(fields.shipTo)
-  const referenceNumber = `BOL # ${manifest} - ${shipToLP}`
+  const siteName = parseShipToSiteName(fields.shipTo)
+  const referenceNumber = `BOL # ${manifest} - ${siteName}`
   const billDate = toISODate(fields.billDate)
   const dueDate = addDays(billDate, parseDueDays(fields.terms))
 
@@ -221,11 +233,14 @@ const CUSTOMER_ID_MAP: Record<string, string> = {
   'Oliver Gen7 LP': 'C00312',
   'Osoyoos Gen7 LP': 'C00308',
   'Charlies Gen7 LP': 'C00320',
+  'Sioux Valley GasMart': 'C00368',
+  'Wavers of Brokenhead': 'C00329',
+  'BON Community Store': 'C00330',
 }
 
-function resolveCustomerId(shipToLP: string): string {
-  const id = CUSTOMER_ID_MAP[shipToLP]
-  if (!id) throw new Error(`Unknown customer for Ship To: "${shipToLP}"`)
+function resolveCustomerId(siteName: string): string {
+  const id = CUSTOMER_ID_MAP[siteName]
+  if (!id) throw new Error(`Unknown customer for Ship To: "${siteName}"`)
   return id
 }
 
@@ -244,9 +259,9 @@ export async function createInvoice(
   sageToken: string,
 ): Promise<string> {
   const manifest = fields.manifest ?? 'Unknown'
-  const shipToLP = parseShipToLP(fields.shipTo)
-  const customerId = resolveCustomerId(shipToLP)
-  const bolRef = `BOL#${manifest}-${shipToLP}`
+  const siteName = parseShipToSiteName(fields.shipTo)
+  const customerId = resolveCustomerId(siteName)
+  const bolRef = `BOL#${manifest}-${siteName}`
   const referenceNumber = bolRef
   const invoiceDate = toISODate(fields.billDate)
   const termDays = parseDueDays(fields.terms)
