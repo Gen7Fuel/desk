@@ -67,6 +67,11 @@ const sidebarLinks: Record<
       path: '/hub/shifts',
       permission: 'hub.shifts',
     },
+    {
+      label: 'Intacct',
+      path: '/hub/intacct',
+      permission: 'hub.intacct',
+    },
   ],
   academy: [
     {

@@ -488,4 +488,54 @@ router.post('/other-receipt', authenticate, async (req, res) => {
   }
 })
 
+/**
+ * GET /sage/customers
+ * Searches accounts-receivable/customer records via Sage's core query API.
+ * Optional `q` query param filters by name ($contains, case-insensitive);
+ * omitted/empty returns all customers for the entity.
+ * Expects the Sage access token in the X-Sage-Token request header.
+ * Optionally reads X-Sage-Entity for the entity ID; falls back to LOCATION_ID.
+ */
+router.get('/customers', authenticate, async (req, res) => {
+  try {
+    const sageToken = req.headers['x-sage-token']
+    if (!sageToken) {
+      return res.status(400).json({ message: 'Missing X-Sage-Token header.' })
+    }
+
+    const entityId = req.headers['x-sage-entity'] || LOCATION_ID
+    const q = typeof req.query.q === 'string' ? req.query.q : ''
+
+    const response = await fetch(`${SAGE_BASE}services/core/query`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${sageToken}`,
+        'Content-Type': 'application/json',
+        'X-IA-API-Param-Entity': entityId,
+      },
+      body: JSON.stringify({
+        object: 'accounts-receivable/customer',
+        fields: ['id', 'name'],
+        filters: [{ '$contains': { name: q } }],
+        filterParameters: { caseSensitiveComparison: false },
+        orderBy: [{ id: 'asc' }],
+      }),
+    })
+
+    const data = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      console.error('[sage/customers] Sage error:', response.status, JSON.stringify(data, null, 2))
+      return res.status(response.status).json(
+        data ?? { message: `Sage returned ${response.status}` }
+      )
+    }
+
+    return res.status(response.status).json(data)
+  } catch (err) {
+    console.error('[sage/customers] error:', err)
+    return res.status(500).json({ message: 'Sage customers request failed.' })
+  }
+})
+
 module.exports = router

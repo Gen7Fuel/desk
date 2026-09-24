@@ -65,7 +65,8 @@
         "arCustomers":     { "actions": ["create", "read", "update", "delete"] },
         "fleetCardCompliance": { "actions": ["read"] },
         "arPaidReport":    { "actions": ["read"] },
-        "shifts":          { "actions": ["read", "update"] }
+        "shifts":          { "actions": ["read", "update"] },
+        "intacct":         { "actions": ["read"] }
       }
     },
     "issues": {
