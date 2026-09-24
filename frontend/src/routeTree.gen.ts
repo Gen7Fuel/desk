@@ -35,6 +35,7 @@ import { Route as AppbarSidebarProjectsIdRouteImport } from './routes/_appbar/_s
 import { Route as AppbarSidebarHubShiftsRouteImport } from './routes/_appbar/_sidebar/hub/shifts'
 import { Route as AppbarSidebarHubReceivablesRouteImport } from './routes/_appbar/_sidebar/hub/receivables'
 import { Route as AppbarSidebarHubPayablesRouteImport } from './routes/_appbar/_sidebar/hub/payables'
+import { Route as AppbarSidebarHubIntacctRouteImport } from './routes/_appbar/_sidebar/hub/intacct'
 import { Route as AppbarSidebarHubFleetCustomersRouteImport } from './routes/_appbar/_sidebar/hub/fleet-customers'
 import { Route as AppbarSidebarHubFleetCardsRouteImport } from './routes/_appbar/_sidebar/hub/fleet-cards'
 import { Route as AppbarSidebarHubFleetCardComplianceRouteImport } from './routes/_appbar/_sidebar/hub/fleet-card-compliance'
@@ -203,6 +204,11 @@ const AppbarSidebarHubPayablesRoute =
     path: '/payables',
     getParentRoute: () => AppbarSidebarHubRoute,
   } as any)
+const AppbarSidebarHubIntacctRoute = AppbarSidebarHubIntacctRouteImport.update({
+  id: '/intacct',
+  path: '/intacct',
+  getParentRoute: () => AppbarSidebarHubRoute,
+} as any)
 const AppbarSidebarHubFleetCustomersRoute =
   AppbarSidebarHubFleetCustomersRouteImport.update({
     id: '/fleet-customers',
@@ -443,6 +449,7 @@ export interface FileRoutesByFullPath {
   '/hub/fleet-card-compliance': typeof AppbarSidebarHubFleetCardComplianceRoute
   '/hub/fleet-cards': typeof AppbarSidebarHubFleetCardsRoute
   '/hub/fleet-customers': typeof AppbarSidebarHubFleetCustomersRoute
+  '/hub/intacct': typeof AppbarSidebarHubIntacctRoute
   '/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
   '/hub/shifts': typeof AppbarSidebarHubShiftsRoute
@@ -496,6 +503,7 @@ export interface FileRoutesByTo {
   '/hub/fleet-card-compliance': typeof AppbarSidebarHubFleetCardComplianceRoute
   '/hub/fleet-cards': typeof AppbarSidebarHubFleetCardsRoute
   '/hub/fleet-customers': typeof AppbarSidebarHubFleetCustomersRoute
+  '/hub/intacct': typeof AppbarSidebarHubIntacctRoute
   '/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
   '/hub/shifts': typeof AppbarSidebarHubShiftsRoute
@@ -560,6 +568,7 @@ export interface FileRoutesById {
   '/_appbar/_sidebar/hub/fleet-card-compliance': typeof AppbarSidebarHubFleetCardComplianceRoute
   '/_appbar/_sidebar/hub/fleet-cards': typeof AppbarSidebarHubFleetCardsRoute
   '/_appbar/_sidebar/hub/fleet-customers': typeof AppbarSidebarHubFleetCustomersRoute
+  '/_appbar/_sidebar/hub/intacct': typeof AppbarSidebarHubIntacctRoute
   '/_appbar/_sidebar/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/_appbar/_sidebar/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
   '/_appbar/_sidebar/hub/shifts': typeof AppbarSidebarHubShiftsRoute
@@ -619,6 +628,7 @@ export interface FileRouteTypes {
     | '/hub/fleet-card-compliance'
     | '/hub/fleet-cards'
     | '/hub/fleet-customers'
+    | '/hub/intacct'
     | '/hub/payables'
     | '/hub/receivables'
     | '/hub/shifts'
@@ -672,6 +682,7 @@ export interface FileRouteTypes {
     | '/hub/fleet-card-compliance'
     | '/hub/fleet-cards'
     | '/hub/fleet-customers'
+    | '/hub/intacct'
     | '/hub/payables'
     | '/hub/receivables'
     | '/hub/shifts'
@@ -735,6 +746,7 @@ export interface FileRouteTypes {
     | '/_appbar/_sidebar/hub/fleet-card-compliance'
     | '/_appbar/_sidebar/hub/fleet-cards'
     | '/_appbar/_sidebar/hub/fleet-customers'
+    | '/_appbar/_sidebar/hub/intacct'
     | '/_appbar/_sidebar/hub/payables'
     | '/_appbar/_sidebar/hub/receivables'
     | '/_appbar/_sidebar/hub/shifts'
@@ -948,6 +960,13 @@ declare module '@tanstack/react-router' {
       path: '/payables'
       fullPath: '/hub/payables'
       preLoaderRoute: typeof AppbarSidebarHubPayablesRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
+    '/_appbar/_sidebar/hub/intacct': {
+      id: '/_appbar/_sidebar/hub/intacct'
+      path: '/intacct'
+      fullPath: '/hub/intacct'
+      preLoaderRoute: typeof AppbarSidebarHubIntacctRouteImport
       parentRoute: typeof AppbarSidebarHubRoute
     }
     '/_appbar/_sidebar/hub/fleet-customers': {
@@ -1382,6 +1401,7 @@ interface AppbarSidebarHubRouteChildren {
   AppbarSidebarHubFleetCardComplianceRoute: typeof AppbarSidebarHubFleetCardComplianceRoute
   AppbarSidebarHubFleetCardsRoute: typeof AppbarSidebarHubFleetCardsRoute
   AppbarSidebarHubFleetCustomersRoute: typeof AppbarSidebarHubFleetCustomersRoute
+  AppbarSidebarHubIntacctRoute: typeof AppbarSidebarHubIntacctRoute
   AppbarSidebarHubPayablesRoute: typeof AppbarSidebarHubPayablesRoute
   AppbarSidebarHubReceivablesRoute: typeof AppbarSidebarHubReceivablesRoute
   AppbarSidebarHubShiftsRoute: typeof AppbarSidebarHubShiftsRoute
@@ -1397,6 +1417,7 @@ const AppbarSidebarHubRouteChildren: AppbarSidebarHubRouteChildren = {
     AppbarSidebarHubFleetCardComplianceRoute,
   AppbarSidebarHubFleetCardsRoute: AppbarSidebarHubFleetCardsRoute,
   AppbarSidebarHubFleetCustomersRoute: AppbarSidebarHubFleetCustomersRoute,
+  AppbarSidebarHubIntacctRoute: AppbarSidebarHubIntacctRoute,
   AppbarSidebarHubPayablesRoute: AppbarSidebarHubPayablesRoute,
   AppbarSidebarHubReceivablesRoute: AppbarSidebarHubReceivablesRoute,
   AppbarSidebarHubShiftsRoute: AppbarSidebarHubShiftsRoute,
