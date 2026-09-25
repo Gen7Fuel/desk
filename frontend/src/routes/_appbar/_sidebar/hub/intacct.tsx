@@ -1,10 +1,11 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { format } from 'date-fns'
 import { Loader2 } from 'lucide-react'
 import { can, getExternalToken } from '@/lib/permissions'
 import { apiFetch } from '@/lib/api'
-import { SitePicker } from '@/components/custom/SitePicker'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -45,42 +46,13 @@ interface SageCustomer {
   name: string
 }
 
-interface EntityInfo {
-  sageToken: string
-  locationId: string
-}
-
-async function resolveEntity(site: string): Promise<EntityInfo> {
+async function getSageToken(): Promise<string> {
   const tokenRes = await apiFetch('/api/sage/connect', { method: 'POST' })
   if (!tokenRes.ok) throw new Error('Failed to get Sage token')
   const { access_token: sageToken } = (await tokenRes.json()) as {
     access_token: string
   }
-
-  const locRes = await fetch(`${HUB}/api/locations`, {
-    headers: { Authorization: `Bearer ${getExternalToken()}` },
-  })
-  if (!locRes.ok) throw new Error('Failed to fetch Hub locations')
-  const locations = (await locRes.json()) as Array<{
-    stationName: string
-    site?: string
-    sageEntityKey?: string
-  }>
-  const loc = locations.find((l) => (l.site ?? l.stationName) === site)
-  if (!loc?.sageEntityKey)
-    throw new Error(`No Sage entity key configured for "${site}"`)
-
-  const entityRes = await apiFetch(`/api/sage/entity/${loc.sageEntityKey}`, {
-    headers: { 'X-Sage-Token': sageToken },
-  })
-  if (!entityRes.ok) throw new Error('Failed to fetch Sage entity')
-  const entityData = (await entityRes.json()) as {
-    'ia::result': { id: string }
-  }
-  const locationId = entityData['ia::result'].id
-  if (!locationId) throw new Error('Could not resolve Sage location ID')
-
-  return { sageToken, locationId }
+  return sageToken
 }
 
 // ---------------------------------------------------------------------------
@@ -106,13 +78,33 @@ function computeLastWeekRange(): { startDate: string; endDate: string } {
   return { startDate: toDateStr(monday), endDate: toDateStr(yesterday) }
 }
 
-function formatDateLabel(dateStr: string): string {
+function parseDateStr(dateStr: string): Date {
   const [y, m, d] = dateStr.split('-').map(Number)
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+  return new Date(y, m - 1, d)
+}
+
+function formatDateLabel(dateStr: string): string {
+  return parseDateStr(dateStr).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   })
+}
+
+// e.g. "Sep 14th-20th, 2026 charges on account", or when the range crosses a
+// month/year boundary: "Aug 31st, 2026-Sep 2nd, 2026 charges on account".
+function buildChargesLabel(startDate: string, endDate: string): string {
+  const start = parseDateStr(startDate)
+  const end = parseDateStr(endDate)
+  const sameMonthYear =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth()
+
+  const range = sameMonthYear
+    ? `${format(start, 'MMM do')}-${format(end, 'do')}, ${format(end, 'yyyy')}`
+    : `${format(start, 'MMM do, yyyy')}-${format(end, 'MMM do, yyyy')}`
+
+  return `${range} charges on account`
 }
 
 function formatAmount(amount: number): string {
@@ -287,17 +279,12 @@ function ArPurchaseOrdersPanel() {
 }
 
 async function searchCustomers(
-  entity: EntityInfo,
+  sageToken: string,
   q: string,
 ): Promise<Array<SageCustomer>> {
   const res = await apiFetch(
     `/api/sage/customers?q=${encodeURIComponent(q)}`,
-    {
-      headers: {
-        'X-Sage-Token': entity.sageToken,
-        'X-Sage-Entity': entity.locationId,
-      },
-    },
+    { headers: { 'X-Sage-Token': sageToken } },
   )
   if (!res.ok) throw new Error('Failed to search Sage customers')
   const data = (await res.json()) as {
@@ -306,11 +293,221 @@ async function searchCustomers(
   return data['ia::result'] ?? []
 }
 
+// ---------------------------------------------------------------------------
+// AR Invoice creation
+// ---------------------------------------------------------------------------
+
+const INVOICE_GL_ACCOUNT = '40010'
+const INVOICE_LOCATION_ID = 'A210'
+const INVOICE_TERM_ID = 'Due on Receipt'
+const INVOICE_CUSTOMER_MESSAGE_ID = 'Payment'
+
+interface InvoiceLine {
+  txnAmount: string
+  glAccount: { id: string }
+  memo: string
+  dimensions: { location: { id: string } }
+}
+
+function buildInvoiceLines(orders: Array<PurchaseOrderRow>): Array<InvoiceLine> {
+  return orders.map((order) => ({
+    txnAmount: (Number(order.amount) || 0).toFixed(2),
+    glAccount: { id: INVOICE_GL_ACCOUNT },
+    memo: order.poNumber,
+    dimensions: { location: { id: INVOICE_LOCATION_ID } },
+  }))
+}
+
+async function createInvoice(
+  sageToken: string,
+  customer: SageCustomer,
+  range: { startDate: string; endDate: string },
+  referenceNumber: string,
+  description: string,
+  orders: Array<PurchaseOrderRow>,
+): Promise<{ id: string; key: string }> {
+  const payload = {
+    invoiceDate: range.endDate,
+    dueDate: range.endDate,
+    customer: { id: customer.id },
+    customerMessage: { id: INVOICE_CUSTOMER_MESSAGE_ID },
+    referenceNumber,
+    description,
+    term: { id: INVOICE_TERM_ID },
+    currency: { txnCurrency: 'CAD' },
+    state: 'draft',
+    lines: buildInvoiceLines(orders),
+  }
+
+  const res = await apiFetch('/api/sage/invoice', {
+    method: 'POST',
+    headers: { 'X-Sage-Token': sageToken },
+    body: JSON.stringify(payload),
+  })
+  const body = await res.json().catch(() => null)
+
+  if (!res.ok) {
+    const detail =
+      (body?.['ia::error'] as { message?: string } | undefined)?.message ??
+      (body?.message as string | undefined) ??
+      JSON.stringify(body)
+    throw new Error(`Sage ${res.status}: ${detail}`)
+  }
+
+  const result = body?.['ia::result'] as
+    | { id: string; key: string }
+    | undefined
+  if (!result?.id) throw new Error('Sage did not return an invoice id.')
+  return result
+}
+
+function CustomerInvoicePanel({
+  range,
+  referenceNumber,
+  description,
+  sageToken,
+  customer,
+}: {
+  range: { startDate: string; endDate: string }
+  referenceNumber: string
+  description: string
+  sageToken: string
+  customer: SageCustomer
+}) {
+  const {
+    data: orders = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['ar-purchase-orders', range.startDate, range.endDate, 'all'],
+    queryFn: () => fetchArPurchaseOrders(range.startDate, range.endDate, 'all'),
+  })
+
+  const matchedOrders = orders.filter(
+    (order) =>
+      order.customerName.trim().toLowerCase() ===
+      customer.name.trim().toLowerCase(),
+  )
+  const total = matchedOrders.reduce(
+    (sum, order) => sum + (Number(order.amount) || 0),
+    0,
+  )
+
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState('')
+  const [created, setCreated] = useState<{ id: string; key: string } | null>(
+    null,
+  )
+
+  async function handleCreateInvoice() {
+    setCreating(true)
+    setCreateError('')
+    try {
+      const result = await createInvoice(
+        sageToken,
+        customer,
+        range,
+        referenceNumber,
+        description,
+        matchedOrders,
+      )
+      setCreated(result)
+    } catch (err) {
+      setCreateError(
+        err instanceof Error ? err.message : 'Failed to create invoice',
+      )
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  return (
+    <div className="mb-8 space-y-3">
+      <h2 className="text-base font-semibold">
+        Invoice Preview — {customer.name}
+      </h2>
+
+      {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
+      {error && (
+        <p className="text-sm text-destructive">
+          Failed to load purchase orders.
+        </p>
+      )}
+
+      {!isLoading && !error && (
+        <>
+          {matchedOrders.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No AR purchase order transactions found for {customer.name} in
+              this date range.
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>PO #</TableHead>
+                  <TableHead>Account</TableHead>
+                  <TableHead>Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {matchedOrders.map((order) => (
+                  <TableRow key={order._id}>
+                    <TableCell className="font-mono text-sm">
+                      {order.poNumber}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {INVOICE_GL_ACCOUNT}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {formatAmount(order.amount)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+              <TableFooter>
+                <TableRow>
+                  <TableCell colSpan={2}>Total</TableCell>
+                  <TableCell>{formatAmount(total)}</TableCell>
+                </TableRow>
+              </TableFooter>
+            </Table>
+          )}
+
+          <Button
+            size="sm"
+            disabled={matchedOrders.length === 0 || creating || !!created}
+            onClick={() => void handleCreateInvoice()}
+          >
+            {creating ? 'Creating…' : 'Create Invoice (Draft)'}
+          </Button>
+
+          {createError && (
+            <p className="text-sm text-destructive">{createError}</p>
+          )}
+          {created && (
+            <p className="text-sm text-emerald-600">
+              Draft invoice created — id {created.id}, key {created.key}.
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 function RouteComponent() {
-  const [site, setSite] = useState<string | undefined>(undefined)
-  const [entity, setEntity] = useState<EntityInfo | null>(null)
-  const [entityLoading, setEntityLoading] = useState(false)
-  const [entityError, setEntityError] = useState('')
+  const [range] = useState(computeLastWeekRange)
+  const [referenceNumber] = useState(() =>
+    buildChargesLabel(range.startDate, range.endDate),
+  )
+  const [description] = useState(() =>
+    buildChargesLabel(range.startDate, range.endDate),
+  )
+
+  const [sageToken, setSageToken] = useState<string | null>(null)
+  const [tokenLoading, setTokenLoading] = useState(true)
+  const [tokenError, setTokenError] = useState('')
 
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -320,35 +517,27 @@ function RouteComponent() {
   const [selectedCustomer, setSelectedCustomer] =
     useState<SageCustomer | null>(null)
 
-  // Resolve the Sage token + entity location whenever the selected site changes.
+  // Fetch the Sage token once on mount — the customer search isn't
+  // entity-scoped, so no site selection is needed to enable it.
   useEffect(() => {
-    setEntity(null)
-    setEntityError('')
-    setSelectedCustomer(null)
-    setSearchInput('')
-    setDebouncedSearch('')
-    if (!site) return
-
     let cancelled = false
-    setEntityLoading(true)
-    resolveEntity(site)
-      .then((result) => {
-        if (!cancelled) setEntity(result)
+    getSageToken()
+      .then((token) => {
+        if (!cancelled) setSageToken(token)
       })
       .catch((err) => {
         if (!cancelled)
-          setEntityError(
-            err instanceof Error ? err.message : 'Failed to resolve entity',
+          setTokenError(
+            err instanceof Error ? err.message : 'Failed to get Sage token',
           )
       })
       .finally(() => {
-        if (!cancelled) setEntityLoading(false)
+        if (!cancelled) setTokenLoading(false)
       })
-
     return () => {
       cancelled = true
     }
-  }, [site])
+  }, [])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -365,9 +554,9 @@ function RouteComponent() {
     isLoading: customersLoading,
     error: customersError,
   } = useQuery({
-    queryKey: ['sage-customers', entity?.locationId, debouncedSearch],
-    queryFn: () => searchCustomers(entity!, debouncedSearch),
-    enabled: !!entity && open,
+    queryKey: ['sage-customers', debouncedSearch],
+    queryFn: () => searchCustomers(sageToken!, debouncedSearch),
+    enabled: !!sageToken && open,
   })
 
   function handleSelect(customer: SageCustomer) {
@@ -376,7 +565,7 @@ function RouteComponent() {
     setOpen(false)
   }
 
-  const inputDisabled = !site || entityLoading || !!entityError
+  const inputDisabled = tokenLoading || !!tokenError
 
   return (
     <div className="p-6">
@@ -384,85 +573,86 @@ function RouteComponent() {
 
       <ArPurchaseOrdersPanel />
 
-      <div className="mb-4 flex items-end gap-4">
-        <div className="space-y-1.5">
-          <Label>Site</Label>
-          <SitePicker value={site} onValueChange={setSite} />
-        </div>
-
-        <div className="w-72 space-y-1.5">
-          <Label>AR Customer</Label>
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverAnchor asChild>
-              <div>
-                <Input
-                  placeholder={
-                    !site
-                      ? 'Select a site first'
-                      : entityLoading
-                        ? 'Resolving Sage entity…'
-                        : 'Click or type to search…'
-                  }
-                  value={searchInput}
-                  disabled={inputDisabled}
-                  onFocus={() => setOpen(true)}
-                  onChange={(e) => {
-                    setSearchInput(e.target.value)
-                    setSelectedCustomer(null)
-                    setOpen(true)
-                  }}
-                />
-              </div>
-            </PopoverAnchor>
-            <PopoverContent
-              align="start"
-              className="w-72 p-1"
-              onOpenAutoFocus={(e) => e.preventDefault()}
-            >
-              {customersLoading && (
-                <div className="flex items-center gap-2 px-2 py-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading…
-                </div>
-              )}
-              {customersError && (
-                <p className="px-2 py-2 text-sm text-destructive">
-                  Failed to load customers.
-                </p>
-              )}
-              {!customersLoading &&
-                !customersError &&
-                customers.length === 0 && (
-                  <p className="px-2 py-2 text-sm text-muted-foreground">
-                    No customers found.
-                  </p>
-                )}
-              {!customersLoading &&
-                !customersError &&
-                customers.length > 0 && (
-                  <div className="max-h-72 overflow-y-auto">
-                    {customers.map((customer) => (
-                      <button
-                        key={customer.id}
-                        type="button"
-                        className="flex w-full flex-col items-start rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
-                        onClick={() => handleSelect(customer)}
-                      >
-                        <span className="font-medium">{customer.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {customer.id}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-            </PopoverContent>
-          </Popover>
-        </div>
+      <div className="mb-8 space-y-1 text-sm">
+        <p>
+          <span className="font-medium">Reference Number:</span>{' '}
+          {referenceNumber}
+        </p>
+        <p>
+          <span className="font-medium">Description:</span> {description}
+        </p>
       </div>
 
-      {entityError && (
-        <p className="mb-4 text-sm text-destructive">{entityError}</p>
+      <div className="mb-4 w-72 space-y-1.5">
+        <Label>AR Customer</Label>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverAnchor asChild>
+            <div>
+              <Input
+                placeholder={
+                  tokenLoading
+                    ? 'Connecting to Sage…'
+                    : 'Click or type to search…'
+                }
+                value={searchInput}
+                disabled={inputDisabled}
+                onFocus={() => setOpen(true)}
+                onChange={(e) => {
+                  setSearchInput(e.target.value)
+                  setSelectedCustomer(null)
+                  setOpen(true)
+                }}
+              />
+            </div>
+          </PopoverAnchor>
+          <PopoverContent
+            align="start"
+            className="w-72 p-1"
+            onOpenAutoFocus={(e) => e.preventDefault()}
+          >
+            {customersLoading && (
+              <div className="flex items-center gap-2 px-2 py-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading…
+              </div>
+            )}
+            {customersError && (
+              <p className="px-2 py-2 text-sm text-destructive">
+                Failed to load customers.
+              </p>
+            )}
+            {!customersLoading &&
+              !customersError &&
+              customers.length === 0 && (
+                <p className="px-2 py-2 text-sm text-muted-foreground">
+                  No customers found.
+                </p>
+              )}
+            {!customersLoading &&
+              !customersError &&
+              customers.length > 0 && (
+                <div className="max-h-72 overflow-y-auto">
+                  {customers.map((customer) => (
+                    <button
+                      key={customer.id}
+                      type="button"
+                      className="flex w-full flex-col items-start rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
+                      onClick={() => handleSelect(customer)}
+                    >
+                      <span className="font-medium">{customer.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {customer.id}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      {tokenError && (
+        <p className="mb-4 text-sm text-destructive">{tokenError}</p>
       )}
 
       <div className="text-sm">
@@ -478,6 +668,17 @@ function RouteComponent() {
           <p className="text-muted-foreground">No customer selected.</p>
         )}
       </div>
+
+      {selectedCustomer && sageToken && (
+        <CustomerInvoicePanel
+          key={selectedCustomer.id}
+          range={range}
+          referenceNumber={referenceNumber}
+          description={description}
+          sageToken={sageToken}
+          customer={selectedCustomer}
+        />
+      )}
     </div>
   )
 }
