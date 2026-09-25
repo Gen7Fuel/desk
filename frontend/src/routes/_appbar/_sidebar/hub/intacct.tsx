@@ -163,6 +163,58 @@ async function fetchArPurchaseOrders(
   return Array.isArray(data) ? (data as Array<PurchaseOrderRow>) : []
 }
 
+// ---------------------------------------------------------------------------
+// Kardpoll (cardlock) AR transactions
+// ---------------------------------------------------------------------------
+
+interface KardpollArRow {
+  customer: string
+  card: string
+  amount: number
+  quantity: number
+  price_per_litre: number
+}
+
+interface KardpollReportDoc {
+  _id: string
+  site: string
+  date: string
+  ar_rows: Array<KardpollArRow>
+}
+
+async function fetchKardpollReports(
+  startDate: string,
+  endDate: string,
+): Promise<Array<KardpollReportDoc>> {
+  const params = new URLSearchParams({ startDate, endDate })
+  const res = await fetch(`${HUB}/api/cash-rec/kardpoll-entries?${params}`, {
+    headers: { Authorization: `Bearer ${getExternalToken()}` },
+  })
+  if (!res.ok) throw new Error('Failed to fetch Kardpoll reports')
+  const data: unknown = await res.json()
+  return Array.isArray(data) ? (data as Array<KardpollReportDoc>) : []
+}
+
+// Kardpoll ar_rows store the customer as a leading numeric code plus the
+// name, e.g. "000325 GMR Construct" — strip the code before comparing.
+function kardpollCustomerName(raw: string): string {
+  return raw.replace(/^\d+\s*/, '').trim()
+}
+
+function matchesKardpollCustomer(
+  rawCustomer: string,
+  sageCustomerName: string,
+): boolean {
+  const stripped = kardpollCustomerName(rawCustomer).toLowerCase()
+  const sageName = sageCustomerName.trim().toLowerCase()
+  if (!stripped || !sageName) return false
+  return (
+    stripped === sageName ||
+    stripped.includes(sageName) ||
+    sageName.includes(stripped)
+  )
+}
+
 function ArPurchaseOrdersPanel() {
   const [range] = useState(computeLastWeekRange)
   const [poSite, setPoSite] = useState('all')
@@ -321,11 +373,22 @@ interface InvoiceLine {
   }>
 }
 
-function buildInvoiceLines(orders: Array<PurchaseOrderRow>): Array<InvoiceLine> {
-  return orders.map((order) => ({
-    txnAmount: (Number(order.amount) || 0).toFixed(2),
+// A matched AR entry ready to become one invoice line, regardless of
+// whether it came from the PO module or a Kardpoll (cardlock) report.
+interface InvoiceLineSource {
+  key: string
+  source: 'PO' | 'Kardpoll'
+  memo: string
+  amount: number
+}
+
+function buildInvoiceLines(
+  sources: Array<InvoiceLineSource>,
+): Array<InvoiceLine> {
+  return sources.map((source) => ({
+    txnAmount: (Number(source.amount) || 0).toFixed(2),
     glAccount: { id: INVOICE_GL_ACCOUNT },
-    memo: order.poNumber,
+    memo: source.memo,
     dimensions: { location: { id: INVOICE_LOCATION_ID } },
     taxEntries: [
       {
@@ -344,7 +407,7 @@ async function createInvoice(
   range: { startDate: string; endDate: string },
   referenceNumber: string,
   description: string,
-  orders: Array<PurchaseOrderRow>,
+  sources: Array<InvoiceLineSource>,
 ): Promise<{ id: string; key: string }> {
   const payload = {
     invoiceDate: range.endDate,
@@ -356,7 +419,7 @@ async function createInvoice(
     term: { id: INVOICE_TERM_ID },
     currency: { txnCurrency: 'CAD' },
     state: 'draft',
-    lines: buildInvoiceLines(orders),
+    lines: buildInvoiceLines(sources),
   }
 
   const res = await apiFetch('/api/sage/invoice', {
@@ -408,20 +471,54 @@ function CustomerInvoicePanel({
 }) {
   const {
     data: orders = [],
-    isLoading,
-    error,
+    isLoading: ordersLoading,
+    error: ordersError,
   } = useQuery({
     queryKey: ['ar-purchase-orders', range.startDate, range.endDate, 'all'],
     queryFn: () => fetchArPurchaseOrders(range.startDate, range.endDate, 'all'),
   })
 
-  const matchedOrders = orders.filter(
-    (order) =>
-      order.customerName.trim().toLowerCase() ===
-      customer.name.trim().toLowerCase(),
+  const {
+    data: kardpollDocs = [],
+    isLoading: kardpollLoading,
+    error: kardpollError,
+  } = useQuery({
+    queryKey: ['kardpoll-reports', range.startDate, range.endDate],
+    queryFn: () => fetchKardpollReports(range.startDate, range.endDate),
+  })
+
+  const isLoading = ordersLoading || kardpollLoading
+  const error = ordersError || kardpollError
+
+  const matchedPoLines: Array<InvoiceLineSource> = orders
+    .filter(
+      (order) =>
+        order.customerName.trim().toLowerCase() ===
+        customer.name.trim().toLowerCase(),
+    )
+    .map((order) => ({
+      key: order._id,
+      source: 'PO',
+      memo: order.poNumber,
+      amount: order.amount,
+    }))
+
+  const matchedKardpollLines: Array<InvoiceLineSource> = kardpollDocs.flatMap(
+    (doc) =>
+      doc.ar_rows
+        .map((row, i) => ({ row, i }))
+        .filter(({ row }) => matchesKardpollCustomer(row.customer, customer.name))
+        .map(({ row, i }) => ({
+          key: `${doc._id}-${i}`,
+          source: 'Kardpoll' as const,
+          memo: row.card,
+          amount: row.amount,
+        })),
   )
-  const total = matchedOrders.reduce(
-    (sum, order) => sum + (Number(order.amount) || 0),
+
+  const matchedLines = [...matchedPoLines, ...matchedKardpollLines]
+  const total = matchedLines.reduce(
+    (sum, line) => sum + (Number(line.amount) || 0),
     0,
   )
 
@@ -441,7 +538,7 @@ function CustomerInvoicePanel({
         range,
         referenceNumber,
         description,
-        matchedOrders,
+        matchedLines,
       )
       setCreated(result)
     } catch (err) {
@@ -462,44 +559,46 @@ function CustomerInvoicePanel({
       {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
       {error && (
         <p className="text-sm text-destructive">
-          Failed to load purchase orders.
+          Failed to load purchase orders or Kardpoll reports.
         </p>
       )}
 
       {!isLoading && !error && (
         <>
-          {matchedOrders.length === 0 ? (
+          {matchedLines.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No AR purchase order transactions found for {customer.name} in
-              this date range.
+              No AR transactions (purchase orders or cardlock) found for{' '}
+              {customer.name} in this date range.
             </p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>PO #</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead>Memo</TableHead>
                   <TableHead>Account</TableHead>
                   <TableHead>Amount</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {matchedOrders.map((order) => (
-                  <TableRow key={order._id}>
+                {matchedLines.map((line) => (
+                  <TableRow key={line.key}>
+                    <TableCell className="text-sm">{line.source}</TableCell>
                     <TableCell className="font-mono text-sm">
-                      {order.poNumber}
+                      {line.memo}
                     </TableCell>
                     <TableCell className="text-sm">
                       {INVOICE_GL_ACCOUNT}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {formatAmount(order.amount)}
+                      {formatAmount(line.amount)}
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
               <TableFooter>
                 <TableRow>
-                  <TableCell colSpan={2}>Total</TableCell>
+                  <TableCell colSpan={3}>Total</TableCell>
                   <TableCell>{formatAmount(total)}</TableCell>
                 </TableRow>
               </TableFooter>
@@ -508,7 +607,7 @@ function CustomerInvoicePanel({
 
           <Button
             size="sm"
-            disabled={matchedOrders.length === 0 || creating || !!created}
+            disabled={matchedLines.length === 0 || creating || !!created}
             onClick={() => void handleCreateInvoice()}
           >
             {creating ? 'Creating…' : 'Create Invoice (Draft)'}
