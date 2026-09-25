@@ -301,14 +301,16 @@ const INVOICE_GL_ACCOUNT = '40010'
 const INVOICE_LOCATION_ID = 'A210'
 const INVOICE_TERM_ID = 'Due on Receipt'
 const INVOICE_CUSTOMER_MESSAGE_ID = 'Payment'
-const INVOICE_TAX_DETAIL_ID = 'Exempt Services Sale'
+// "Canadian Sales Tax - SYS" per GET /objects/tax/tax-solution — without an
+// explicit tax solution on the invoice, Sage can't resolve each line's tax
+// detail from the GL account's default mapping and rejects with SL-0749.
+const INVOICE_TAX_SOLUTION_ID = 'Canadian Sales Tax - SYS'
 
 interface InvoiceLine {
   txnAmount: string
   glAccount: { id: string }
   memo: string
   dimensions: { location: { id: string } }
-  taxEntries: Array<{ taxDetail: { id: string } }>
 }
 
 function buildInvoiceLines(orders: Array<PurchaseOrderRow>): Array<InvoiceLine> {
@@ -317,7 +319,6 @@ function buildInvoiceLines(orders: Array<PurchaseOrderRow>): Array<InvoiceLine> 
     glAccount: { id: INVOICE_GL_ACCOUNT },
     memo: order.poNumber,
     dimensions: { location: { id: INVOICE_LOCATION_ID } },
-    taxEntries: [{ taxDetail: { id: INVOICE_TAX_DETAIL_ID } }],
   }))
 }
 
@@ -338,6 +339,7 @@ async function createInvoice(
     description,
     term: { id: INVOICE_TERM_ID },
     currency: { txnCurrency: 'CAD' },
+    taxSolution: { id: INVOICE_TAX_SOLUTION_ID },
     state: 'draft',
     lines: buildInvoiceLines(orders),
   }
@@ -350,8 +352,20 @@ async function createInvoice(
   const body = await res.json().catch(() => null)
 
   if (!res.ok) {
+    const err = body?.['ia::error'] as
+      | {
+          message?: string
+          details?: Array<{ message?: string; target?: string }>
+        }
+      | undefined
+    const detailMessages = err?.details
+      ?.map((d) => (d.target ? `${d.target}: ${d.message}` : d.message))
+      .filter(Boolean)
     const detail =
-      (body?.['ia::error'] as { message?: string } | undefined)?.message ??
+      (detailMessages && detailMessages.length > 0
+        ? detailMessages.join('; ')
+        : undefined) ??
+      err?.message ??
       (body?.message as string | undefined) ??
       JSON.stringify(body)
     throw new Error(`Sage ${res.status}: ${detail}`)
@@ -450,7 +464,6 @@ function CustomerInvoicePanel({
                 <TableRow>
                   <TableHead>PO #</TableHead>
                   <TableHead>Account</TableHead>
-                  <TableHead>Tax Detail</TableHead>
                   <TableHead>Amount</TableHead>
                 </TableRow>
               </TableHeader>
@@ -464,9 +477,6 @@ function CustomerInvoicePanel({
                       {INVOICE_GL_ACCOUNT}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {INVOICE_TAX_DETAIL_ID}
-                    </TableCell>
-                    <TableCell className="text-sm">
                       {formatAmount(order.amount)}
                     </TableCell>
                   </TableRow>
@@ -474,7 +484,7 @@ function CustomerInvoicePanel({
               </TableBody>
               <TableFooter>
                 <TableRow>
-                  <TableCell colSpan={3}>Total</TableCell>
+                  <TableCell colSpan={2}>Total</TableCell>
                   <TableCell>{formatAmount(total)}</TableCell>
                 </TableRow>
               </TableFooter>
