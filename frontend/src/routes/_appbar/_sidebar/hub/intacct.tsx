@@ -301,16 +301,24 @@ const INVOICE_GL_ACCOUNT = '40010'
 const INVOICE_LOCATION_ID = 'A210'
 const INVOICE_TERM_ID = 'Due on Receipt'
 const INVOICE_CUSTOMER_MESSAGE_ID = 'Payment'
-// "Canadian Sales Tax - SYS" per GET /objects/tax/tax-solution — without an
-// explicit tax solution on the invoice, Sage can't resolve each line's tax
-// detail from the GL account's default mapping and rejects with SL-0749.
-const INVOICE_TAX_SOLUTION_ID = 'Canadian Sales Tax - SYS'
+// "Exempt Services Sale - CA" (key 74) per GET /objects/tax/tax-detail — same
+// GL account (40010) already uses this in the fuel-invoicing AR flow. GL
+// 40010 has no default tax mapping, so relying on a bare invoice-level
+// taxSolution (previous attempt) still hit SL-0749; the detail has to be
+// sent explicitly per line via the taxEntries.orderEntryTaxDetail field.
+const INVOICE_TAX_DETAIL_KEY = '74'
 
 interface InvoiceLine {
   txnAmount: string
   glAccount: { id: string }
   memo: string
   dimensions: { location: { id: string } }
+  taxEntries: Array<{
+    baseTaxAmount: string
+    txnTaxAmount: string
+    taxRate: number
+    orderEntryTaxDetail: { key: string }
+  }>
 }
 
 function buildInvoiceLines(orders: Array<PurchaseOrderRow>): Array<InvoiceLine> {
@@ -319,6 +327,14 @@ function buildInvoiceLines(orders: Array<PurchaseOrderRow>): Array<InvoiceLine> 
     glAccount: { id: INVOICE_GL_ACCOUNT },
     memo: order.poNumber,
     dimensions: { location: { id: INVOICE_LOCATION_ID } },
+    taxEntries: [
+      {
+        baseTaxAmount: '0',
+        txnTaxAmount: '0',
+        taxRate: 0,
+        orderEntryTaxDetail: { key: INVOICE_TAX_DETAIL_KEY },
+      },
+    ],
   }))
 }
 
@@ -339,7 +355,6 @@ async function createInvoice(
     description,
     term: { id: INVOICE_TERM_ID },
     currency: { txnCurrency: 'CAD' },
-    taxSolution: { id: INVOICE_TAX_SOLUTION_ID },
     state: 'draft',
     lines: buildInvoiceLines(orders),
   }
