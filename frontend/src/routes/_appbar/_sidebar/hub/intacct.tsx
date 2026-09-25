@@ -301,12 +301,14 @@ const INVOICE_GL_ACCOUNT = '40010'
 const INVOICE_LOCATION_ID = 'A210'
 const INVOICE_TERM_ID = 'Due on Receipt'
 const INVOICE_CUSTOMER_MESSAGE_ID = 'Payment'
+const INVOICE_TAX_DETAIL_ID = 'Exempt Services Sale'
 
 interface InvoiceLine {
   txnAmount: string
   glAccount: { id: string }
   memo: string
   dimensions: { location: { id: string } }
+  taxEntries: Array<{ taxDetail: { id: string } }>
 }
 
 function buildInvoiceLines(orders: Array<PurchaseOrderRow>): Array<InvoiceLine> {
@@ -315,6 +317,7 @@ function buildInvoiceLines(orders: Array<PurchaseOrderRow>): Array<InvoiceLine> 
     glAccount: { id: INVOICE_GL_ACCOUNT },
     memo: order.poNumber,
     dimensions: { location: { id: INVOICE_LOCATION_ID } },
+    taxEntries: [{ taxDetail: { id: INVOICE_TAX_DETAIL_ID } }],
   }))
 }
 
@@ -447,6 +450,7 @@ function CustomerInvoicePanel({
                 <TableRow>
                   <TableHead>PO #</TableHead>
                   <TableHead>Account</TableHead>
+                  <TableHead>Tax Detail</TableHead>
                   <TableHead>Amount</TableHead>
                 </TableRow>
               </TableHeader>
@@ -460,6 +464,9 @@ function CustomerInvoicePanel({
                       {INVOICE_GL_ACCOUNT}
                     </TableCell>
                     <TableCell className="text-sm">
+                      {INVOICE_TAX_DETAIL_ID}
+                    </TableCell>
+                    <TableCell className="text-sm">
                       {formatAmount(order.amount)}
                     </TableCell>
                   </TableRow>
@@ -467,7 +474,7 @@ function CustomerInvoicePanel({
               </TableBody>
               <TableFooter>
                 <TableRow>
-                  <TableCell colSpan={2}>Total</TableCell>
+                  <TableCell colSpan={3}>Total</TableCell>
                   <TableCell>{formatAmount(total)}</TableCell>
                 </TableRow>
               </TableFooter>
