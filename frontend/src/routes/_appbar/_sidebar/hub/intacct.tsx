@@ -14,13 +14,6 @@ import {
   PopoverContent,
 } from '@/components/ui/popover'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   Table,
   TableBody,
   TableCell,
@@ -56,7 +49,7 @@ async function getSageToken(): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
-// AR Purchase Orders (last week) panel
+// Date range + charges label
 // ---------------------------------------------------------------------------
 
 function toDateStr(d: Date): string {
@@ -83,14 +76,6 @@ function parseDateStr(dateStr: string): Date {
   return new Date(y, m - 1, d)
 }
 
-function formatDateLabel(dateStr: string): string {
-  return parseDateStr(dateStr).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
-
 // e.g. "Sep 14th-20th, 2026 charges on account", or when the range crosses a
 // month/year boundary: "Aug 31st, 2026-Sep 2nd, 2026 charges on account".
 function buildChargesLabel(startDate: string, endDate: string): string {
@@ -114,11 +99,6 @@ function formatAmount(amount: number): string {
   })}`
 }
 
-interface HubLocation {
-  stationName: string
-  site?: string
-}
-
 interface PurchaseOrderRow {
   _id: string
   date: string
@@ -128,18 +108,6 @@ interface PurchaseOrderRow {
   poNumber: string
   quantity: number
   amount: number
-}
-
-function poRowDate(row: Pick<PurchaseOrderRow, 'date' | 'dateStr'>): string {
-  return row.dateStr || new Date(row.date).toLocaleDateString('en-CA')
-}
-
-async function fetchHubLocations(): Promise<Array<HubLocation>> {
-  const res = await fetch(`${HUB}/api/locations`, {
-    headers: { Authorization: `Bearer ${getExternalToken()}` },
-  })
-  if (!res.ok) throw new Error('Failed to fetch Hub locations')
-  return (await res.json()) as Array<HubLocation>
 }
 
 async function fetchArPurchaseOrders(
@@ -212,121 +180,6 @@ function matchesKardpollCustomer(
     stripped === sageName ||
     stripped.includes(sageName) ||
     sageName.includes(stripped)
-  )
-}
-
-function ArPurchaseOrdersPanel() {
-  const [range] = useState(computeLastWeekRange)
-  const [poSite, setPoSite] = useState('all')
-
-  const { data: locations = [] } = useQuery({
-    queryKey: ['hub-locations'],
-    queryFn: fetchHubLocations,
-  })
-
-  const {
-    data: orders = [],
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['ar-purchase-orders', range.startDate, range.endDate, poSite],
-    queryFn: () =>
-      fetchArPurchaseOrders(range.startDate, range.endDate, poSite),
-  })
-
-  const total = orders.reduce((sum, o) => sum + (Number(o.amount) || 0), 0)
-
-  return (
-    <div className="mb-8">
-      <div className="mb-3 flex items-end justify-between gap-4">
-        <div>
-          <h2 className="text-base font-semibold">AR Purchase Orders</h2>
-          <p className="text-sm text-muted-foreground">
-            {formatDateLabel(range.startDate)} –{' '}
-            {formatDateLabel(range.endDate)}
-          </p>
-        </div>
-        <div className="w-56 space-y-1.5">
-          <Label>Site</Label>
-          <Select value={poSite} onValueChange={setPoSite}>
-            <SelectTrigger className="w-56">
-              <SelectValue placeholder="All Sites" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Sites</SelectItem>
-              {locations.map((loc) => {
-                const name = loc.site ?? loc.stationName
-                return (
-                  <SelectItem key={name} value={name}>
-                    {name}
-                  </SelectItem>
-                )
-              })}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
-      {error && (
-        <p className="text-sm text-destructive">
-          Failed to load purchase orders.
-        </p>
-      )}
-
-      {!isLoading && !error && (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Site</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>PO #</TableHead>
-              <TableHead>Qty</TableHead>
-              <TableHead>Amount</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {orders.length === 0 && (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="text-center text-sm text-muted-foreground"
-                >
-                  No AR purchase orders found.
-                </TableCell>
-              </TableRow>
-            )}
-            {orders.map((order) => (
-              <TableRow key={order._id}>
-                <TableCell className="text-sm">{poRowDate(order)}</TableCell>
-                <TableCell className="text-sm">
-                  {order.stationName}
-                </TableCell>
-                <TableCell className="text-sm">
-                  {order.customerName}
-                </TableCell>
-                <TableCell className="font-mono text-sm">
-                  {order.poNumber}
-                </TableCell>
-                <TableCell className="text-sm">{order.quantity}</TableCell>
-                <TableCell className="text-sm">
-                  {formatAmount(order.amount)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-          {orders.length > 0 && (
-            <TableFooter>
-              <TableRow>
-                <TableCell colSpan={5}>Total</TableCell>
-                <TableCell>{formatAmount(total)}</TableCell>
-              </TableRow>
-            </TableFooter>
-          )}
-        </Table>
-      )}
-    </div>
   )
 }
 
@@ -517,10 +370,15 @@ function CustomerInvoicePanel({
   )
 
   const matchedLines = [...matchedPoLines, ...matchedKardpollLines]
-  const total = matchedLines.reduce(
+  const poSubtotal = matchedPoLines.reduce(
     (sum, line) => sum + (Number(line.amount) || 0),
     0,
   )
+  const kardpollSubtotal = matchedKardpollLines.reduce(
+    (sum, line) => sum + (Number(line.amount) || 0),
+    0,
+  )
+  const total = poSubtotal + kardpollSubtotal
 
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState('')
@@ -571,38 +429,87 @@ function CustomerInvoicePanel({
               {customer.name} in this date range.
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Source</TableHead>
-                  <TableHead>Memo</TableHead>
-                  <TableHead>Account</TableHead>
-                  <TableHead>Amount</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {matchedLines.map((line) => (
-                  <TableRow key={line.key}>
-                    <TableCell className="text-sm">{line.source}</TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {line.memo}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {INVOICE_GL_ACCOUNT}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {formatAmount(line.amount)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-              <TableFooter>
-                <TableRow>
-                  <TableCell colSpan={3}>Total</TableCell>
-                  <TableCell>{formatAmount(total)}</TableCell>
-                </TableRow>
-              </TableFooter>
-            </Table>
+            <div className="space-y-4">
+              {matchedPoLines.length > 0 && (
+                <div>
+                  <h3 className="mb-1.5 text-sm font-medium">
+                    Purchase Orders
+                  </h3>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>PO #</TableHead>
+                        <TableHead>Account</TableHead>
+                        <TableHead>Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {matchedPoLines.map((line) => (
+                        <TableRow key={line.key}>
+                          <TableCell className="font-mono text-sm">
+                            {line.memo}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {INVOICE_GL_ACCOUNT}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {formatAmount(line.amount)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                    <TableFooter>
+                      <TableRow>
+                        <TableCell colSpan={2}>Subtotal</TableCell>
+                        <TableCell>{formatAmount(poSubtotal)}</TableCell>
+                      </TableRow>
+                    </TableFooter>
+                  </Table>
+                </div>
+              )}
+
+              {matchedKardpollLines.length > 0 && (
+                <div>
+                  <h3 className="mb-1.5 text-sm font-medium">Kardpoll</h3>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Card</TableHead>
+                        <TableHead>Account</TableHead>
+                        <TableHead>Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {matchedKardpollLines.map((line) => (
+                        <TableRow key={line.key}>
+                          <TableCell className="font-mono text-sm">
+                            {line.memo}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {INVOICE_GL_ACCOUNT}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {formatAmount(line.amount)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                    <TableFooter>
+                      <TableRow>
+                        <TableCell colSpan={2}>Subtotal</TableCell>
+                        <TableCell>
+                          {formatAmount(kardpollSubtotal)}
+                        </TableCell>
+                      </TableRow>
+                    </TableFooter>
+                  </Table>
+                </div>
+              )}
+
+              <p className="text-sm font-medium">
+                Grand Total: {formatAmount(total)}
+              </p>
+            </div>
           )}
 
           <Button
@@ -701,8 +608,6 @@ function RouteComponent() {
   return (
     <div className="p-6">
       <h1 className="mb-6 text-lg font-semibold">Intacct</h1>
-
-      <ArPurchaseOrdersPanel />
 
       <div className="mb-8 space-y-1 text-sm">
         <p>
