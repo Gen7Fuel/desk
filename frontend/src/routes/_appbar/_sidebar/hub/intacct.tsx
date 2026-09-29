@@ -279,6 +279,7 @@ interface InvoiceLine {
 interface InvoiceLineSource {
   key: string
   source: 'PO' | 'Kardpoll'
+  station: string
   memo: string
   amount: number
 }
@@ -357,6 +358,168 @@ async function createInvoice(
   return result
 }
 
+// ---------------------------------------------------------------------------
+// AP Bill creation — mirrors the AR invoice, split one bill per station the
+// matched AR lines originated from (each station has its own "Gen7 LP
+// {Station}" AP vendor record representing the inter-company payable).
+// ---------------------------------------------------------------------------
+
+const AP_BILL_GL_ACCOUNT = '50350'
+// "ON HST Exempt" (key 73) per GET /objects/tax/purchasing-tax-detail —
+// the AP-side equivalent of the AR invoice's tax-detail lookup.
+const AP_BILL_TAX_DETAIL_KEY = '73'
+
+interface SageVendor {
+  id: string
+  name: string
+}
+
+async function findVendorForStation(
+  sageToken: string,
+  station: string,
+): Promise<SageVendor> {
+  const q = `Gen7 LP ${station}`
+  const res = await apiFetch(`/api/sage/vendors?q=${encodeURIComponent(q)}`, {
+    headers: { 'X-Sage-Token': sageToken },
+  })
+  if (!res.ok)
+    throw new Error(`Failed to search Sage vendors for "${station}"`)
+  const data = (await res.json()) as { 'ia::result'?: Array<SageVendor> }
+  const results = data['ia::result'] ?? []
+  const exact = results.find(
+    (v) => v.name.trim().toLowerCase() === q.trim().toLowerCase(),
+  )
+  const vendor = exact ?? (results.length === 1 ? results[0] : undefined)
+  if (!vendor) {
+    throw new Error(
+      `Could not resolve a unique Sage vendor for "${station}" (searched "${q}")`,
+    )
+  }
+  return vendor
+}
+
+function buildApBillLabel(
+  station: string,
+  startDate: string,
+  endDate: string,
+): string {
+  return `${station} station AR due from Gen7 LP - ${formatDateRangeLabel(startDate, endDate)}`
+}
+
+async function createApBill(
+  sageToken: string,
+  vendor: SageVendor,
+  range: { startDate: string; endDate: string },
+  label: string,
+  amount: number,
+): Promise<{ id: string; key: string }> {
+  const payload = {
+    createdDate: range.endDate,
+    postingDate: range.endDate,
+    dueDate: range.endDate,
+    vendor: { id: vendor.id },
+    referenceNumber: label,
+    description: label,
+    term: { id: INVOICE_TERM_ID },
+    currency: { txnCurrency: 'CAD' },
+    state: 'draft',
+    lines: [
+      {
+        txnAmount: (Number(amount) || 0).toFixed(2),
+        glAccount: { id: AP_BILL_GL_ACCOUNT },
+        memo: label,
+        dimensions: { location: { id: INVOICE_LOCATION_ID } },
+        taxEntries: [
+          {
+            baseTaxAmount: '0',
+            txnTaxAmount: '0',
+            taxRate: 0,
+            orderEntryTaxDetail: { key: AP_BILL_TAX_DETAIL_KEY },
+          },
+        ],
+      },
+    ],
+  }
+
+  const res = await apiFetch('/api/sage/bill', {
+    method: 'POST',
+    headers: { 'X-Sage-Token': sageToken },
+    body: JSON.stringify(payload),
+  })
+  const body = await res.json().catch(() => null)
+
+  if (!res.ok) {
+    const err = body?.['ia::error'] as
+      | {
+          message?: string
+          details?: Array<{ message?: string; target?: string }>
+        }
+      | undefined
+    const detailMessages = err?.details
+      ?.map((d) => (d.target ? `${d.target}: ${d.message}` : d.message))
+      .filter(Boolean)
+    const detail =
+      (detailMessages && detailMessages.length > 0
+        ? detailMessages.join('; ')
+        : undefined) ??
+      err?.message ??
+      (body?.message as string | undefined) ??
+      JSON.stringify(body)
+    throw new Error(`Sage ${res.status}: ${detail}`)
+  }
+
+  const result = body?.['ia::result'] as
+    | { id: string; key: string }
+    | undefined
+  if (!result?.id) throw new Error('Sage did not return a bill id.')
+  return result
+}
+
+interface ApBillResult {
+  station: string
+  amount: number
+  status: 'pending' | 'success' | 'error'
+  id?: string
+  key?: string
+  errorMessage?: string
+}
+
+async function createApBillsForStations(
+  sageToken: string,
+  range: { startDate: string; endDate: string },
+  stationTotals: Array<{ station: string; amount: number }>,
+  onSettled: (result: ApBillResult) => void,
+): Promise<void> {
+  await Promise.all(
+    stationTotals.map(async ({ station, amount }) => {
+      try {
+        const vendor = await findVendorForStation(sageToken, station)
+        const label = buildApBillLabel(
+          station,
+          range.startDate,
+          range.endDate,
+        )
+        const result = await createApBill(sageToken, vendor, range, label, amount)
+        onSettled({
+          station,
+          amount,
+          status: 'success',
+          id: result.id,
+          key: result.key,
+        })
+      } catch (err) {
+        onSettled({
+          station,
+          amount,
+          status: 'error',
+          errorMessage:
+            err instanceof Error ? err.message : 'Failed to create AP bill',
+        })
+      }
+    }),
+  )
+}
+
 function CustomerInvoicePanel({
   range,
   referenceNumber,
@@ -400,6 +563,7 @@ function CustomerInvoicePanel({
     .map((order) => ({
       key: order._id,
       source: 'PO',
+      station: order.stationName,
       memo: order.poNumber,
       amount: order.amount,
     }))
@@ -412,6 +576,7 @@ function CustomerInvoicePanel({
         .map(({ row, i }) => ({
           key: `${doc._id}-${i}`,
           source: 'Kardpoll' as const,
+          station: doc.site,
           memo: row.card,
           amount: row.amount,
         })),
@@ -433,6 +598,7 @@ function CustomerInvoicePanel({
   const [created, setCreated] = useState<{ id: string; key: string } | null>(
     null,
   )
+  const [apBillResults, setApBillResults] = useState<Array<ApBillResult>>([])
 
   async function handleCreateInvoice() {
     setCreating(true)
@@ -447,6 +613,26 @@ function CustomerInvoicePanel({
         matchedLines,
       )
       setCreated(result)
+
+      const stationTotals = Array.from(
+        matchedLines.reduce((map, line) => {
+          map.set(line.station, (map.get(line.station) ?? 0) + (Number(line.amount) || 0))
+          return map
+        }, new Map<string, number>()),
+      ).map(([station, amount]) => ({ station, amount }))
+
+      setApBillResults(
+        stationTotals.map(({ station, amount }) => ({
+          station,
+          amount,
+          status: 'pending' as const,
+        })),
+      )
+      void createApBillsForStations(sageToken, range, stationTotals, (update) => {
+        setApBillResults((prev) =>
+          prev.map((r) => (r.station === update.station ? update : r)),
+        )
+      })
     } catch (err) {
       setCreateError(
         err instanceof Error ? err.message : 'Failed to create invoice',
@@ -575,6 +761,28 @@ function CustomerInvoicePanel({
             <p className="text-sm text-emerald-600">
               Draft invoice created — id {created.id}, key {created.key}.
             </p>
+          )}
+
+          {apBillResults.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-sm font-medium">AP Bills</p>
+              {apBillResults.map((r) => (
+                <p key={r.station} className="text-sm">
+                  {r.station} ({formatAmount(r.amount)}):{' '}
+                  {r.status === 'pending' && (
+                    <span className="text-muted-foreground">Creating…</span>
+                  )}
+                  {r.status === 'success' && (
+                    <span className="text-emerald-600">
+                      Draft bill created — id {r.id}, key {r.key}.
+                    </span>
+                  )}
+                  {r.status === 'error' && (
+                    <span className="text-destructive">{r.errorMessage}</span>
+                  )}
+                </p>
+              ))}
+            </div>
           )}
         </>
       )}
