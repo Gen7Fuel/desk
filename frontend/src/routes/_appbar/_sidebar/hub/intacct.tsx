@@ -14,6 +14,13 @@ import {
   PopoverContent,
 } from '@/components/ui/popover'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -76,20 +83,61 @@ function parseDateStr(dateStr: string): Date {
   return new Date(y, m - 1, d)
 }
 
-// e.g. "Sep 14th-20th, 2026 charges on account", or when the range crosses a
-// month/year boundary: "Aug 31st, 2026-Sep 2nd, 2026 charges on account".
-function buildChargesLabel(startDate: string, endDate: string): string {
+// e.g. "Sep 22nd, 2026" (single day), "Sep 14th-20th, 2026" (same month), or
+// "Aug 31st, 2026-Sep 2nd, 2026" when the range crosses a month/year boundary.
+function formatDateRangeLabel(startDate: string, endDate: string): string {
+  if (startDate === endDate) {
+    return format(parseDateStr(startDate), 'MMM do, yyyy')
+  }
+
   const start = parseDateStr(startDate)
   const end = parseDateStr(endDate)
   const sameMonthYear =
     start.getFullYear() === end.getFullYear() &&
     start.getMonth() === end.getMonth()
 
-  const range = sameMonthYear
+  return sameMonthYear
     ? `${format(start, 'MMM do')}-${format(end, 'do')}, ${format(end, 'yyyy')}`
     : `${format(start, 'MMM do, yyyy')}-${format(end, 'MMM do, yyyy')}`
+}
 
-  return `${range} charges on account`
+function buildChargesLabel(startDate: string, endDate: string): string {
+  return `${formatDateRangeLabel(startDate, endDate)} charges on account`
+}
+
+interface WeekOption {
+  label: string
+  startDate: string
+  endDate: string
+}
+
+// Four selectable weeks: the latest (Monday on/before yesterday, through
+// yesterday — matches computeLastWeekRange's self-correcting behavior), then
+// three full Monday-Sunday weeks stepping back from there.
+function computeWeekOptions(): Array<WeekOption> {
+  const latest = computeLastWeekRange()
+  const options: Array<WeekOption> = []
+  let start = parseDateStr(latest.startDate)
+  let end = parseDateStr(latest.endDate)
+
+  for (let i = 0; i < 4; i++) {
+    const startDate = toDateStr(start)
+    const endDate = toDateStr(end)
+    options.push({
+      label: formatDateRangeLabel(startDate, endDate),
+      startDate,
+      endDate,
+    })
+
+    const prevEnd = new Date(start)
+    prevEnd.setDate(start.getDate() - 1)
+    const prevStart = new Date(prevEnd)
+    prevStart.setDate(prevEnd.getDate() - 6)
+    start = prevStart
+    end = prevEnd
+  }
+
+  return options
 }
 
 function formatAmount(amount: number): string {
@@ -535,13 +583,11 @@ function CustomerInvoicePanel({
 }
 
 function RouteComponent() {
-  const [range] = useState(computeLastWeekRange)
-  const [referenceNumber] = useState(() =>
-    buildChargesLabel(range.startDate, range.endDate),
-  )
-  const [description] = useState(() =>
-    buildChargesLabel(range.startDate, range.endDate),
-  )
+  const [weekOptions] = useState(computeWeekOptions)
+  const [selectedWeek, setSelectedWeek] = useState('0')
+  const range = weekOptions[Number(selectedWeek)]
+  const referenceNumber = buildChargesLabel(range.startDate, range.endDate)
+  const description = referenceNumber
 
   const [sageToken, setSageToken] = useState<string | null>(null)
   const [tokenLoading, setTokenLoading] = useState(true)
@@ -609,14 +655,20 @@ function RouteComponent() {
     <div className="p-6">
       <h1 className="mb-6 text-lg font-semibold">Intacct</h1>
 
-      <div className="mb-8 space-y-1 text-sm">
-        <p>
-          <span className="font-medium">Reference Number:</span>{' '}
-          {referenceNumber}
-        </p>
-        <p>
-          <span className="font-medium">Description:</span> {description}
-        </p>
+      <div className="mb-4 w-72 space-y-1.5">
+        <Label>Week</Label>
+        <Select value={selectedWeek} onValueChange={setSelectedWeek}>
+          <SelectTrigger className="w-72">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {weekOptions.map((option, index) => (
+              <SelectItem key={option.startDate} value={String(index)}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="mb-4 w-72 space-y-1.5">
@@ -707,7 +759,7 @@ function RouteComponent() {
 
       {selectedCustomer && sageToken && (
         <CustomerInvoicePanel
-          key={selectedCustomer.id}
+          key={`${selectedCustomer.id}-${selectedWeek}`}
           range={range}
           referenceNumber={referenceNumber}
           description={description}
