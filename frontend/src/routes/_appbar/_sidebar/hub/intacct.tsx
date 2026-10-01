@@ -676,11 +676,12 @@ async function createSiteInvoice(
 function SiteInvoicePanel({
   range,
   sageToken,
+  site,
 }: {
   range: { startDate: string; endDate: string }
   sageToken: string
+  site: string | undefined
 }) {
-  const [site, setSite] = useState<string | undefined>(undefined)
   const [entityLocationId, setEntityLocationId] = useState<string | null>(
     null,
   )
@@ -770,11 +771,6 @@ function SiteInvoicePanel({
   return (
     <div className="mb-8 space-y-3">
       <h2 className="text-base font-semibold">Site AR Invoice</h2>
-
-      <div className="w-72 space-y-1.5">
-        <Label>Site</Label>
-        <SitePicker value={site} onValueChange={setSite} />
-      </div>
 
       {!site && (
         <p className="text-sm text-muted-foreground">
@@ -1152,6 +1148,7 @@ function RouteComponent() {
   const [open, setOpen] = useState(false)
   const [selectedCustomer, setSelectedCustomer] =
     useState<SageCustomer | null>(null)
+  const [site, setSite] = useState<string | undefined>(undefined)
 
   // Fetch the Sage token once on mount — the customer search isn't
   // entity-scoped, so no site selection is needed to enable it.
@@ -1205,90 +1202,98 @@ function RouteComponent() {
 
   return (
     <div className="p-6">
-      <h1 className="mb-6 text-lg font-semibold">Intacct</h1>
-
-      <div className="mb-4 w-72 space-y-1.5">
-        <Label>Week</Label>
-        <Select value={selectedWeek} onValueChange={setSelectedWeek}>
-          <SelectTrigger className="w-72">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {weekOptions.map((option, index) => (
-              <SelectItem key={option.startDate} value={String(index)}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="mb-4 flex items-end justify-between gap-4">
+        <h1 className="text-lg font-semibold">Intacct</h1>
+        <div className="w-72 space-y-1.5">
+          <Label>Week</Label>
+          <Select value={selectedWeek} onValueChange={setSelectedWeek}>
+            <SelectTrigger className="w-72">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {weekOptions.map((option, index) => (
+                <SelectItem key={option.startDate} value={String(index)}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      <div className="mb-4 w-72 space-y-1.5">
-        <Label>AR Customer</Label>
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverAnchor asChild>
-            <div>
-              <Input
-                placeholder={
-                  tokenLoading
-                    ? 'Connecting to Sage…'
-                    : 'Click or type to search…'
-                }
-                value={searchInput}
-                disabled={inputDisabled}
-                onFocus={() => setOpen(true)}
-                onChange={(e) => {
-                  setSearchInput(e.target.value)
-                  setSelectedCustomer(null)
-                  setOpen(true)
-                }}
-              />
-            </div>
-          </PopoverAnchor>
-          <PopoverContent
-            align="start"
-            className="w-72 p-1"
-            onOpenAutoFocus={(e) => e.preventDefault()}
-          >
-            {customersLoading && (
-              <div className="flex items-center gap-2 px-2 py-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Loading…
+      <div className="mb-4 flex items-end justify-between gap-4">
+        <div className="w-72 space-y-1.5">
+          <Label>AR Customer</Label>
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverAnchor asChild>
+              <div>
+                <Input
+                  placeholder={
+                    tokenLoading
+                      ? 'Connecting to Sage…'
+                      : 'Click or type to search…'
+                  }
+                  value={searchInput}
+                  disabled={inputDisabled}
+                  onFocus={() => setOpen(true)}
+                  onChange={(e) => {
+                    setSearchInput(e.target.value)
+                    setSelectedCustomer(null)
+                    setOpen(true)
+                  }}
+                />
               </div>
-            )}
-            {customersError && (
-              <p className="px-2 py-2 text-sm text-destructive">
-                Failed to load customers.
-              </p>
-            )}
-            {!customersLoading &&
-              !customersError &&
-              customers.length === 0 && (
-                <p className="px-2 py-2 text-sm text-muted-foreground">
-                  No customers found.
-                </p>
-              )}
-            {!customersLoading &&
-              !customersError &&
-              customers.length > 0 && (
-                <div className="max-h-72 overflow-y-auto">
-                  {customers.map((customer) => (
-                    <button
-                      key={customer.id}
-                      type="button"
-                      className="flex w-full flex-col items-start rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
-                      onClick={() => handleSelect(customer)}
-                    >
-                      <span className="font-medium">{customer.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {customer.id}
-                      </span>
-                    </button>
-                  ))}
+            </PopoverAnchor>
+            <PopoverContent
+              align="start"
+              className="w-72 p-1"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
+              {customersLoading && (
+                <div className="flex items-center gap-2 px-2 py-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading…
                 </div>
               )}
-          </PopoverContent>
-        </Popover>
+              {customersError && (
+                <p className="px-2 py-2 text-sm text-destructive">
+                  Failed to load customers.
+                </p>
+              )}
+              {!customersLoading &&
+                !customersError &&
+                customers.length === 0 && (
+                  <p className="px-2 py-2 text-sm text-muted-foreground">
+                    No customers found.
+                  </p>
+                )}
+              {!customersLoading &&
+                !customersError &&
+                customers.length > 0 && (
+                  <div className="max-h-72 overflow-y-auto">
+                    {customers.map((customer) => (
+                      <button
+                        key={customer.id}
+                        type="button"
+                        className="flex w-full flex-col items-start rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
+                        onClick={() => handleSelect(customer)}
+                      >
+                        <span className="font-medium">{customer.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {customer.id}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        <div className="w-72 space-y-1.5">
+          <Label>Site</Label>
+          <SitePicker value={site} onValueChange={setSite} />
+        </div>
       </div>
 
       {tokenError && (
@@ -1322,9 +1327,10 @@ function RouteComponent() {
 
       {sageToken && (
         <SiteInvoicePanel
-          key={selectedWeek}
+          key={`${selectedWeek}-${site ?? 'none'}`}
           range={range}
           sageToken={sageToken}
+          site={site}
         />
       )}
     </div>
