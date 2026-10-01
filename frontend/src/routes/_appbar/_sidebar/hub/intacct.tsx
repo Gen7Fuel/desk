@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { Loader2 } from 'lucide-react'
 import { can, getExternalToken } from '@/lib/permissions'
 import { apiFetch } from '@/lib/api'
+import { SitePicker } from '@/components/custom/SitePicker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -201,8 +202,10 @@ interface KardpollReportDoc {
 async function fetchKardpollReports(
   startDate: string,
   endDate: string,
+  site?: string,
 ): Promise<Array<KardpollReportDoc>> {
   const params = new URLSearchParams({ startDate, endDate })
+  if (site) params.set('site', site)
   const res = await fetch(`${HUB}/api/cash-rec/kardpoll-entries?${params}`, {
     headers: { Authorization: `Bearer ${getExternalToken()}` },
   })
@@ -274,6 +277,34 @@ interface InvoiceLine {
   }>
 }
 
+// Sage error responses put the useful detail in ia::error.details[] (one
+// entry per invalid field/line) — fall back to the top-level message, or the
+// raw body, when details aren't present.
+function parseSageErrorDetail(body: unknown): string {
+  const err = (
+    body as
+      | {
+          'ia::error'?: {
+            message?: string
+            details?: Array<{ message?: string; target?: string }>
+          }
+          message?: string
+        }
+      | null
+  )?.['ia::error']
+  const detailMessages = err?.details
+    ?.map((d) => (d.target ? `${d.target}: ${d.message}` : d.message))
+    .filter(Boolean)
+  return (
+    (detailMessages && detailMessages.length > 0
+      ? detailMessages.join('; ')
+      : undefined) ??
+    err?.message ??
+    (body as { message?: string } | null)?.message ??
+    JSON.stringify(body)
+  )
+}
+
 // A matched AR entry ready to become one invoice line, regardless of
 // whether it came from the PO module or a Kardpoll (cardlock) report.
 interface InvoiceLineSource {
@@ -332,23 +363,7 @@ async function createInvoice(
   const body = await res.json().catch(() => null)
 
   if (!res.ok) {
-    const err = body?.['ia::error'] as
-      | {
-          message?: string
-          details?: Array<{ message?: string; target?: string }>
-        }
-      | undefined
-    const detailMessages = err?.details
-      ?.map((d) => (d.target ? `${d.target}: ${d.message}` : d.message))
-      .filter(Boolean)
-    const detail =
-      (detailMessages && detailMessages.length > 0
-        ? detailMessages.join('; ')
-        : undefined) ??
-      err?.message ??
-      (body?.message as string | undefined) ??
-      JSON.stringify(body)
-    throw new Error(`Sage ${res.status}: ${detail}`)
+    throw new Error(`Sage ${res.status}: ${parseSageErrorDetail(body)}`)
   }
 
   const result = body?.['ia::result'] as
@@ -449,23 +464,7 @@ async function createApBill(
   const body = await res.json().catch(() => null)
 
   if (!res.ok) {
-    const err = body?.['ia::error'] as
-      | {
-          message?: string
-          details?: Array<{ message?: string; target?: string }>
-        }
-      | undefined
-    const detailMessages = err?.details
-      ?.map((d) => (d.target ? `${d.target}: ${d.message}` : d.message))
-      .filter(Boolean)
-    const detail =
-      (detailMessages && detailMessages.length > 0
-        ? detailMessages.join('; ')
-        : undefined) ??
-      err?.message ??
-      (body?.message as string | undefined) ??
-      JSON.stringify(body)
-    throw new Error(`Sage ${res.status}: ${detail}`)
+    throw new Error(`Sage ${res.status}: ${parseSageErrorDetail(body)}`)
   }
 
   const result = body?.['ia::result'] as
@@ -517,6 +516,351 @@ async function createApBillsForStations(
         })
       }
     }),
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Site AR Invoice — one invoice per site, created under that site's own
+// Sage entity, billed to the "Gen7 LP" customer, one aggregate line per
+// real-world AR customer active at that site (across PO + Kardpoll).
+// ---------------------------------------------------------------------------
+
+const SITE_INVOICE_GL_ACCOUNT = '10440'
+
+async function resolveSiteEntity(
+  sageToken: string,
+  site: string,
+): Promise<string> {
+  const locRes = await fetch(`${HUB}/api/locations`, {
+    headers: { Authorization: `Bearer ${getExternalToken()}` },
+  })
+  if (!locRes.ok) throw new Error('Failed to fetch Hub locations')
+  const locations = (await locRes.json()) as Array<{
+    stationName: string
+    site?: string
+    sageEntityKey?: string
+  }>
+  const loc = locations.find((l) => (l.site ?? l.stationName) === site)
+  if (!loc?.sageEntityKey)
+    throw new Error(`No Sage entity key configured for "${site}"`)
+
+  const entityRes = await apiFetch(`/api/sage/entity/${loc.sageEntityKey}`, {
+    headers: { 'X-Sage-Token': sageToken },
+  })
+  if (!entityRes.ok) throw new Error('Failed to fetch Sage entity')
+  const entityData = (await entityRes.json()) as {
+    'ia::result': { id: string }
+  }
+  const locationId = entityData['ia::result'].id
+  if (!locationId) throw new Error('Could not resolve Sage location ID')
+  return locationId
+}
+
+async function findGen7LpCustomer(
+  sageToken: string,
+  entityId: string,
+): Promise<SageCustomer> {
+  const res = await apiFetch('/api/sage/customers?q=Gen7 LP', {
+    headers: { 'X-Sage-Token': sageToken, 'X-Sage-Entity': entityId },
+  })
+  if (!res.ok) throw new Error('Failed to search Sage customers')
+  const data = (await res.json()) as { 'ia::result'?: Array<SageCustomer> }
+  const results = data['ia::result'] ?? []
+  const exact = results.find((c) => c.name.trim().toLowerCase() === 'gen7 lp')
+  const customer = exact ?? (results.length === 1 ? results[0] : undefined)
+  if (!customer) {
+    throw new Error(
+      'Could not resolve a unique "Gen7 LP" customer for this site',
+    )
+  }
+  return customer
+}
+
+interface SiteInvoiceLine {
+  key: string
+  customerLabel: string
+  amount: number
+}
+
+function groupBySiteCustomer(
+  orders: Array<PurchaseOrderRow>,
+  kardpollDocs: Array<KardpollReportDoc>,
+): Array<SiteInvoiceLine> {
+  const totals = new Map<string, number>()
+
+  orders.forEach((order) => {
+    const name = order.customerName.trim()
+    if (!name) return
+    totals.set(name, (totals.get(name) ?? 0) + (Number(order.amount) || 0))
+  })
+
+  kardpollDocs.forEach((doc) => {
+    doc.ar_rows.forEach((row) => {
+      const name = kardpollCustomerName(row.customer)
+      if (!name) return
+      totals.set(name, (totals.get(name) ?? 0) + (Number(row.amount) || 0))
+    })
+  })
+
+  return Array.from(totals, ([customerLabel, amount]) => ({
+    key: customerLabel,
+    customerLabel,
+    amount,
+  }))
+}
+
+function buildSiteInvoiceLines(
+  lines: Array<SiteInvoiceLine>,
+  entityLocationId: string,
+  dateLabel: string,
+): Array<InvoiceLine> {
+  return lines.map((line) => ({
+    txnAmount: (Number(line.amount) || 0).toFixed(2),
+    glAccount: { id: SITE_INVOICE_GL_ACCOUNT },
+    memo: `${line.customerLabel} - ${dateLabel} AR Invoice`,
+    dimensions: { location: { id: entityLocationId } },
+    taxEntries: [
+      {
+        baseTaxAmount: '0',
+        txnTaxAmount: '0',
+        taxRate: 0,
+        orderEntryTaxDetail: { key: INVOICE_TAX_DETAIL_KEY },
+      },
+    ],
+  }))
+}
+
+async function createSiteInvoice(
+  sageToken: string,
+  entityLocationId: string,
+  customer: SageCustomer,
+  range: { startDate: string; endDate: string },
+  lines: Array<SiteInvoiceLine>,
+): Promise<{ id: string; key: string }> {
+  const dateLabel = formatDateRangeLabel(range.startDate, range.endDate)
+  const referenceNumber = `${dateLabel} AR Invoice`
+  const payload = {
+    invoiceDate: range.endDate,
+    dueDate: range.endDate,
+    customer: { id: customer.id },
+    customerMessage: { id: INVOICE_CUSTOMER_MESSAGE_ID },
+    referenceNumber,
+    description: referenceNumber,
+    term: { id: INVOICE_TERM_ID },
+    currency: { txnCurrency: 'CAD' },
+    state: 'draft',
+    lines: buildSiteInvoiceLines(lines, entityLocationId, dateLabel),
+  }
+
+  const res = await apiFetch('/api/sage/invoice', {
+    method: 'POST',
+    headers: {
+      'X-Sage-Token': sageToken,
+      'X-Sage-Entity': entityLocationId,
+    },
+    body: JSON.stringify(payload),
+  })
+  const body = await res.json().catch(() => null)
+
+  if (!res.ok) {
+    throw new Error(`Sage ${res.status}: ${parseSageErrorDetail(body)}`)
+  }
+
+  const result = body?.['ia::result'] as
+    | { id: string; key: string }
+    | undefined
+  if (!result?.id) throw new Error('Sage did not return an invoice id.')
+  return result
+}
+
+function SiteInvoicePanel({
+  range,
+  sageToken,
+}: {
+  range: { startDate: string; endDate: string }
+  sageToken: string
+}) {
+  const [site, setSite] = useState<string | undefined>(undefined)
+  const [entityLocationId, setEntityLocationId] = useState<string | null>(
+    null,
+  )
+  const [entityLoading, setEntityLoading] = useState(false)
+  const [entityError, setEntityError] = useState('')
+
+  useEffect(() => {
+    setEntityLocationId(null)
+    setEntityError('')
+    if (!site) return
+
+    let cancelled = false
+    setEntityLoading(true)
+    resolveSiteEntity(sageToken, site)
+      .then((locationId) => {
+        if (!cancelled) setEntityLocationId(locationId)
+      })
+      .catch((err) => {
+        if (!cancelled)
+          setEntityError(
+            err instanceof Error ? err.message : 'Failed to resolve site entity',
+          )
+      })
+      .finally(() => {
+        if (!cancelled) setEntityLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [site, sageToken])
+
+  const {
+    data: orders = [],
+    isLoading: ordersLoading,
+    error: ordersError,
+  } = useQuery({
+    queryKey: ['ar-purchase-orders', range.startDate, range.endDate, site],
+    queryFn: () => fetchArPurchaseOrders(range.startDate, range.endDate, site ?? 'all'),
+    enabled: !!site,
+  })
+
+  const {
+    data: kardpollDocs = [],
+    isLoading: kardpollLoading,
+    error: kardpollError,
+  } = useQuery({
+    queryKey: ['kardpoll-reports', range.startDate, range.endDate, site],
+    queryFn: () => fetchKardpollReports(range.startDate, range.endDate, site),
+    enabled: !!site,
+  })
+
+  const dataLoading = ordersLoading || kardpollLoading
+  const dataError = ordersError || kardpollError
+
+  const lines = groupBySiteCustomer(orders, kardpollDocs)
+  const total = lines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0)
+
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState('')
+  const [created, setCreated] = useState<{ id: string; key: string } | null>(
+    null,
+  )
+
+  async function handleCreate() {
+    if (!site || !entityLocationId) return
+    setCreating(true)
+    setCreateError('')
+    try {
+      const customer = await findGen7LpCustomer(sageToken, entityLocationId)
+      const result = await createSiteInvoice(
+        sageToken,
+        entityLocationId,
+        customer,
+        range,
+        lines,
+      )
+      setCreated(result)
+    } catch (err) {
+      setCreateError(
+        err instanceof Error ? err.message : 'Failed to create invoice',
+      )
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  return (
+    <div className="mb-8 space-y-3">
+      <h2 className="text-base font-semibold">Site AR Invoice</h2>
+
+      <div className="w-72 space-y-1.5">
+        <Label>Site</Label>
+        <SitePicker value={site} onValueChange={setSite} />
+      </div>
+
+      {!site && (
+        <p className="text-sm text-muted-foreground">
+          Select a site to preview its AR invoice.
+        </p>
+      )}
+      {site && entityLoading && (
+        <p className="text-sm text-muted-foreground">
+          Resolving Sage entity…
+        </p>
+      )}
+      {site && entityError && (
+        <p className="text-sm text-destructive">{entityError}</p>
+      )}
+
+      {site && !entityLoading && !entityError && (
+        <>
+          {dataLoading && (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          )}
+          {dataError && (
+            <p className="text-sm text-destructive">
+              Failed to load purchase orders or Kardpoll reports.
+            </p>
+          )}
+
+          {!dataLoading && !dataError && (
+            <>
+              {lines.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No AR transactions found for {site} in this date range.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Account</TableHead>
+                      <TableHead>Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {lines.map((line) => (
+                      <TableRow key={line.key}>
+                        <TableCell className="text-sm">
+                          {line.customerLabel}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {SITE_INVOICE_GL_ACCOUNT}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {formatAmount(line.amount)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell colSpan={2}>Total</TableCell>
+                      <TableCell>{formatAmount(total)}</TableCell>
+                    </TableRow>
+                  </TableFooter>
+                </Table>
+              )}
+
+              <Button
+                size="sm"
+                disabled={lines.length === 0 || creating || !!created}
+                onClick={() => void handleCreate()}
+              >
+                {creating ? 'Creating…' : 'Create Invoice (Draft)'}
+              </Button>
+
+              {createError && (
+                <p className="text-sm text-destructive">{createError}</p>
+              )}
+              {created && (
+                <p className="text-sm text-emerald-600">
+                  Draft invoice created — id {created.id}, key {created.key}.
+                </p>
+              )}
+            </>
+          )}
+        </>
+      )}
+    </div>
   )
 }
 
@@ -973,6 +1317,14 @@ function RouteComponent() {
           description={description}
           sageToken={sageToken}
           customer={selectedCustomer}
+        />
+      )}
+
+      {sageToken && (
+        <SiteInvoicePanel
+          key={selectedWeek}
+          range={range}
+          sageToken={sageToken}
         />
       )}
     </div>
