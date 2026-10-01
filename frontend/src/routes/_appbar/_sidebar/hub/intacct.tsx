@@ -9,11 +9,7 @@ import { SitePicker } from '@/components/custom/SitePicker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Popover,
-  PopoverAnchor,
-  PopoverContent,
-} from '@/components/ui/popover'
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -30,6 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export const Route = createFileRoute('/_appbar/_sidebar/hub/intacct')({
   component: RouteComponent,
@@ -238,10 +235,9 @@ async function searchCustomers(
   sageToken: string,
   q: string,
 ): Promise<Array<SageCustomer>> {
-  const res = await apiFetch(
-    `/api/sage/customers?q=${encodeURIComponent(q)}`,
-    { headers: { 'X-Sage-Token': sageToken } },
-  )
+  const res = await apiFetch(`/api/sage/customers?q=${encodeURIComponent(q)}`, {
+    headers: { 'X-Sage-Token': sageToken },
+  })
   if (!res.ok) throw new Error('Failed to search Sage customers')
   const data = (await res.json()) as {
     'ia::result'?: Array<SageCustomer>
@@ -282,15 +278,13 @@ interface InvoiceLine {
 // raw body, when details aren't present.
 function parseSageErrorDetail(body: unknown): string {
   const err = (
-    body as
-      | {
-          'ia::error'?: {
-            message?: string
-            details?: Array<{ message?: string; target?: string }>
-          }
-          message?: string
-        }
-      | null
+    body as {
+      'ia::error'?: {
+        message?: string
+        details?: Array<{ message?: string; target?: string }>
+      }
+      message?: string
+    } | null
   )?.['ia::error']
   const detailMessages = err?.details
     ?.map((d) => (d.target ? `${d.target}: ${d.message}` : d.message))
@@ -366,9 +360,7 @@ async function createInvoice(
     throw new Error(`Sage ${res.status}: ${parseSageErrorDetail(body)}`)
   }
 
-  const result = body?.['ia::result'] as
-    | { id: string; key: string }
-    | undefined
+  const result = body?.['ia::result'] as { id: string; key: string } | undefined
   if (!result?.id) throw new Error('Sage did not return an invoice id.')
   return result
 }
@@ -397,8 +389,7 @@ async function findVendorForStation(
   const res = await apiFetch(`/api/sage/vendors?q=${encodeURIComponent(q)}`, {
     headers: { 'X-Sage-Token': sageToken },
   })
-  if (!res.ok)
-    throw new Error(`Failed to search Sage vendors for "${station}"`)
+  if (!res.ok) throw new Error(`Failed to search Sage vendors for "${station}"`)
   const data = (await res.json()) as { 'ia::result'?: Array<SageVendor> }
   const results = data['ia::result'] ?? []
   const exact = results.find(
@@ -467,9 +458,7 @@ async function createApBill(
     throw new Error(`Sage ${res.status}: ${parseSageErrorDetail(body)}`)
   }
 
-  const result = body?.['ia::result'] as
-    | { id: string; key: string }
-    | undefined
+  const result = body?.['ia::result'] as { id: string; key: string } | undefined
   if (!result?.id) throw new Error('Sage did not return a bill id.')
   return result
 }
@@ -493,12 +482,14 @@ async function createApBillsForStations(
     stationTotals.map(async ({ station, amount }) => {
       try {
         const vendor = await findVendorForStation(sageToken, station)
-        const label = buildApBillLabel(
-          station,
-          range.startDate,
-          range.endDate,
+        const label = buildApBillLabel(station, range.startDate, range.endDate)
+        const result = await createApBill(
+          sageToken,
+          vendor,
+          range,
+          label,
+          amount,
         )
-        const result = await createApBill(sageToken, vendor, range, label, amount)
         onSettled({
           station,
           amount,
@@ -666,9 +657,7 @@ async function createSiteInvoice(
     throw new Error(`Sage ${res.status}: ${parseSageErrorDetail(body)}`)
   }
 
-  const result = body?.['ia::result'] as
-    | { id: string; key: string }
-    | undefined
+  const result = body?.['ia::result'] as { id: string; key: string } | undefined
   if (!result?.id) throw new Error('Sage did not return an invoice id.')
   return result
 }
@@ -682,9 +671,7 @@ function SiteInvoicePanel({
   sageToken: string
   site: string | undefined
 }) {
-  const [entityLocationId, setEntityLocationId] = useState<string | null>(
-    null,
-  )
+  const [entityLocationId, setEntityLocationId] = useState<string | null>(null)
   const [entityLoading, setEntityLoading] = useState(false)
   const [entityError, setEntityError] = useState('')
 
@@ -702,7 +689,9 @@ function SiteInvoicePanel({
       .catch((err) => {
         if (!cancelled)
           setEntityError(
-            err instanceof Error ? err.message : 'Failed to resolve site entity',
+            err instanceof Error
+              ? err.message
+              : 'Failed to resolve site entity',
           )
       })
       .finally(() => {
@@ -719,7 +708,8 @@ function SiteInvoicePanel({
     error: ordersError,
   } = useQuery({
     queryKey: ['ar-purchase-orders', range.startDate, range.endDate, site],
-    queryFn: () => fetchArPurchaseOrders(range.startDate, range.endDate, site ?? 'all'),
+    queryFn: () =>
+      fetchArPurchaseOrders(range.startDate, range.endDate, site ?? 'all'),
     enabled: !!site,
   })
 
@@ -778,9 +768,7 @@ function SiteInvoicePanel({
         </p>
       )}
       {site && entityLoading && (
-        <p className="text-sm text-muted-foreground">
-          Resolving Sage entity…
-        </p>
+        <p className="text-sm text-muted-foreground">Resolving Sage entity…</p>
       )}
       {site && entityError && (
         <p className="text-sm text-destructive">{entityError}</p>
@@ -912,7 +900,9 @@ function CustomerInvoicePanel({
     (doc) =>
       doc.ar_rows
         .map((row, i) => ({ row, i }))
-        .filter(({ row }) => matchesKardpollCustomer(row.customer, customer.name))
+        .filter(({ row }) =>
+          matchesKardpollCustomer(row.customer, customer.name),
+        )
         .map(({ row, i }) => ({
           key: `${doc._id}-${i}`,
           source: 'Kardpoll' as const,
@@ -956,7 +946,10 @@ function CustomerInvoicePanel({
 
       const stationTotals = Array.from(
         matchedLines.reduce((map, line) => {
-          map.set(line.station, (map.get(line.station) ?? 0) + (Number(line.amount) || 0))
+          map.set(
+            line.station,
+            (map.get(line.station) ?? 0) + (Number(line.amount) || 0),
+          )
           return map
         }, new Map<string, number>()),
       ).map(([station, amount]) => ({ station, amount }))
@@ -968,11 +961,16 @@ function CustomerInvoicePanel({
           status: 'pending' as const,
         })),
       )
-      void createApBillsForStations(sageToken, range, stationTotals, (update) => {
-        setApBillResults((prev) =>
-          prev.map((r) => (r.station === update.station ? update : r)),
-        )
-      })
+      void createApBillsForStations(
+        sageToken,
+        range,
+        stationTotals,
+        (update) => {
+          setApBillResults((prev) =>
+            prev.map((r) => (r.station === update.station ? update : r)),
+          )
+        },
+      )
     } catch (err) {
       setCreateError(
         err instanceof Error ? err.message : 'Failed to create invoice',
@@ -1071,9 +1069,7 @@ function CustomerInvoicePanel({
                     <TableFooter>
                       <TableRow>
                         <TableCell colSpan={2}>Subtotal</TableCell>
-                        <TableCell>
-                          {formatAmount(kardpollSubtotal)}
-                        </TableCell>
+                        <TableCell>{formatAmount(kardpollSubtotal)}</TableCell>
                       </TableRow>
                     </TableFooter>
                   </Table>
@@ -1146,8 +1142,9 @@ function RouteComponent() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [open, setOpen] = useState(false)
-  const [selectedCustomer, setSelectedCustomer] =
-    useState<SageCustomer | null>(null)
+  const [selectedCustomer, setSelectedCustomer] = useState<SageCustomer | null>(
+    null,
+  )
   const [site, setSite] = useState<string | undefined>(undefined)
 
   // Fetch the Sage token once on mount — the customer search isn't
@@ -1221,118 +1218,127 @@ function RouteComponent() {
         </div>
       </div>
 
-      <div className="mb-4 flex items-end justify-between gap-4">
-        <div className="w-72 space-y-1.5">
-          <Label>AR Customer</Label>
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverAnchor asChild>
-              <div>
-                <Input
-                  placeholder={
-                    tokenLoading
-                      ? 'Connecting to Sage…'
-                      : 'Click or type to search…'
-                  }
-                  value={searchInput}
-                  disabled={inputDisabled}
-                  onFocus={() => setOpen(true)}
-                  onChange={(e) => {
-                    setSearchInput(e.target.value)
-                    setSelectedCustomer(null)
-                    setOpen(true)
-                  }}
-                />
-              </div>
-            </PopoverAnchor>
-            <PopoverContent
-              align="start"
-              className="w-72 p-1"
-              onOpenAutoFocus={(e) => e.preventDefault()}
-            >
-              {customersLoading && (
-                <div className="flex items-center gap-2 px-2 py-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading…
-                </div>
-              )}
-              {customersError && (
-                <p className="px-2 py-2 text-sm text-destructive">
-                  Failed to load customers.
-                </p>
-              )}
-              {!customersLoading &&
-                !customersError &&
-                customers.length === 0 && (
-                  <p className="px-2 py-2 text-sm text-muted-foreground">
-                    No customers found.
-                  </p>
-                )}
-              {!customersLoading &&
-                !customersError &&
-                customers.length > 0 && (
-                  <div className="max-h-72 overflow-y-auto">
-                    {customers.map((customer) => (
-                      <button
-                        key={customer.id}
-                        type="button"
-                        className="flex w-full flex-col items-start rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
-                        onClick={() => handleSelect(customer)}
-                      >
-                        <span className="font-medium">{customer.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {customer.id}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        <div className="w-72 space-y-1.5">
-          <Label>Site</Label>
-          <SitePicker value={site} onValueChange={setSite} />
-        </div>
-      </div>
-
       {tokenError && (
         <p className="mb-4 text-sm text-destructive">{tokenError}</p>
       )}
 
-      <div className="text-sm">
-        {selectedCustomer ? (
-          <p>
-            Selected:{' '}
-            <span className="font-medium">{selectedCustomer.name}</span>{' '}
-            <span className="font-mono text-muted-foreground">
-              ({selectedCustomer.id})
-            </span>
-          </p>
-        ) : (
-          <p className="text-muted-foreground">No customer selected.</p>
-        )}
-      </div>
+      <Tabs defaultValue="gen7lp">
+        <TabsList>
+          <TabsTrigger value="gen7lp">Gen7 LP</TabsTrigger>
+          <TabsTrigger value="site">Site</TabsTrigger>
+        </TabsList>
 
-      {selectedCustomer && sageToken && (
-        <CustomerInvoicePanel
-          key={`${selectedCustomer.id}-${selectedWeek}`}
-          range={range}
-          referenceNumber={referenceNumber}
-          description={description}
-          sageToken={sageToken}
-          customer={selectedCustomer}
-        />
-      )}
+        <TabsContent value="gen7lp" className="space-y-4 pt-4">
+          <div className="w-72 space-y-1.5">
+            <Label>AR Customer</Label>
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverAnchor asChild>
+                <div>
+                  <Input
+                    placeholder={
+                      tokenLoading
+                        ? 'Connecting to Sage…'
+                        : 'Click or type to search…'
+                    }
+                    value={searchInput}
+                    disabled={inputDisabled}
+                    onFocus={() => setOpen(true)}
+                    onChange={(e) => {
+                      setSearchInput(e.target.value)
+                      setSelectedCustomer(null)
+                      setOpen(true)
+                    }}
+                  />
+                </div>
+              </PopoverAnchor>
+              <PopoverContent
+                align="start"
+                className="w-72 p-1"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+              >
+                {customersLoading && (
+                  <div className="flex items-center gap-2 px-2 py-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading…
+                  </div>
+                )}
+                {customersError && (
+                  <p className="px-2 py-2 text-sm text-destructive">
+                    Failed to load customers.
+                  </p>
+                )}
+                {!customersLoading &&
+                  !customersError &&
+                  customers.length === 0 && (
+                    <p className="px-2 py-2 text-sm text-muted-foreground">
+                      No customers found.
+                    </p>
+                  )}
+                {!customersLoading &&
+                  !customersError &&
+                  customers.length > 0 && (
+                    <div className="max-h-72 overflow-y-auto">
+                      {customers.map((customer) => (
+                        <button
+                          key={customer.id}
+                          type="button"
+                          className="flex w-full flex-col items-start rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
+                          onClick={() => handleSelect(customer)}
+                        >
+                          <span className="font-medium">{customer.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {customer.id}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+              </PopoverContent>
+            </Popover>
+          </div>
 
-      {sageToken && (
-        <SiteInvoicePanel
-          key={`${selectedWeek}-${site ?? 'none'}`}
-          range={range}
-          sageToken={sageToken}
-          site={site}
-        />
-      )}
+          <div className="text-sm">
+            {selectedCustomer ? (
+              <p>
+                Selected:{' '}
+                <span className="font-medium">{selectedCustomer.name}</span>{' '}
+                <span className="font-mono text-muted-foreground">
+                  ({selectedCustomer.id})
+                </span>
+              </p>
+            ) : (
+              <p className="text-muted-foreground">No customer selected.</p>
+            )}
+          </div>
+
+          {selectedCustomer && sageToken && (
+            <CustomerInvoicePanel
+              key={`${selectedCustomer.id}-${selectedWeek}`}
+              range={range}
+              referenceNumber={referenceNumber}
+              description={description}
+              sageToken={sageToken}
+              customer={selectedCustomer}
+            />
+          )}
+        </TabsContent>
+
+        <TabsContent value="site" className="space-y-4 pt-4">
+          <div className="w-72 space-y-1.5">
+            <Label>Site</Label>
+            <SitePicker value={site} onValueChange={setSite} />
+          </div>
+
+          {sageToken && (
+            <SiteInvoicePanel
+              key={`${selectedWeek}-${site ?? 'none'}`}
+              range={range}
+              sageToken={sageToken}
+              site={site}
+            />
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
