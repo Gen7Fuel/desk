@@ -4,6 +4,7 @@ import { SidebarNavLinks } from '@/components/sidebar'
 
 const intacctLinks = [
   { label: 'AR Entries', path: '/hub/intacct/ar-entries' },
+  { label: 'Payroll', path: '/hub/intacct/payroll' },
 ]
 
 export const Route = createFileRoute('/_appbar/_sidebar/hub/intacct')({

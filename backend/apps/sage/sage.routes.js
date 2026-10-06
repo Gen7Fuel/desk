@@ -183,6 +183,88 @@ router.post('/invoice', authenticate, async (req, res) => {
 })
 
 /**
+ * POST /sage/journal-entry
+ * Proxies a create-journal-entry request to the Sage Intacct general-ledger API.
+ * Expects the Sage access token in the X-Sage-Token request header.
+ * Optionally reads X-Sage-Entity for the entity ID; falls back to LOCATION_ID.
+ */
+router.post('/journal-entry', authenticate, async (req, res) => {
+  try {
+    const sageToken = req.headers['x-sage-token']
+    if (!sageToken) {
+      return res.status(400).json({ message: 'Missing X-Sage-Token header.' })
+    }
+
+    const entityId = req.headers['x-sage-entity'] || LOCATION_ID
+    const url = SAGE_BASE + 'objects/general-ledger/journal-entry'
+    console.log('[sage/journal-entry] payload:', JSON.stringify(req.body, null, 2))
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${sageToken}`,
+        'Content-Type': 'application/json',
+        'X-IA-API-Param-Entity': entityId,
+      },
+      body: JSON.stringify(req.body),
+    })
+
+    const data = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      console.error('[sage/journal-entry] Sage error:', response.status, JSON.stringify(data, null, 2))
+      return res.status(response.status).json(
+        data ?? { message: `Sage returned ${response.status}` }
+      )
+    }
+
+    return res.status(response.status).json(data)
+  } catch (err) {
+    console.error('[sage/journal-entry] error:', err)
+    return res.status(500).json({ message: 'Sage journal entry request failed.' })
+  }
+})
+
+/**
+ * GET /sage/checking-account/:id
+ * Proxies a get-checking-account request to the Sage Intacct cash-management API.
+ * Used to resolve the GL account behind a site's bank account.
+ * Expects the Sage access token in the X-Sage-Token request header.
+ * Optionally reads X-Sage-Entity for the entity ID; falls back to LOCATION_ID.
+ */
+router.get('/checking-account/:id', authenticate, async (req, res) => {
+  try {
+    const sageToken = req.headers['x-sage-token']
+    if (!sageToken) {
+      return res.status(400).json({ message: 'Missing X-Sage-Token header.' })
+    }
+
+    const entityId = req.headers['x-sage-entity'] || LOCATION_ID
+    const url = `${SAGE_BASE}objects/cash-management/checking-account/${encodeURIComponent(req.params.id)}`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${sageToken}`,
+        'X-IA-API-Param-Entity': entityId,
+      },
+    })
+
+    const data = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      console.error('[sage/checking-account] Sage error:', response.status, JSON.stringify(data, null, 2))
+      return res.status(response.status).json(
+        data ?? { message: `Sage returned ${response.status}` }
+      )
+    }
+
+    return res.status(response.status).json(data)
+  } catch (err) {
+    console.error('[sage/checking-account] error:', err)
+    return res.status(500).json({ message: 'Sage checking account request failed.' })
+  }
+})
+
+/**
  * GET /sage/entity/:key
  * Proxies a get-entity request to the Sage Intacct company-config API.
  * Expects the Sage access token in the X-Sage-Token request header.

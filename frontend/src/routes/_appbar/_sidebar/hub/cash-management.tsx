@@ -13,6 +13,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
+import { SITE_BANK_ACCOUNTS } from '@/lib/sage-bank-accounts'
 
 export const Route = createFileRoute('/_appbar/_sidebar/hub/cash-management')({
   component: RouteComponent,
@@ -24,15 +25,6 @@ export const Route = createFileRoute('/_appbar/_sidebar/hub/cash-management')({
 })
 
 const HUB = 'https://app.gen7fuel.com'
-
-const SITE_BANK_ACCOUNTS: Record<string, string> = {
-  Rankin: 'Rankin Gen7 LP SB',
-  Couchiching: '72',
-  Walpole: '75',
-  Sarnia: '74',
-  'Jocko Point': '77',
-  'Silver Grizzly': '79',
-}
 
 function todayIso(): string {
   return new Date().toISOString().split('T')[0]
