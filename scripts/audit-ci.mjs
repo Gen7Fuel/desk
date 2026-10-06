@@ -44,6 +44,18 @@ const ALLOWLIST = [
       'ReDoS in SheetJS. Same situation as GHSA-4r6h-8v6p-xvw6 above — no ' +
       'fixed version published on npm.',
   },
+  {
+    ghsa: 'GHSA-vfj7-8cjw-p6xm',
+    package: 'braces',
+    reason:
+      'Stack exhaustion on deeply nested brace patterns. Advisory has no ' +
+      'first_patched_version and braces@3.0.3 (latest on npm) has no depth ' +
+      'limit in the installed source, so it is genuinely unfixed. Only ' +
+      'reachable via dev tooling globbing (backend: nodemon > chokidar@3; ' +
+      'frontend: shadcn CLI > fast-glob > micromatch) on patterns we write, ' +
+      'never on request input. Revisit when braces publishes a fix or ' +
+      'chokidar/micromatch drop it.',
+  },
 ]
 
 const allowed = new Map(ALLOWLIST.map((e) => [e.ghsa, e]))
