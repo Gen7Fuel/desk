@@ -13,4 +13,9 @@ export const SITE_BANK_ACCOUNTS: Record<string, string> = {
 // its GL account, so this can't be looked up — add sites here as needed.
 export const SITE_BANK_GL_ACCOUNTS: Record<string, string> = {
   Couchiching: '10131',
+  'Jocko Point': '10097',
+  Rankin: '10119',
+  Sarnia: '10088',
+  'Silver Grizzly': '10135',
+  Walpole: '10104',
 }
