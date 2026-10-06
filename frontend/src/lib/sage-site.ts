@@ -1,6 +1,5 @@
 import { getExternalToken } from '@/lib/permissions'
 import { apiFetch } from '@/lib/api'
-import { SITE_BANK_ACCOUNTS } from '@/lib/sage-bank-accounts'
 
 const HUB = 'https://app.gen7fuel.com'
 
@@ -41,37 +40,4 @@ export async function resolveSiteEntity(
   const locationId = entityData['ia::result'].id
   if (!locationId) throw new Error('Could not resolve Sage location ID')
   return locationId
-}
-
-/**
- * Looks up the GL account behind a site's Sage bank (checking) account, e.g.
- * Couchiching -> "10131". Returns null when the site has no bank account
- * configured or the account has no GL account on it.
- */
-export async function resolveSiteBankGlAccount(
-  sageToken: string,
-  entityId: string,
-  site: string,
-): Promise<string | null> {
-  const bankAccountId = SITE_BANK_ACCOUNTS[site]
-  if (!bankAccountId) return null
-
-  const res = await apiFetch(
-    `/api/sage/checking-account/${encodeURIComponent(bankAccountId)}`,
-    { headers: { 'X-Sage-Token': sageToken, 'X-Sage-Entity': entityId } },
-  )
-  if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>
-    const detail =
-      (body['ia::error'] as { message?: string } | undefined)?.message ??
-      (body.message as string | undefined) ??
-      JSON.stringify(body)
-    throw new Error(
-      `Failed to fetch Sage bank account "${bankAccountId}" (${res.status}): ${detail}`,
-    )
-  }
-  const data = (await res.json()) as {
-    'ia::result'?: { glAccount?: { id?: string } }
-  }
-  return data['ia::result']?.glAccount?.id ?? null
 }

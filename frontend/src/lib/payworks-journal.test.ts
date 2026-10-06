@@ -90,7 +90,6 @@ describe('buildJournalEntryPayload', () => {
       glJournal: { id: 'PYRJ' },
       postingDate: '2026-09-28',
       state: 'draft',
-      scheduledOperationKey: '40',
     })
   })
 
