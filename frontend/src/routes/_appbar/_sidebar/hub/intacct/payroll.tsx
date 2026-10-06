@@ -149,15 +149,19 @@ function RouteComponent() {
         headers: { 'X-Sage-Token': sageToken, 'X-Sage-Entity': locationId },
         body: JSON.stringify(payload),
       })
-      const body = (await res.json().catch(() => ({}))) as Record<
-        string,
-        unknown
-      >
+      const raw = await res.text()
+      let body: Record<string, any> = {}
+      try {
+        body = JSON.parse(raw) as Record<string, any>
+      } catch {
+        // Non-JSON reply (e.g. a proxy/Express 404 page) — keep the raw text.
+      }
       if (!res.ok) {
         const detail =
-          (body['ia::error'] as { message?: string } | undefined)?.message ??
-          (body.message as string | undefined) ??
-          JSON.stringify(body)
+          body['ia::result']?.['ia::error']?.message ??
+          body['ia::error']?.message ??
+          body.message ??
+          (raw.trim().slice(0, 300) || '(empty response)')
         throw new Error(`Sage ${res.status}: ${detail}`)
       }
       const result = body['ia::result'] as
