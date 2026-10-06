@@ -7,3 +7,10 @@ export const SITE_BANK_ACCOUNTS: Record<string, string> = {
   'Jocko Point': '77',
   'Silver Grizzly': '79',
 }
+
+// GL account each site's payroll journal credits (the site's bank account in
+// the chart of accounts). Sage's REST checking-account object does not expose
+// its GL account, so this can't be looked up — add sites here as needed.
+export const SITE_BANK_GL_ACCOUNTS: Record<string, string> = {
+  Couchiching: '10131',
+}

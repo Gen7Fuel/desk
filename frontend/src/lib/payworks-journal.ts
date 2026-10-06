@@ -150,7 +150,6 @@ export function buildJournalEntryPayload(args: {
     description,
     // Saved as a draft in Intacct rather than posted.
     state: 'draft',
-    scheduledOperationKey: journal.payPeriod,
     lines: [
       {
         txnType: 'credit',

@@ -4,11 +4,8 @@ import { Loader2, Upload } from 'lucide-react'
 import type { PayworksJournal } from '@/lib/payworks-journal'
 import { can } from '@/lib/permissions'
 import { apiFetch } from '@/lib/api'
-import {
-  getSageToken,
-  resolveSiteBankGlAccount,
-  resolveSiteEntity,
-} from '@/lib/sage-site'
+import { getSageToken, resolveSiteEntity } from '@/lib/sage-site'
+import { SITE_BANK_GL_ACCOUNTS } from '@/lib/sage-bank-accounts'
 import {
   buildJournalEntryPayload,
   extractPdfText,
@@ -88,12 +85,11 @@ function RouteComponent() {
         const entityId = await resolveSiteEntity(sageToken, site)
         if (stale()) return
         setLocationId(entityId)
-        const gl = await resolveSiteBankGlAccount(sageToken, entityId, site)
-        if (stale()) return
+        const gl = SITE_BANK_GL_ACCOUNTS[site] as string | undefined
         if (gl) setCreditAccountId(gl)
         else
           setSiteError(
-            'Could not find the GL account for this site’s bank account — enter it below.',
+            'No bank GL account on file for this site — enter it below.',
           )
       } catch (err) {
         if (!stale())
