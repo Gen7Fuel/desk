@@ -60,7 +60,16 @@ export async function resolveSiteBankGlAccount(
     `/api/sage/checking-account/${encodeURIComponent(bankAccountId)}`,
     { headers: { 'X-Sage-Token': sageToken, 'X-Sage-Entity': entityId } },
   )
-  if (!res.ok) throw new Error('Failed to fetch Sage bank account')
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>
+    const detail =
+      (body['ia::error'] as { message?: string } | undefined)?.message ??
+      (body.message as string | undefined) ??
+      JSON.stringify(body)
+    throw new Error(
+      `Failed to fetch Sage bank account "${bankAccountId}" (${res.status}): ${detail}`,
+    )
+  }
   const data = (await res.json()) as {
     'ia::result'?: { glAccount?: { id?: string } }
   }
