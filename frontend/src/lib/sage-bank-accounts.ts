@@ -12,5 +12,11 @@ export const SITE_BANK_ACCOUNTS: Record<string, string> = {
 // the chart of accounts). Sage's REST checking-account object does not expose
 // its GL account, so this can't be looked up — add sites here as needed.
 export const SITE_BANK_GL_ACCOUNTS: Record<string, string> = {
+  Charlies: '10320',
   Couchiching: '10131',
+  'Jocko Point': '10097',
+  Rankin: '10119',
+  Sarnia: '10088',
+  'Silver Grizzly': '10135',
+  Walpole: '10104',
 }
