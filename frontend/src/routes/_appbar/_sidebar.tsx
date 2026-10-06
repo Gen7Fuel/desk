@@ -4,7 +4,12 @@ import { SidebarNavLinks } from '@/components/sidebar'
 
 const sidebarLinks: Record<
   string,
-  Array<{ label: string; path: string; permission: string }>
+  Array<{
+    label: string
+    path: string
+    permission: string
+    matchChildren?: boolean
+  }>
 > = {
   cipher: [
     { label: 'Lock', path: '/cipher/lock', permission: 'cipher.lock' },
@@ -71,6 +76,7 @@ const sidebarLinks: Record<
       label: 'Intacct',
       path: '/hub/intacct',
       permission: 'hub.intacct',
+      matchChildren: true,
     },
   ],
   academy: [

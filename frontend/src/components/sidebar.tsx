@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils'
 export interface SidebarLink {
   label: string
   path: string
+  /** Also highlight when a child route of `path` is active. */
+  matchChildren?: boolean
 }
 
 export function Sidebar({
@@ -73,7 +75,7 @@ export function SidebarNavLinks({
       {links.map((link) => {
         const isActive = fuzzy
           ? location.pathname.startsWith('/' + link.path.split('/')[1])
-          : !!matchRoute({ to: link.path })
+          : !!matchRoute({ to: link.path, fuzzy: link.matchChildren })
         return (
           <Link
             key={link.path}

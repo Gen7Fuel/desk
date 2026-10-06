@@ -56,9 +56,11 @@ import { Route as AppbarAdminSidebarPersonnelRouteImport } from './routes/_appba
 import { Route as AppbarAdminSidebarCredentialsRouteImport } from './routes/_appbar/_admin/_sidebar/credentials'
 import { Route as AppbarAdminSidebarAssetsRouteImport } from './routes/_appbar/_admin/_sidebar/assets'
 import { Route as AppbarAdminSidebarAccessRouteImport } from './routes/_appbar/_admin/_sidebar/access'
+import { Route as AppbarSidebarHubIntacctIndexRouteImport } from './routes/_appbar/_sidebar/hub/intacct/index'
 import { Route as AppbarSidebarAcademyCoursesIndexRouteImport } from './routes/_appbar/_sidebar/academy/courses/index'
 import { Route as AppbarAdminSidebarSiteAssetsIndexRouteImport } from './routes/_appbar/_admin/_sidebar/site-assets/index'
 import { Route as AppbarAdminSidebarPersonnelIndexRouteImport } from './routes/_appbar/_admin/_sidebar/personnel/index'
+import { Route as AppbarSidebarHubIntacctArEntriesRouteImport } from './routes/_appbar/_sidebar/hub/intacct/ar-entries'
 import { Route as AppbarSidebarAcademyCoursesCourseIdRouteImport } from './routes/_appbar/_sidebar/academy/courses/$courseId'
 import { Route as AppbarAdminSidebarSubscriptionsListRouteImport } from './routes/_appbar/_admin/_sidebar/subscriptions/list'
 import { Route as AppbarAdminSidebarSubscriptionsCategoriesRouteImport } from './routes/_appbar/_admin/_sidebar/subscriptions/categories'
@@ -326,6 +328,12 @@ const AppbarAdminSidebarAccessRoute =
     path: '/access',
     getParentRoute: () => AppbarAdminSidebarRoute,
   } as any)
+const AppbarSidebarHubIntacctIndexRoute =
+  AppbarSidebarHubIntacctIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AppbarSidebarHubIntacctRoute,
+  } as any)
 const AppbarSidebarAcademyCoursesIndexRoute =
   AppbarSidebarAcademyCoursesIndexRouteImport.update({
     id: '/',
@@ -343,6 +351,12 @@ const AppbarAdminSidebarPersonnelIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AppbarAdminSidebarPersonnelRoute,
+  } as any)
+const AppbarSidebarHubIntacctArEntriesRoute =
+  AppbarSidebarHubIntacctArEntriesRouteImport.update({
+    id: '/ar-entries',
+    path: '/ar-entries',
+    getParentRoute: () => AppbarSidebarHubIntacctRoute,
   } as any)
 const AppbarSidebarAcademyCoursesCourseIdRoute =
   AppbarSidebarAcademyCoursesCourseIdRouteImport.update({
@@ -449,7 +463,7 @@ export interface FileRoutesByFullPath {
   '/hub/fleet-card-compliance': typeof AppbarSidebarHubFleetCardComplianceRoute
   '/hub/fleet-cards': typeof AppbarSidebarHubFleetCardsRoute
   '/hub/fleet-customers': typeof AppbarSidebarHubFleetCustomersRoute
-  '/hub/intacct': typeof AppbarSidebarHubIntacctRoute
+  '/hub/intacct': typeof AppbarSidebarHubIntacctRouteWithChildren
   '/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
   '/hub/shifts': typeof AppbarSidebarHubShiftsRoute
@@ -471,9 +485,11 @@ export interface FileRoutesByFullPath {
   '/subscriptions/categories': typeof AppbarAdminSidebarSubscriptionsCategoriesRoute
   '/subscriptions/list': typeof AppbarAdminSidebarSubscriptionsListRoute
   '/academy/courses/$courseId': typeof AppbarSidebarAcademyCoursesCourseIdRoute
+  '/hub/intacct/ar-entries': typeof AppbarSidebarHubIntacctArEntriesRoute
   '/personnel/': typeof AppbarAdminSidebarPersonnelIndexRoute
   '/site-assets/': typeof AppbarAdminSidebarSiteAssetsIndexRoute
   '/academy/courses/': typeof AppbarSidebarAcademyCoursesIndexRoute
+  '/hub/intacct/': typeof AppbarSidebarHubIntacctIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof authLoginRoute
@@ -503,7 +519,6 @@ export interface FileRoutesByTo {
   '/hub/fleet-card-compliance': typeof AppbarSidebarHubFleetCardComplianceRoute
   '/hub/fleet-cards': typeof AppbarSidebarHubFleetCardsRoute
   '/hub/fleet-customers': typeof AppbarSidebarHubFleetCustomersRoute
-  '/hub/intacct': typeof AppbarSidebarHubIntacctRoute
   '/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
   '/hub/shifts': typeof AppbarSidebarHubShiftsRoute
@@ -525,9 +540,11 @@ export interface FileRoutesByTo {
   '/subscriptions/categories': typeof AppbarAdminSidebarSubscriptionsCategoriesRoute
   '/subscriptions/list': typeof AppbarAdminSidebarSubscriptionsListRoute
   '/academy/courses/$courseId': typeof AppbarSidebarAcademyCoursesCourseIdRoute
+  '/hub/intacct/ar-entries': typeof AppbarSidebarHubIntacctArEntriesRoute
   '/personnel': typeof AppbarAdminSidebarPersonnelIndexRoute
   '/site-assets': typeof AppbarAdminSidebarSiteAssetsIndexRoute
   '/academy/courses': typeof AppbarSidebarAcademyCoursesIndexRoute
+  '/hub/intacct': typeof AppbarSidebarHubIntacctIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -568,7 +585,7 @@ export interface FileRoutesById {
   '/_appbar/_sidebar/hub/fleet-card-compliance': typeof AppbarSidebarHubFleetCardComplianceRoute
   '/_appbar/_sidebar/hub/fleet-cards': typeof AppbarSidebarHubFleetCardsRoute
   '/_appbar/_sidebar/hub/fleet-customers': typeof AppbarSidebarHubFleetCustomersRoute
-  '/_appbar/_sidebar/hub/intacct': typeof AppbarSidebarHubIntacctRoute
+  '/_appbar/_sidebar/hub/intacct': typeof AppbarSidebarHubIntacctRouteWithChildren
   '/_appbar/_sidebar/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/_appbar/_sidebar/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
   '/_appbar/_sidebar/hub/shifts': typeof AppbarSidebarHubShiftsRoute
@@ -590,9 +607,11 @@ export interface FileRoutesById {
   '/_appbar/_admin/_sidebar/subscriptions/categories': typeof AppbarAdminSidebarSubscriptionsCategoriesRoute
   '/_appbar/_admin/_sidebar/subscriptions/list': typeof AppbarAdminSidebarSubscriptionsListRoute
   '/_appbar/_sidebar/academy/courses/$courseId': typeof AppbarSidebarAcademyCoursesCourseIdRoute
+  '/_appbar/_sidebar/hub/intacct/ar-entries': typeof AppbarSidebarHubIntacctArEntriesRoute
   '/_appbar/_admin/_sidebar/personnel/': typeof AppbarAdminSidebarPersonnelIndexRoute
   '/_appbar/_admin/_sidebar/site-assets/': typeof AppbarAdminSidebarSiteAssetsIndexRoute
   '/_appbar/_sidebar/academy/courses/': typeof AppbarSidebarAcademyCoursesIndexRoute
+  '/_appbar/_sidebar/hub/intacct/': typeof AppbarSidebarHubIntacctIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -650,9 +669,11 @@ export interface FileRouteTypes {
     | '/subscriptions/categories'
     | '/subscriptions/list'
     | '/academy/courses/$courseId'
+    | '/hub/intacct/ar-entries'
     | '/personnel/'
     | '/site-assets/'
     | '/academy/courses/'
+    | '/hub/intacct/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -682,7 +703,6 @@ export interface FileRouteTypes {
     | '/hub/fleet-card-compliance'
     | '/hub/fleet-cards'
     | '/hub/fleet-customers'
-    | '/hub/intacct'
     | '/hub/payables'
     | '/hub/receivables'
     | '/hub/shifts'
@@ -704,9 +724,11 @@ export interface FileRouteTypes {
     | '/subscriptions/categories'
     | '/subscriptions/list'
     | '/academy/courses/$courseId'
+    | '/hub/intacct/ar-entries'
     | '/personnel'
     | '/site-assets'
     | '/academy/courses'
+    | '/hub/intacct'
   id:
     | '__root__'
     | '/_appbar'
@@ -768,9 +790,11 @@ export interface FileRouteTypes {
     | '/_appbar/_admin/_sidebar/subscriptions/categories'
     | '/_appbar/_admin/_sidebar/subscriptions/list'
     | '/_appbar/_sidebar/academy/courses/$courseId'
+    | '/_appbar/_sidebar/hub/intacct/ar-entries'
     | '/_appbar/_admin/_sidebar/personnel/'
     | '/_appbar/_admin/_sidebar/site-assets/'
     | '/_appbar/_sidebar/academy/courses/'
+    | '/_appbar/_sidebar/hub/intacct/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1109,6 +1133,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppbarAdminSidebarAccessRouteImport
       parentRoute: typeof AppbarAdminSidebarRoute
     }
+    '/_appbar/_sidebar/hub/intacct/': {
+      id: '/_appbar/_sidebar/hub/intacct/'
+      path: '/'
+      fullPath: '/hub/intacct/'
+      preLoaderRoute: typeof AppbarSidebarHubIntacctIndexRouteImport
+      parentRoute: typeof AppbarSidebarHubIntacctRoute
+    }
     '/_appbar/_sidebar/academy/courses/': {
       id: '/_appbar/_sidebar/academy/courses/'
       path: '/'
@@ -1129,6 +1160,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/personnel/'
       preLoaderRoute: typeof AppbarAdminSidebarPersonnelIndexRouteImport
       parentRoute: typeof AppbarAdminSidebarPersonnelRoute
+    }
+    '/_appbar/_sidebar/hub/intacct/ar-entries': {
+      id: '/_appbar/_sidebar/hub/intacct/ar-entries'
+      path: '/ar-entries'
+      fullPath: '/hub/intacct/ar-entries'
+      preLoaderRoute: typeof AppbarSidebarHubIntacctArEntriesRouteImport
+      parentRoute: typeof AppbarSidebarHubIntacctRoute
     }
     '/_appbar/_sidebar/academy/courses/$courseId': {
       id: '/_appbar/_sidebar/academy/courses/$courseId'
@@ -1392,6 +1430,23 @@ const AppbarSidebarCipherRouteChildren: AppbarSidebarCipherRouteChildren = {
 const AppbarSidebarCipherRouteWithChildren =
   AppbarSidebarCipherRoute._addFileChildren(AppbarSidebarCipherRouteChildren)
 
+interface AppbarSidebarHubIntacctRouteChildren {
+  AppbarSidebarHubIntacctArEntriesRoute: typeof AppbarSidebarHubIntacctArEntriesRoute
+  AppbarSidebarHubIntacctIndexRoute: typeof AppbarSidebarHubIntacctIndexRoute
+}
+
+const AppbarSidebarHubIntacctRouteChildren: AppbarSidebarHubIntacctRouteChildren =
+  {
+    AppbarSidebarHubIntacctArEntriesRoute:
+      AppbarSidebarHubIntacctArEntriesRoute,
+    AppbarSidebarHubIntacctIndexRoute: AppbarSidebarHubIntacctIndexRoute,
+  }
+
+const AppbarSidebarHubIntacctRouteWithChildren =
+  AppbarSidebarHubIntacctRoute._addFileChildren(
+    AppbarSidebarHubIntacctRouteChildren,
+  )
+
 interface AppbarSidebarHubRouteChildren {
   AppbarSidebarHubArCustomersRoute: typeof AppbarSidebarHubArCustomersRoute
   AppbarSidebarHubArPaidReportRoute: typeof AppbarSidebarHubArPaidReportRoute
@@ -1401,7 +1456,7 @@ interface AppbarSidebarHubRouteChildren {
   AppbarSidebarHubFleetCardComplianceRoute: typeof AppbarSidebarHubFleetCardComplianceRoute
   AppbarSidebarHubFleetCardsRoute: typeof AppbarSidebarHubFleetCardsRoute
   AppbarSidebarHubFleetCustomersRoute: typeof AppbarSidebarHubFleetCustomersRoute
-  AppbarSidebarHubIntacctRoute: typeof AppbarSidebarHubIntacctRoute
+  AppbarSidebarHubIntacctRoute: typeof AppbarSidebarHubIntacctRouteWithChildren
   AppbarSidebarHubPayablesRoute: typeof AppbarSidebarHubPayablesRoute
   AppbarSidebarHubReceivablesRoute: typeof AppbarSidebarHubReceivablesRoute
   AppbarSidebarHubShiftsRoute: typeof AppbarSidebarHubShiftsRoute
@@ -1417,7 +1472,7 @@ const AppbarSidebarHubRouteChildren: AppbarSidebarHubRouteChildren = {
     AppbarSidebarHubFleetCardComplianceRoute,
   AppbarSidebarHubFleetCardsRoute: AppbarSidebarHubFleetCardsRoute,
   AppbarSidebarHubFleetCustomersRoute: AppbarSidebarHubFleetCustomersRoute,
-  AppbarSidebarHubIntacctRoute: AppbarSidebarHubIntacctRoute,
+  AppbarSidebarHubIntacctRoute: AppbarSidebarHubIntacctRouteWithChildren,
   AppbarSidebarHubPayablesRoute: AppbarSidebarHubPayablesRoute,
   AppbarSidebarHubReceivablesRoute: AppbarSidebarHubReceivablesRoute,
   AppbarSidebarHubShiftsRoute: AppbarSidebarHubShiftsRoute,
