@@ -225,6 +225,63 @@ router.post('/journal-entry', authenticate, async (req, res) => {
 })
 
 /**
+ * GET /sage/ap-vendors
+ * Returns every active, open-item AP vendor as [{ id, name }], paging through
+ * the Sage core query service server-side so the browser gets one flat list.
+ * Expects the Sage access token in the X-Sage-Token request header.
+ * Optionally reads X-Sage-Entity for the entity ID; falls back to LOCATION_ID.
+ */
+router.get('/ap-vendors', authenticate, async (req, res) => {
+  try {
+    const sageToken = req.headers['x-sage-token']
+    if (!sageToken) {
+      return res.status(400).json({ message: 'Missing X-Sage-Token header.' })
+    }
+
+    const entityId = req.headers['x-sage-entity'] || LOCATION_ID
+    const PAGE_SIZE = 500
+    const MAX_PAGES = 20 // safety stop: 10,000 vendors
+    const vendors = []
+    let start = 1
+
+    for (let page = 0; start && page < MAX_PAGES; page++) {
+      const response = await fetch(`${SAGE_BASE}services/core/query`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${sageToken}`,
+          'Content-Type': 'application/json',
+          'X-IA-API-Param-Entity': entityId,
+        },
+        body: JSON.stringify({
+          object: 'accounts-payable/vendor',
+          fields: ['id', 'name'],
+          filters: [{ $eq: { status: 'active' } }, { $eq: { billingType: 'openItem' } }],
+          filterExpression: '1 and 2',
+          filterParameters: { caseSensitiveComparison: true, includePrivate: true },
+          orderBy: [{ id: 'asc' }],
+          start,
+          size: PAGE_SIZE,
+        }),
+      })
+
+      const data = await response.json().catch(() => null)
+      if (!response.ok) {
+        console.error('[sage/ap-vendors] Sage error:', response.status, JSON.stringify(data, null, 2))
+        return res.status(response.status).json(data ?? { message: `Sage returned ${response.status}` })
+      }
+
+      for (const v of data['ia::result'] ?? []) vendors.push({ id: v.id, name: v.name })
+      start = data['ia::meta']?.next ?? null
+    }
+
+    return res.json({ vendors })
+  } catch (err) {
+    console.error('[sage/ap-vendors] error:', err)
+    return res.status(500).json({ message: 'Sage vendors request failed.' })
+  }
+})
+
+/**
  * GET /sage/entity/:key
  * Proxies a get-entity request to the Sage Intacct company-config API.
  * Expects the Sage access token in the X-Sage-Token request header.
