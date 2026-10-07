@@ -29,7 +29,8 @@ export const PAYROLL_GL_ACCOUNTS = {
 
 export const PAYROLL_JOURNAL_ID = 'PYRJ'
 
-const AMOUNT = String.raw`([\d,]+\.\d{2})`
+// A leading minus is a credit (e.g. Service Fees -195.20).
+const AMOUNT = String.raw`(-?[\d,]+\.\d{2})`
 
 function money(text: string, pattern: string): number | null {
   const m = new RegExp(pattern + String.raw`\s*` + AMOUNT, 'i').exec(text)
@@ -99,6 +100,7 @@ const cents = (n: number) => Math.round(n * 100)
 /**
  * Debit lines in display order; the same order is used for the Intacct payload.
  * Lines with no amount (e.g. service fees / HST missing from the PDF) are left out.
+ * Amounts are signed: a negative amount is a credit line, not a debit.
  */
 export function journalDebits(j: PayworksJournal) {
   const lines = [
@@ -137,12 +139,26 @@ export function journalDebits(j: PayworksJournal) {
   return lines.filter((d) => cents(d.amount) !== 0)
 }
 
-export function totalDebits(j: PayworksJournal): number {
-  return journalDebits(j).reduce((sum, d) => sum + cents(d.amount), 0) / 100
+/**
+ * Entry totals: debits are the positive lines; credits are the Payroll
+ * Clearing credit plus any negative lines (shown as positive amounts).
+ */
+export function journalTotals(j: PayworksJournal): {
+  debit: number
+  credit: number
+} {
+  let debit = 0
+  let credit = cents(j.clearingTotal)
+  for (const d of journalDebits(j)) {
+    if (d.amount > 0) debit += cents(d.amount)
+    else credit += cents(-d.amount)
+  }
+  return { debit: debit / 100, credit: credit / 100 }
 }
 
 export function isBalanced(j: PayworksJournal): boolean {
-  return cents(totalDebits(j)) === cents(j.clearingTotal)
+  const { debit, credit } = journalTotals(j)
+  return cents(debit) === cents(credit)
 }
 
 export function buildJournalEntryPayload(args: {
@@ -169,8 +185,8 @@ export function buildJournalEntryPayload(args: {
         description,
       },
       ...journalDebits(journal).map((d) => ({
-        txnType: 'debit',
-        txnAmount: d.amount.toFixed(2),
+        txnType: d.amount > 0 ? 'debit' : 'credit',
+        txnAmount: Math.abs(d.amount).toFixed(2),
         glAccount: { id: d.glAccount },
         dimensions,
         description,

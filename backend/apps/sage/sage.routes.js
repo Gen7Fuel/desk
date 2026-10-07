@@ -102,6 +102,7 @@ router.post('/attachment', authenticate, async (req, res) => {
  * POST /sage/bill
  * Proxies a create-bill request to the Sage Intacct AP API.
  * Expects the Sage access token in the X-Sage-Token request header.
+ * Optionally reads X-Sage-Entity for the entity ID; falls back to LOCATION_ID.
  */
 router.post('/bill', authenticate, async (req, res) => {
   try {
@@ -110,6 +111,7 @@ router.post('/bill', authenticate, async (req, res) => {
       return res.status(400).json({ message: 'Missing Sage token.' })
     }
 
+    const entityId = req.headers['x-sage-entity'] || LOCATION_ID
     const { sageToken: _t, ...forwardBody } = req.body
     const url = SAGE_BASE + 'objects/accounts-payable/bill'
     console.log('[sage/bill] payload:', JSON.stringify(forwardBody, null, 2))
@@ -118,7 +120,7 @@ router.post('/bill', authenticate, async (req, res) => {
       headers: {
         Authorization: `Bearer ${sageToken}`,
         'Content-Type': 'application/json',
-        'X-IA-API-Param-Entity': LOCATION_ID,
+        'X-IA-API-Param-Entity': entityId,
       },
       body: JSON.stringify(forwardBody),
     })

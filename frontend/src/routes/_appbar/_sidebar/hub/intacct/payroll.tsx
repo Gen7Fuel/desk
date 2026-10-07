@@ -11,8 +11,8 @@ import {
   extractPdfText,
   isBalanced,
   journalDebits,
+  journalTotals,
   parsePayworksJournal,
-  totalDebits,
 } from '@/lib/payworks-journal'
 import { SitePicker } from '@/components/custom/SitePicker'
 import { Button } from '@/components/ui/button'
@@ -288,8 +288,12 @@ function RouteComponent() {
                 <TableRow key={d.key}>
                   <TableCell>{d.glAccount}</TableCell>
                   <TableCell>{d.label}</TableCell>
-                  <TableCell className="text-right">{fmt(d.amount)}</TableCell>
-                  <TableCell />
+                  <TableCell className="text-right">
+                    {d.amount > 0 ? fmt(d.amount) : ''}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {d.amount < 0 ? fmt(-d.amount) : ''}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -297,10 +301,10 @@ function RouteComponent() {
               <TableRow>
                 <TableCell colSpan={2}>Total</TableCell>
                 <TableCell className="text-right">
-                  {fmt(totalDebits(journal))}
+                  {fmt(journalTotals(journal).debit)}
                 </TableCell>
                 <TableCell className="text-right">
-                  {fmt(journal.clearingTotal)}
+                  {fmt(journalTotals(journal).credit)}
                 </TableCell>
               </TableRow>
             </TableFooter>
