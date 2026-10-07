@@ -18,6 +18,12 @@ import VendorTagDialog from '@/components/custom/VendorTagDialog'
 import { can, getTokenPayload } from '@/lib/permissions'
 import { createLog } from '@/lib/log-api'
 import { fetchVendorTags, vendorNameKey } from '@/lib/payable-vendor-tags'
+import {
+  CASH_VENDOR_ID,
+  buildPayableBillNumber,
+  createPayableIntacctEntry,
+  storePayableSageBill,
+} from '@/lib/payable-intacct'
 import { SitePicker } from '@/components/custom/SitePicker'
 import { Button } from '@/components/ui/button'
 import {
@@ -58,6 +64,7 @@ interface Payable {
   createdAt: string
   date?: string
   requestInvoice?: boolean
+  sageBill?: { key?: string }
 }
 
 const HUB = 'https://app.gen7fuel.com'
@@ -238,6 +245,10 @@ function RouteComponent() {
     Record<string, VendorTag | undefined>
   >({})
   const [tagDialogFor, setTagDialogFor] = useState<string | null>(null)
+  // "Create Intacct Entry" progress per payable id.
+  const [intacctState, setIntacctState] = useState<
+    Record<string, { busy: boolean; error?: string } | undefined>
+  >({})
 
   useEffect(() => {
     fetchVendorTags()
@@ -542,6 +553,67 @@ function RouteComponent() {
     }
   }
 
+  const createIntacctEntry = async (payable: Payable) => {
+    const date = payableDateStr(payable)
+    const tag = vendorTags[vendorNameKey(payable.vendorName)]
+    const supplier = tag
+      ? `${tag.sageVendorId} – ${tag.sageVendorName}`
+      : `Cash Vendor (${CASH_VENDOR_ID}) – this vendor isn't tagged`
+
+    const ok = window.confirm(
+      [
+        'Create a DRAFT AP entry in Intacct?',
+        '',
+        `Supplier: ${supplier}`,
+        `Invoice number: ${buildPayableBillNumber(payable.vendorName, date)}`,
+        `Store Safe: -$${payable.amount.toFixed(2)}`,
+        `Photos attached: ${payable.images.length}`,
+        '',
+        'Only the Store Safe line is created. Add the expense line in Intacct yourself.',
+      ].join('\n'),
+    )
+    if (!ok) return
+
+    setIntacctState((prev) => ({ ...prev, [payable._id]: { busy: true } }))
+    try {
+      const photos = (
+        await Promise.all(payable.images.map((f) => fetchImageDataUri(f)))
+      ).filter(Boolean)
+      const key = await createPayableIntacctEntry({
+        site,
+        vendorName: payable.vendorName,
+        date,
+        amount: payable.amount,
+        notes: payable.notes,
+        taggedVendorId: tag?.sageVendorId,
+        photoDataUris: photos,
+      })
+      try {
+        await storePayableSageBill(payable._id, key)
+      } catch (err) {
+        // The entry exists in Intacct; make that clear so nobody creates a second one.
+        throw new Error(
+          `Created in Intacct (bill ${key}) but could not be saved in Hub: ${err instanceof Error ? err.message : 'unknown error'}. Do NOT create it again.`,
+        )
+      }
+      setPayables((prev) =>
+        prev.map((p) =>
+          p._id === payable._id ? { ...p, sageBill: { key } } : p,
+        ),
+      )
+      setIntacctState((prev) => ({ ...prev, [payable._id]: undefined }))
+    } catch (err) {
+      setIntacctState((prev) => ({
+        ...prev,
+        [payable._id]: {
+          busy: false,
+          error:
+            err instanceof Error ? err.message : 'Failed to create the entry',
+        },
+      }))
+    }
+  }
+
   const generatePDF = async (payable: Payable) => {
     try {
       const imageDataUris: Array<string> = []
@@ -654,6 +726,7 @@ function RouteComponent() {
                 </th>
                 <th className="px-4 py-2 text-right font-medium">Amount</th>
                 <th className="px-4 py-2 text-center font-medium">Images</th>
+                <th className="px-4 py-2 text-left font-medium">Intacct</th>
                 <th className="px-4 py-2 text-center font-medium">Actions</th>
               </tr>
             </thead>
@@ -860,6 +933,31 @@ function RouteComponent() {
                     <td className="px-4 py-2 text-center">
                       {payable.images.length}
                     </td>
+                    <td className="px-4 py-2">
+                      {payable.sageBill?.key ? (
+                        <span className="text-xs text-emerald-700">
+                          Intacct entry created (#{payable.sageBill.key})
+                        </span>
+                      ) : payable.paymentMethod === 'safe' ? (
+                        <div className="flex flex-col gap-1">
+                          <button
+                            type="button"
+                            disabled={intacctState[payable._id]?.busy}
+                            onClick={() => void createIntacctEntry(payable)}
+                            className="w-fit text-left text-sm text-primary underline-offset-2 hover:underline disabled:opacity-50"
+                          >
+                            {intacctState[payable._id]?.busy
+                              ? 'Creating…'
+                              : 'Create Intacct Entry'}
+                          </button>
+                          {intacctState[payable._id]?.error && (
+                            <span className="max-w-xs text-xs text-destructive">
+                              {intacctState[payable._id]?.error}
+                            </span>
+                          )}
+                        </div>
+                      ) : null}
+                    </td>
                     <td className="px-4 py-2 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <Button
@@ -903,7 +1001,7 @@ function RouteComponent() {
               ) : (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-4 py-8 text-center text-muted-foreground"
                   >
                     No payables found.
