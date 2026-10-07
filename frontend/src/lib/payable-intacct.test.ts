@@ -3,6 +3,7 @@ import {
   CASH_VENDOR_ID,
   buildPayableBillNumber,
   buildPayableBillPayload,
+  candidateBillNumbers,
   formatBillDate,
 } from './payable-intacct'
 
@@ -77,5 +78,14 @@ describe('buildPayableBillPayload', () => {
     expect(
       buildPayableBillPayload({ ...input, attachmentKey: '17' }),
     ).toMatchObject({ attachment: { key: '17' } })
+  })
+})
+
+describe('candidateBillNumbers', () => {
+  it('lists both numbers an earlier entry could have been saved under', () => {
+    expect(candidateBillNumbers('Food Basics', '2026-10-06', 5.95)).toEqual([
+      'Food Basics Oct 06/2026',
+      'Food Basics Oct 06/2026 - 5.95',
+    ])
   })
 })

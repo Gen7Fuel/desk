@@ -142,6 +142,83 @@ router.post('/bill', authenticate, async (req, res) => {
 })
 
 /**
+ * GET /sage/bill-lookup?billNumber=...&billNumber=...&vendorId=...&glAccount=...&txnAmount=...
+ * Finds an existing AP bill for a supplier whose invoice number is one of the
+ * given numbers AND that has a line on glAccount for exactly txnAmount, so a
+ * payable that was already sent to Intacct is recognised instead of duplicated.
+ * Returns { bill: { key, billNumber } } or { bill: null }.
+ * Expects the Sage access token in the X-Sage-Token request header.
+ * Optionally reads X-Sage-Entity for the entity ID; falls back to LOCATION_ID.
+ */
+router.get('/bill-lookup', authenticate, async (req, res) => {
+  try {
+    const sageToken = req.headers['x-sage-token']
+    if (!sageToken) {
+      return res.status(400).json({ message: 'Missing X-Sage-Token header.' })
+    }
+
+    const asList = (v) => (Array.isArray(v) ? v : v === undefined ? [] : [v]).filter((x) => typeof x === 'string' && x)
+    const billNumbers = asList(req.query.billNumber)
+    const vendorId = typeof req.query.vendorId === 'string' ? req.query.vendorId : ''
+    const glAccount = typeof req.query.glAccount === 'string' ? req.query.glAccount : ''
+    const txnAmount = Number(req.query.txnAmount)
+    if (!billNumbers.length || !vendorId || !glAccount || !Number.isFinite(txnAmount)) {
+      return res.status(400).json({ message: 'billNumber, vendorId, glAccount and txnAmount are required.' })
+    }
+
+    const entityId = req.headers['x-sage-entity'] || LOCATION_ID
+    const query = async (object, fields, filters, filterExpression) => {
+      const response = await fetch(`${SAGE_BASE}services/core/query`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${sageToken}`,
+          'Content-Type': 'application/json',
+          'X-IA-API-Param-Entity': entityId,
+        },
+        body: JSON.stringify({ object, fields, filters, filterExpression, size: 100 }),
+      })
+      const data = await response.json().catch(() => null)
+      if (!response.ok) {
+        const err = new Error(`Sage returned ${response.status}`)
+        err.status = response.status
+        err.body = data
+        throw err
+      }
+      return data?.['ia::result'] ?? []
+    }
+
+    for (const billNumber of billNumbers) {
+      const bills = await query(
+        'accounts-payable/bill',
+        ['key', 'billNumber'],
+        [{ $eq: { billNumber } }, { $eq: { 'vendor.id': vendorId } }],
+        '1 and 2'
+      )
+      for (const bill of bills) {
+        const lines = await query(
+          'accounts-payable/bill-line',
+          ['key', 'txnAmount'],
+          [{ $eq: { 'bill.key': String(bill.key) } }, { $eq: { 'glAccount.id': glAccount } }],
+          '1 and 2'
+        )
+        if (lines.some((l) => Math.round(Number(l.txnAmount) * 100) === Math.round(txnAmount * 100))) {
+          return res.json({ bill: { key: String(bill.key), billNumber: bill.billNumber } })
+        }
+      }
+    }
+
+    return res.json({ bill: null })
+  } catch (err) {
+    if (err.status) {
+      console.error('[sage/bill-lookup] Sage error:', err.status, JSON.stringify(err.body, null, 2))
+      return res.status(err.status).json(err.body ?? { message: err.message })
+    }
+    console.error('[sage/bill-lookup] error:', err)
+    return res.status(500).json({ message: 'Sage bill lookup failed.' })
+  }
+})
+
+/**
  * POST /sage/invoice
  * Proxies a create-invoice request to the Sage Intacct AR API.
  * Expects the Sage access token in the X-Sage-Token request header.
