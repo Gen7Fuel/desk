@@ -306,6 +306,19 @@ function RouteComponent() {
             </TableFooter>
           </Table>
 
+          {(journal.serviceFees === 0 || journal.hst === 0) && (
+            <p className="text-sm text-muted-foreground">
+              Not in this PDF, so no Intacct line:{' '}
+              {[
+                journal.serviceFees === 0 && 'Service Fees',
+                journal.hst === 0 && 'HST',
+              ]
+                .filter(Boolean)
+                .join(', ')}
+              .
+            </p>
+          )}
+
           {!balanced && (
             <p className="text-sm text-destructive">
               Debits and credits don&apos;t balance &mdash; check the PDF.

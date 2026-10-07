@@ -67,8 +67,6 @@ export function parsePayworksJournal(rawText: string): PayworksJournal {
     wsib: money(journal, String.raw`WSIB(?:\s+\d+)?`),
     cpp: money(journal, String.raw`CPP\s+Employer`),
     ei: money(journal, String.raw`EI\s+Employer`),
-    serviceFees: money(journal, String.raw`Service Fees`),
-    hst: money(journal, String.raw`HST`),
     clearingTotal: money(journal, String.raw`Payroll Clearing Account`),
   }
   const missing = Object.entries(values)
@@ -78,6 +76,13 @@ export function parsePayworksJournal(rawText: string): PayworksJournal {
     throw new Error(`Could not find in the PDF: ${missing.join(', ')}`)
   }
 
+  // Service fees and HST are sometimes absent; a missing one is 0 and gets no
+  // line in the Intacct entry.
+  const optional = {
+    serviceFees: money(journal, String.raw`Service Fees`) ?? 0,
+    hst: money(journal, String.raw`HST`) ?? 0,
+  }
+
   return {
     customerNumber: field(text, /Customer Number\s*(\S+)/i),
     payPeriod,
@@ -85,14 +90,18 @@ export function parsePayworksJournal(rawText: string): PayworksJournal {
     runDate,
     payGroup: field(text, /Pay Group\s*(.+?)\s*Journal Entry/i),
     ...(values as Record<keyof typeof values, number>),
+    ...optional,
   }
 }
 
 const cents = (n: number) => Math.round(n * 100)
 
-/** Debit lines in display order; the same order is used for the Intacct payload. */
+/**
+ * Debit lines in display order; the same order is used for the Intacct payload.
+ * Lines with no amount (e.g. service fees / HST missing from the PDF) are left out.
+ */
 export function journalDebits(j: PayworksJournal) {
-  return [
+  const lines = [
     {
       key: 'wages',
       label: 'Wages',
@@ -125,6 +134,7 @@ export function journalDebits(j: PayworksJournal) {
       amount: j.hst,
     },
   ] as const
+  return lines.filter((d) => cents(d.amount) !== 0)
 }
 
 export function totalDebits(j: PayworksJournal): number {

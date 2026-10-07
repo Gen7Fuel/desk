@@ -113,3 +113,71 @@ describe('buildJournalEntryPayload', () => {
     ).toBe(true)
   })
 })
+
+// The journal section (from "Wages" on) with service fees and/or HST removed and
+// the clearing credit adjusted to match; the earlier payables section is kept.
+function withoutOptional(
+  opts: { serviceFees?: boolean; hst?: boolean },
+  clearing: string,
+) {
+  const i = SAMPLE.indexOf('Wages')
+  let tail = SAMPLE.slice(i)
+  if (opts.serviceFees)
+    tail = tail.replace(/\?\s+Service Fees\s+158\.80\s*/, '')
+  if (opts.hst) tail = tail.replace(/\?\s+HST\s+20\.64\s*/, '')
+  return SAMPLE.slice(0, i) + tail.replace('5,958.24', clearing)
+}
+
+describe('optional service fees and HST', () => {
+  it('treats both as absent when the PDF has neither, and still balances', () => {
+    const j = parsePayworksJournal(
+      withoutOptional({ serviceFees: true, hst: true }, '5,778.80'),
+    )
+    expect(j).toMatchObject({ serviceFees: 0, hst: 0, clearingTotal: 5778.8 })
+    expect(isBalanced(j)).toBe(true)
+  })
+
+  it('omits the 54650 lines from the Intacct entry when both are absent', () => {
+    const j = parsePayworksJournal(
+      withoutOptional({ serviceFees: true, hst: true }, '5,778.80'),
+    )
+    const payload = buildJournalEntryPayload({
+      journal: j,
+      locationId: 'G160',
+      creditAccountId: '10131',
+      description: 'x',
+    })
+    expect(
+      payload.lines.map((l) => [l.txnType, l.glAccount.id, l.txnAmount]),
+    ).toEqual([
+      ['credit', '10131', '5778.80'],
+      ['debit', '53300', '5376.76'],
+      ['debit', '53650', '66.14'],
+      ['debit', '53550', '213.17'],
+      ['debit', '53600', '122.73'],
+    ])
+  })
+
+  it('keeps service fees when only HST is missing', () => {
+    const j = parsePayworksJournal(withoutOptional({ hst: true }, '5,937.60'))
+    expect(j).toMatchObject({ serviceFees: 158.8, hst: 0 })
+    expect(isBalanced(j)).toBe(true)
+    const payload = buildJournalEntryPayload({
+      journal: j,
+      locationId: 'G160',
+      creditAccountId: '10131',
+      description: 'x',
+    })
+    expect(
+      payload.lines.filter((l) => l.glAccount.id === '54650'),
+    ).toHaveLength(1)
+  })
+
+  it('still requires the core lines', () => {
+    const broken = withoutOptional(
+      { serviceFees: true, hst: true },
+      '5,778.80',
+    ).replace(/Wages\s+5,376\.76/, 'Wages')
+    expect(() => parsePayworksJournal(broken)).toThrow(/wages/)
+  })
+})
