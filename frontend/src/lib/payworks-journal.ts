@@ -9,6 +9,8 @@ export interface PayworksJournal {
   wages: number
   wsib: number
   cpp: number
+  /** Employer CPP2 (the second CPP line, when the PDF has one); 0 when absent. */
+  cpp2: number
   ei: number
   serviceFees: number
   hst: number
@@ -21,6 +23,8 @@ export const PAYROLL_GL_ACCOUNTS = {
   wages: '53300',
   wsib: '53650',
   cpp: '53550',
+  // CPP2 is booked to the same CPP account, as its own line.
+  cpp2: '53550',
   ei: '53600',
   // Service fees and HST are both booked to Office Supplies.
   serviceFees: '54650',
@@ -77,9 +81,10 @@ export function parsePayworksJournal(rawText: string): PayworksJournal {
     throw new Error(`Could not find in the PDF: ${missing.join(', ')}`)
   }
 
-  // Service fees and HST are sometimes absent; a missing one is 0 and gets no
-  // line in the Intacct entry.
+  // CPP2, service fees and HST are sometimes absent; a missing one is 0 and
+  // gets no line in the Intacct entry.
   const optional = {
+    cpp2: money(journal, String.raw`CPP2\s+Employer`) ?? 0,
     serviceFees: money(journal, String.raw`Service Fees`) ?? 0,
     hst: money(journal, String.raw`HST`) ?? 0,
   }
@@ -121,6 +126,12 @@ export function journalDebits(j: PayworksJournal) {
       label: 'CPP',
       glAccount: PAYROLL_GL_ACCOUNTS.cpp,
       amount: j.cpp,
+    },
+    {
+      key: 'cpp2',
+      label: 'CPP2',
+      glAccount: PAYROLL_GL_ACCOUNTS.cpp2,
+      amount: j.cpp2,
     },
     { key: 'ei', label: 'EI', glAccount: PAYROLL_GL_ACCOUNTS.ei, amount: j.ei },
     {
