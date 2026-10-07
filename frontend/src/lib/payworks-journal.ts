@@ -69,7 +69,8 @@ export function parsePayworksJournal(rawText: string): PayworksJournal {
 
   const values = {
     wages: money(journal, String.raw`Wages`),
-    wsib: money(journal, String.raw`WSIB(?:\s+\d+)?`),
+    // Ontario calls it WSIB, British Columbia WCB; both post to the same account.
+    wsib: money(journal, String.raw`(?:WSIB|WCB)(?:\s+\d+)?`),
     cpp: money(journal, String.raw`CPP\s+Employer`),
     ei: money(journal, String.raw`EI\s+Employer`),
     clearingTotal: money(journal, String.raw`Payroll Clearing Account`),
@@ -117,7 +118,7 @@ export function journalDebits(j: PayworksJournal) {
     },
     {
       key: 'wsib',
-      label: 'WSIB',
+      label: 'WSIB / WCB',
       glAccount: PAYROLL_GL_ACCOUNTS.wsib,
       amount: j.wsib,
     },
