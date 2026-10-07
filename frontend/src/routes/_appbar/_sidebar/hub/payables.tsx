@@ -570,6 +570,7 @@ function RouteComponent() {
         `Photos attached: ${payable.images.length}`,
         '',
         'Only the Store Safe line is created. Add the expense line in Intacct yourself.',
+        'If this entry is already in Intacct, it is linked here instead of created again.',
       ].join('\n'),
     )
     if (!ok) return
@@ -579,7 +580,7 @@ function RouteComponent() {
       const photos = (
         await Promise.all(payable.images.map((f) => fetchImageDataUri(f)))
       ).filter(Boolean)
-      const key = await createPayableIntacctEntry({
+      const { key, alreadyExisted } = await createPayableIntacctEntry({
         site,
         vendorName: payable.vendorName,
         date,
@@ -593,7 +594,7 @@ function RouteComponent() {
       } catch (err) {
         // The entry exists in Intacct; make that clear so nobody creates a second one.
         throw new Error(
-          `Created in Intacct (bill ${key}) but could not be saved in Hub: ${err instanceof Error ? err.message : 'unknown error'}. Do NOT create it again.`,
+          `${alreadyExisted ? 'Found in Intacct' : 'Created in Intacct'} (bill ${key}) but could not be saved in Hub: ${err instanceof Error ? err.message : 'unknown error'}. ${alreadyExisted ? 'Try again once Hub is updated.' : 'Do NOT create it again.'}`,
         )
       }
       setPayables((prev) =>

@@ -169,16 +169,74 @@ export interface CreatePayableEntryArgs {
   photoDataUris: Array<string>
 }
 
+/** The two invoice numbers an entry for this payable could have been saved under. */
+export function candidateBillNumbers(
+  vendorName: string,
+  ymd: string,
+  amount: number,
+): Array<string> {
+  return [
+    buildPayableBillNumber(vendorName, ymd),
+    buildPayableBillNumber(vendorName, ymd, amount),
+  ]
+}
+
 /**
- * Creates the draft AP bill in Intacct and returns its key. Retries once with
- * the amount appended to the invoice number if Intacct says it already exists.
+ * Finds a bill already in Intacct for this payable: same supplier, one of the
+ * candidate invoice numbers, and a Store Safe line for exactly this amount
+ * (other lines, like the expense line added by hand, are ignored). Returns its
+ * key, or null when there isn't one.
+ */
+async function findExistingBill(
+  args: CreatePayableEntryArgs,
+  supplierId: string,
+  sageToken: string,
+  entityId: string,
+): Promise<string | null> {
+  const params = new URLSearchParams()
+  for (const n of candidateBillNumbers(args.vendorName, args.date, args.amount))
+    params.append('billNumber', n)
+  params.set('vendorId', supplierId)
+  params.set('glAccount', STORE_SAFE_GL_ACCOUNT)
+  params.set('txnAmount', (-args.amount).toFixed(2))
+
+  const res = await apiFetch(`/api/sage/bill-lookup?${params.toString()}`, {
+    headers: { 'X-Sage-Token': sageToken, 'X-Sage-Entity': entityId },
+  })
+  const body = (await res.json().catch(() => null)) as {
+    bill?: { key?: string } | null
+  } | null
+  if (!res.ok) throw new Error(sageErrorText(body, res.status))
+  return body?.bill?.key ?? null
+}
+
+export interface PayableEntryResult {
+  key: string
+  /** True when the entry was already in Intacct and was only linked, not created. */
+  alreadyExisted: boolean
+}
+
+/**
+ * Creates the draft AP bill in Intacct and returns its key. First looks for a
+ * bill this payable already produced (e.g. created earlier but never saved in
+ * Hub) and returns that instead of making a duplicate. Retries once with the
+ * amount appended to the invoice number if Intacct says the number is taken.
  */
 export async function createPayableIntacctEntry(
   args: CreatePayableEntryArgs,
-): Promise<string> {
+): Promise<PayableEntryResult> {
   const sageToken = await getSageToken()
   const entityId = await resolveSiteEntity(sageToken, args.site)
   const supplierId = args.taggedVendorId ?? CASH_VENDOR_ID
+
+  const existingKey = await findExistingBill(
+    args,
+    supplierId,
+    sageToken,
+    entityId,
+  )
+  if (existingKey) return { key: existingKey, alreadyExisted: true }
+
   const firstNumber = buildPayableBillNumber(args.vendorName, args.date)
 
   const attachmentKey = args.photoDataUris.length
@@ -212,15 +270,18 @@ export async function createPayableIntacctEntry(
   }
 
   try {
-    return await post(firstNumber)
+    return { key: await post(firstNumber), alreadyExisted: false }
   } catch (err) {
     if (
       err instanceof Error &&
       /already exists|duplicate|not unique|must be unique/i.test(err.message)
     ) {
-      return await post(
-        buildPayableBillNumber(args.vendorName, args.date, args.amount),
-      )
+      return {
+        key: await post(
+          buildPayableBillNumber(args.vendorName, args.date, args.amount),
+        ),
+        alreadyExisted: false,
+      }
     }
     throw err
   }
