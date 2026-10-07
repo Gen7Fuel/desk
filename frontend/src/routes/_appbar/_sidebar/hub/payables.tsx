@@ -12,9 +12,12 @@ import {
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { pdf } from '@react-pdf/renderer'
+import type { VendorTag } from '@/lib/payable-vendor-tags'
 import PayablePDF from '@/components/custom/PayablePDF'
+import VendorTagDialog from '@/components/custom/VendorTagDialog'
 import { can, getTokenPayload } from '@/lib/permissions'
 import { createLog } from '@/lib/log-api'
+import { fetchVendorTags, vendorNameKey } from '@/lib/payable-vendor-tags'
 import { SitePicker } from '@/components/custom/SitePicker'
 import { Button } from '@/components/ui/button'
 import {
@@ -230,6 +233,19 @@ function RouteComponent() {
     field: 'vendorName' | 'amount' | 'paymentMethod'
   } | null>(null)
   const [editValue, setEditValue] = useState<string>('')
+  // Intacct vendor tags, keyed by normalized payable vendor name.
+  const [vendorTags, setVendorTags] = useState<
+    Record<string, VendorTag | undefined>
+  >({})
+  const [tagDialogFor, setTagDialogFor] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchVendorTags()
+      .then((tags) =>
+        setVendorTags(Object.fromEntries(tags.map((t) => [t.nameKey, t]))),
+      )
+      .catch((err: unknown) => console.error('Vendor tags:', err))
+  }, [])
   const [imageModal, setImageModal] = useState<{
     isOpen: boolean
     images: Array<string>
@@ -246,8 +262,11 @@ function RouteComponent() {
       const locRes = await fetch(`${HUB}/api/locations`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      const locations: Array<{ _id: string; stationName: string; site?: string }> =
-        await locRes.json()
+      const locations: Array<{
+        _id: string
+        stationName: string
+        site?: string
+      }> = await locRes.json()
       const selected = locations.find((l) => (l.site ?? l.stationName) === site)
       if (!selected) {
         setPayables([])
@@ -367,7 +386,10 @@ function RouteComponent() {
         setPayables((prev) =>
           prev.map((p) =>
             p._id === id
-              ? { ...p, [field]: field === 'amount' ? parseFloat(value) : value }
+              ? {
+                  ...p,
+                  [field]: field === 'amount' ? parseFloat(value) : value,
+                }
               : p,
           ),
         )
@@ -732,7 +754,36 @@ function RouteComponent() {
                           className="w-full rounded border bg-background px-1"
                         />
                       ) : (
-                        payable.vendorName
+                        <span className="flex items-center gap-2">
+                          {payable.vendorName}
+                          {(() => {
+                            const tag =
+                              vendorTags[vendorNameKey(payable.vendorName)]
+                            return (
+                              <button
+                                type="button"
+                                title={
+                                  tag
+                                    ? `${tag.sageVendorName} — click to change`
+                                    : 'Tag with an Intacct vendor'
+                                }
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setTagDialogFor(payable.vendorName)
+                                }}
+                                onDoubleClick={(e) => e.stopPropagation()}
+                                className={cn(
+                                  'rounded px-1.5 py-0.5 text-xs font-medium',
+                                  tag
+                                    ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                                    : 'border border-dashed text-muted-foreground hover:bg-accent',
+                                )}
+                              >
+                                {tag ? tag.sageVendorId : '+ Tag'}
+                              </button>
+                            )
+                          })()}
+                        </span>
                       )}
                     </td>
                     <td
@@ -863,6 +914,19 @@ function RouteComponent() {
           </table>
         </div>
       )}
+
+      <VendorTagDialog
+        vendorName={tagDialogFor}
+        currentId={
+          tagDialogFor
+            ? vendorTags[vendorNameKey(tagDialogFor)]?.sageVendorId
+            : undefined
+        }
+        onClose={() => setTagDialogFor(null)}
+        onTagged={(tag) =>
+          setVendorTags((prev) => ({ ...prev, [tag.nameKey]: tag }))
+        }
+      />
 
       <Dialog open={imageModal.isOpen} onOpenChange={closeModal}>
         <DialogContent className="max-w-4xl">
