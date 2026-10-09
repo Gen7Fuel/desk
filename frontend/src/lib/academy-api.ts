@@ -178,6 +178,29 @@ export async function deleteAcademyMedia(path: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete media')
 }
 
+export interface ReleaseMediaResult {
+  released: boolean
+  /** Why the file was kept: 'in-use', 'not-in-course-folder', 'not-in-storage'. */
+  reason?: string
+}
+
+/**
+ * Asks the server to delete a video that was swapped out of (or cleared from) a
+ * saved course. The server only deletes it if it lives in this course's own
+ * folder and no saved course still references it.
+ */
+export async function releaseCourseMedia(
+  courseId: string,
+  url: string,
+): Promise<ReleaseMediaResult> {
+  const res = await apiFetch(`/api/academy/courses/${courseId}/release-media`, {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+  })
+  if (!res.ok) throw new Error('Failed to release media')
+  return res.json()
+}
+
 export async function getAcademyMediaSasUrl(path: string): Promise<string> {
   const res = await apiFetch(
     `/api/academy/media/sas?path=${encodeURIComponent(path)}`,
@@ -196,7 +219,9 @@ export async function getVideoStatus(
   if (courseId) params.set('courseId', courseId)
   if (courseTitle) params.set('courseTitle', courseTitle)
   const qs = params.toString()
-  const res = await apiFetch(`/api/academy/videos/${videoId}/status${qs ? `?${qs}` : ''}`)
+  const res = await apiFetch(
+    `/api/academy/videos/${videoId}/status${qs ? `?${qs}` : ''}`,
+  )
   if (!res.ok) throw new Error('Failed to get video status')
   return res.json()
 }
@@ -236,12 +261,17 @@ export function uploadAcademyMedia(
       }
 
       if (xhr.status < 200 || xhr.status >= 300) {
-        reject(new Error((data as { message?: string }).message ?? 'Upload failed'))
+        reject(
+          new Error((data as { message?: string }).message ?? 'Upload failed'),
+        )
         return
       }
 
       if ((data as { status?: string }).status === 'processing') {
-        resolve({ type: 'processing', videoId: (data as { videoId: string }).videoId })
+        resolve({
+          type: 'processing',
+          videoId: (data as { videoId: string }).videoId,
+        })
       } else {
         resolve({ type: 'immediate', file: data as AcademyMediaFile })
       }
