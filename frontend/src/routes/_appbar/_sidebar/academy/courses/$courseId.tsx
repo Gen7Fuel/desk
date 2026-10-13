@@ -43,10 +43,12 @@ import {
   createCourse,
   getCourse,
   publishCourse,
+  releaseCourseMedia,
   unpublishCourse,
   updateCourse,
   uploadAcademyAsset,
 } from '@/lib/academy-api'
+import { replacedVideoUrls, videoUrlsByItem } from '@/lib/academy-video-cleanup'
 import { ItemEditorSheet } from '@/components/academy/ItemEditorSheet'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -324,6 +326,33 @@ function SortableSectionCard({
   )
 }
 
+// After a save, asks the server to delete videos that were swapped out or
+// cleared. The server keeps any video that isn't in this course's own folder or
+// that a saved course still uses, so failures and "kept" answers are silent.
+async function releaseReplacedVideos(
+  courseId: string,
+  urls: Array<string>,
+  onRemoved: () => void,
+) {
+  let removed = 0
+  for (const url of urls) {
+    try {
+      const result = await releaseCourseMedia(courseId, url)
+      if (result.released) removed++
+    } catch (err) {
+      console.error('Could not release replaced video:', err)
+    }
+  }
+  if (removed) {
+    onRemoved()
+    toast.success(
+      removed === 1
+        ? 'Replaced video removed from storage'
+        : `${removed} replaced videos removed from storage`,
+    )
+  }
+}
+
 // ── Main builder page ──────────────────────────────────────────────────────────
 function RouteComponent() {
   const { courseId } = Route.useParams()
@@ -338,6 +367,8 @@ function RouteComponent() {
   const [status, setStatus] = useState<'draft' | 'published'>('draft')
   const [sections, setSections] = useState<Array<DraftSection>>([])
   const [loaded, setLoaded] = useState(isNew)
+  // Video URL of each item as last saved, to spot videos a save replaces.
+  const savedVideosRef = useRef<Map<string, string>>(new Map())
 
   const [thumbnailUploading, setThumbnailUploading] = useState(false)
   const thumbnailFileRef = useRef<HTMLInputElement>(null)
@@ -375,6 +406,7 @@ function RouteComponent() {
       setThumbnail(courseData.thumbnail)
       setStatus(courseData.status)
       setSections(courseData.sections.map(toLocalSection))
+      savedVideosRef.current = videoUrlsByItem(courseData.sections)
       setLoaded(true)
     }
   }, [courseData, loaded])
@@ -394,6 +426,16 @@ function RouteComponent() {
     onSuccess: (saved) => {
       queryClient.invalidateQueries({ queryKey: ['academy', 'courses'] })
       toast.success('Course saved')
+      // Delete videos this save replaced or cleared (existing courses only).
+      const replaced = isNew
+        ? []
+        : replacedVideoUrls(savedVideosRef.current, saved.sections)
+      savedVideosRef.current = videoUrlsByItem(saved.sections)
+      if (replaced.length) {
+        void releaseReplacedVideos(courseId, replaced, () =>
+          queryClient.invalidateQueries({ queryKey: ['academy-media'] }),
+        )
+      }
       if (isNew) {
         navigate({
           to: '/academy/courses/$courseId',

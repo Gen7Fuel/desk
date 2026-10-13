@@ -3,10 +3,11 @@ const fs = require('fs')
 const express = require('express')
 const multer = require('multer')
 const ffmpeg = require('fluent-ffmpeg')
-const { BlobServiceClient, BlobSASPermissions } = require('@azure/storage-blob')
+const { BlobSASPermissions } = require('@azure/storage-blob')
 const { authenticate, requirePermission } = require('../../middleware/auth')
 const { jobs } = require('./video-jobs')
 const { courseFolder } = require('./course-folder')
+const { HLS_MASTER_RE, getContainerClient, deleteMediaAtPath } = require('./media-storage')
 
 const router = express.Router()
 
@@ -44,14 +45,6 @@ const RENDITIONS = [
 
 const TEN_YEARS_MS = 10 * 365 * 24 * 60 * 60 * 1000
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000
-
-function getContainerClient() {
-  const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING
-  const containerName = process.env.AZURE_CONTAINER
-  if (!connectionString || !containerName) throw new Error('Azure storage not configured.')
-  const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString)
-  return blobServiceClient.getContainerClient(containerName)
-}
 
 function generateSasUrl(blockBlobClient, expiresInMs) {
   return blockBlobClient.generateSasUrl({
@@ -279,7 +272,6 @@ async function transcodeToHls(jobId, videoId, tempFilePath, originalName, folder
 // Matches both the legacy flat layout (academy/videos/{id}/...) and the
 // per-course layout (academy/{courseFolder}/videos/{id}/...).
 const HLS_SUBPATH_RE = /^academy\/(?:[^/]+\/)?videos\/([^/]+)\//
-const HLS_MASTER_RE = /^academy\/(?:[^/]+\/)?videos\/([^/]+)\/master\.m3u8$/
 // On a storage account with Hierarchical Namespace enabled, the videoId
 // "folder" itself is a real, zero-length blob object (not just a naming
 // prefix) and shows up in a flat listing alongside its contents. It never
@@ -350,50 +342,14 @@ router.get('/media/sas', authenticate, requirePermission('academy.courses', 'upd
 
 // ── DELETE /media ─────────────────────────────────────────────────────────────
 
-// `path` is the fullPath shown in the media list. For a plain file that's a
-// single blob delete. For an HLS video it's the master.m3u8 blob — deleting
-// it alone would orphan every per-rendition index.m3u8 and .ts segment, so
-// instead we delete every blob under that video's shared prefix
-// (academy/{folder}/videos/{videoId}/), i.e. the whole transcoded group.
+// `path` is the fullPath shown in the media list. See deleteMediaAtPath for how
+// plain files and HLS video groups are removed.
 router.delete('/media', authenticate, requirePermission('academy.courses', 'delete'), async (req, res) => {
   const blobPath = String(req.query.path || '').trim()
   if (!blobPath) return res.status(400).json({ message: 'path is required' })
 
   try {
-    const containerClient = getContainerClient()
-    const masterMatch = blobPath.match(HLS_MASTER_RE)
-
-    if (masterMatch) {
-      const videoId = masterMatch[1]
-      // blobPath is ".../videos/{videoId}/master.m3u8" — videoDir is the
-      // directory one level up, whose contents (master + quality dirs +
-      // playlists + segments) all share this prefix.
-      const videoDir = blobPath.slice(0, -'/master.m3u8'.length)
-      const childPrefix = `${videoDir}/`
-
-      const childNames = []
-      for await (const blob of containerClient.listBlobsFlat({ prefix: childPrefix })) {
-        childNames.push(blob.name)
-      }
-      // On a Hierarchical Namespace account, each quality-dir (e.g. .../240p)
-      // is itself a real, zero-length blob alongside its segment files, and
-      // the delete API refuses to remove a directory that still has
-      // children. listBlobsFlat returns them in lexicographic order, which
-      // puts a directory *before* its contents (a prefix sorts first), so
-      // delete deepest paths first to guarantee children are gone before
-      // their containing directory placeholder is attempted.
-      childNames.sort((a, b) => b.length - a.length)
-      for (const name of childNames) {
-        await containerClient.getBlockBlobClient(name).deleteIfExists()
-      }
-      // Finally the videoId directory placeholder itself, if this account
-      // has Hierarchical Namespace enabled — harmless no-op otherwise.
-      await containerClient.getBlockBlobClient(videoDir).deleteIfExists()
-      jobs.delete(videoId)
-    } else {
-      await containerClient.getBlockBlobClient(blobPath).deleteIfExists()
-    }
-
+    await deleteMediaAtPath(blobPath)
     res.json({ message: 'Deleted' })
   } catch (err) {
     console.error('[academy/media] delete error:', err)
