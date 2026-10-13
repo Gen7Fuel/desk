@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import { SITE_BANK_ACCOUNTS } from '@/lib/sage-bank-accounts'
+import { buildReceiptLines, tillOverShortFor } from '@/lib/sage-other-receipt-lines'
 
 export const Route = createFileRoute('/_appbar/_sidebar/hub/cash-management')({
   component: RouteComponent,
@@ -65,6 +66,8 @@ interface CashRecResponse {
       cashOffCoupons?: number
       gasolineCoupons?: number
       otherCoupons?: number
+      gst?: number
+      pst?: number
     }
     handheldDebit?: number
     unsettledPrepays?: number
@@ -561,6 +564,8 @@ function RouteComponent() {
         dayEntry?.cashSummary?.totals.gasolineCoupons,
       )
       const d_otherCoupons = rn(dayEntry?.cashSummary?.totals.otherCoupons)
+      const d_gst = rn(dayEntry?.cashSummary?.totals.gst)
+      const d_rst = rn(dayEntry?.cashSummary?.totals.pst)
 
       const d_bankCrBal =
         d_miscCreditsTotal +
@@ -572,8 +577,14 @@ function RouteComponent() {
         d_transferFrom -
         d_nightDeposit
       const d_bankPosRec = d_totalPos - d_afdGiftCard - d_kioskGiftCard
+      // The tax gets its own GST and RST lines, so it comes out of GBL Sales.
       const d_gblSales =
-        d_totalSales - d_itemSales - d_reportedCanadianCash - d_missedCpl
+        d_totalSales -
+        d_itemSales -
+        d_reportedCanadianCash -
+        d_missedCpl -
+        d_gst -
+        d_rst
       const d_kardpollValue =
         d_gblCreditsFiltered - (d_kardpollSales - d_kardpollAr)
       const d_gblValue = d_bankCrBal - d_bankPosRec
@@ -614,52 +625,48 @@ function RouteComponent() {
         .filter((r) => !isGpmc(r))
         .reduce((s, r) => s + (Number(r.amount) || 0), 0)
 
-      const lines: Array<Record<string, unknown>> = []
-      let ln = 1
+      const receiptLines = buildReceiptLines({
+        site,
+        dateLabel: format(parseISO(date), 'dd/MM/yyyy'),
+        gblSales: d_gblSales,
+        cashSales: d_reportedCanadianCash,
+        kardpollSales: d_kardpollSales,
+        ontarioIntegratedTax: d_ontarioIntTax,
+        gst: d_gst,
+        rst: d_rst,
+        storeSales: d_itemSales,
+        safeDeposit: d_canadianCashCollected,
+        nightDeposit: d_nightDeposit,
+        gcRedemption: d_gcRedemption,
+        loyalty: d_loyalty,
+        nonGpmcArTotal: nonGpmcTotal,
+        gpmcArRows: gpmcRows.map((row) => ({
+          name: row.customerName ?? row.customer ?? 'GPMC',
+          amount: Number(row.amount) || 0,
+        })),
+        kardpollValue: d_kardpollValue,
+        gblValue: d_gblValue,
+        tillOverShort: tillOverShortFor({
+          adjustedOverShort: dayEntry?.adjustedOverShort,
+          canadianCashCollected: d_canadianCashCollected,
+          reportedCanadianCash: d_reportedCanadianCash,
+          handheldDebit: d_handheldDebit,
+          unsettledPrepays: rn(dayEntry?.cashSummary?.unsettledPrepays),
+        }),
+      })
 
-      const addLine = (gl: string, amount: number, desc: string) => {
-        if (amount === 0) return
-        lines.push({
-          status: 'active',
-          amount: amount.toFixed(2),
-          txnAmount: amount.toFixed(2),
-          description: desc,
-          lineNumber: ln++,
-          isTax: false,
-          glAccount: { id: gl },
-          dimensions: {
-            location: { id: locationId },
-          },
-        })
-      }
-
-      addLine('40010', d_gblSales, 'GBL Sales')
-      addLine('40010', d_reportedCanadianCash, 'Cash Sales')
-      addLine('40010', d_kardpollSales, 'Kardpoll Sales')
-      addLine('40010', d_ontarioIntTax, 'Ontario Integrated Tax')
-      addLine('40200', d_itemSales, 'Store Sales')
-      addLine(
-        '10011',
-        -d_canadianCashCollected,
-        `Safe Deposit ${format(parseISO(date), 'dd/MM/yyyy')}`,
-      )
-      addLine('10011', d_nightDeposit, 'Night Deposit')
-      addLine('52250', -d_gcRedemption, 'Gift Card Redemption')
-      addLine('52175', -d_loyalty, 'Loyalty')
-      if (nonGpmcTotal !== 0) addLine('10440', -nonGpmcTotal, 'Total AR POs')
-      for (const row of gpmcRows) {
-        addLine(
-          '55100',
-          -(Number(row.amount) || 0),
-          row.customerName ?? row.customer ?? 'GPMC',
-        )
-      }
-      addLine(
-        '55050',
-        d_kardpollValue,
-        d_kardpollValue >= 0 ? 'Kardpoll Paid' : 'Kardpoll Short',
-      )
-      addLine('55050', d_gblValue, d_gblValue >= 0 ? 'GBL Paid' : 'GBL Short')
+      const lines = receiptLines.map((l, i) => ({
+        status: 'active',
+        amount: l.amount.toFixed(2),
+        txnAmount: l.amount.toFixed(2),
+        description: l.description,
+        lineNumber: i + 1,
+        isTax: false,
+        glAccount: { id: l.glAccount },
+        dimensions: {
+          location: { id: locationId },
+        },
+      }))
 
       const payload = {
         payer: 'Daily Sales',
