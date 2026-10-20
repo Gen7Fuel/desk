@@ -60,6 +60,7 @@ import { Route as AppbarSidebarHubIntacctIndexRouteImport } from './routes/_appb
 import { Route as AppbarSidebarAcademyCoursesIndexRouteImport } from './routes/_appbar/_sidebar/academy/courses/index'
 import { Route as AppbarAdminSidebarSiteAssetsIndexRouteImport } from './routes/_appbar/_admin/_sidebar/site-assets/index'
 import { Route as AppbarAdminSidebarPersonnelIndexRouteImport } from './routes/_appbar/_admin/_sidebar/personnel/index'
+import { Route as AppbarSidebarHubIntacctTradogramRouteImport } from './routes/_appbar/_sidebar/hub/intacct/tradogram'
 import { Route as AppbarSidebarHubIntacctPayrollRouteImport } from './routes/_appbar/_sidebar/hub/intacct/payroll'
 import { Route as AppbarSidebarHubIntacctArEntriesRouteImport } from './routes/_appbar/_sidebar/hub/intacct/ar-entries'
 import { Route as AppbarSidebarAcademyCoursesCourseIdRouteImport } from './routes/_appbar/_sidebar/academy/courses/$courseId'
@@ -353,6 +354,12 @@ const AppbarAdminSidebarPersonnelIndexRoute =
     path: '/',
     getParentRoute: () => AppbarAdminSidebarPersonnelRoute,
   } as any)
+const AppbarSidebarHubIntacctTradogramRoute =
+  AppbarSidebarHubIntacctTradogramRouteImport.update({
+    id: '/tradogram',
+    path: '/tradogram',
+    getParentRoute: () => AppbarSidebarHubIntacctRoute,
+  } as any)
 const AppbarSidebarHubIntacctPayrollRoute =
   AppbarSidebarHubIntacctPayrollRouteImport.update({
     id: '/payroll',
@@ -494,6 +501,7 @@ export interface FileRoutesByFullPath {
   '/academy/courses/$courseId': typeof AppbarSidebarAcademyCoursesCourseIdRoute
   '/hub/intacct/ar-entries': typeof AppbarSidebarHubIntacctArEntriesRoute
   '/hub/intacct/payroll': typeof AppbarSidebarHubIntacctPayrollRoute
+  '/hub/intacct/tradogram': typeof AppbarSidebarHubIntacctTradogramRoute
   '/personnel/': typeof AppbarAdminSidebarPersonnelIndexRoute
   '/site-assets/': typeof AppbarAdminSidebarSiteAssetsIndexRoute
   '/academy/courses/': typeof AppbarSidebarAcademyCoursesIndexRoute
@@ -550,6 +558,7 @@ export interface FileRoutesByTo {
   '/academy/courses/$courseId': typeof AppbarSidebarAcademyCoursesCourseIdRoute
   '/hub/intacct/ar-entries': typeof AppbarSidebarHubIntacctArEntriesRoute
   '/hub/intacct/payroll': typeof AppbarSidebarHubIntacctPayrollRoute
+  '/hub/intacct/tradogram': typeof AppbarSidebarHubIntacctTradogramRoute
   '/personnel': typeof AppbarAdminSidebarPersonnelIndexRoute
   '/site-assets': typeof AppbarAdminSidebarSiteAssetsIndexRoute
   '/academy/courses': typeof AppbarSidebarAcademyCoursesIndexRoute
@@ -618,6 +627,7 @@ export interface FileRoutesById {
   '/_appbar/_sidebar/academy/courses/$courseId': typeof AppbarSidebarAcademyCoursesCourseIdRoute
   '/_appbar/_sidebar/hub/intacct/ar-entries': typeof AppbarSidebarHubIntacctArEntriesRoute
   '/_appbar/_sidebar/hub/intacct/payroll': typeof AppbarSidebarHubIntacctPayrollRoute
+  '/_appbar/_sidebar/hub/intacct/tradogram': typeof AppbarSidebarHubIntacctTradogramRoute
   '/_appbar/_admin/_sidebar/personnel/': typeof AppbarAdminSidebarPersonnelIndexRoute
   '/_appbar/_admin/_sidebar/site-assets/': typeof AppbarAdminSidebarSiteAssetsIndexRoute
   '/_appbar/_sidebar/academy/courses/': typeof AppbarSidebarAcademyCoursesIndexRoute
@@ -681,6 +691,7 @@ export interface FileRouteTypes {
     | '/academy/courses/$courseId'
     | '/hub/intacct/ar-entries'
     | '/hub/intacct/payroll'
+    | '/hub/intacct/tradogram'
     | '/personnel/'
     | '/site-assets/'
     | '/academy/courses/'
@@ -737,6 +748,7 @@ export interface FileRouteTypes {
     | '/academy/courses/$courseId'
     | '/hub/intacct/ar-entries'
     | '/hub/intacct/payroll'
+    | '/hub/intacct/tradogram'
     | '/personnel'
     | '/site-assets'
     | '/academy/courses'
@@ -804,6 +816,7 @@ export interface FileRouteTypes {
     | '/_appbar/_sidebar/academy/courses/$courseId'
     | '/_appbar/_sidebar/hub/intacct/ar-entries'
     | '/_appbar/_sidebar/hub/intacct/payroll'
+    | '/_appbar/_sidebar/hub/intacct/tradogram'
     | '/_appbar/_admin/_sidebar/personnel/'
     | '/_appbar/_admin/_sidebar/site-assets/'
     | '/_appbar/_sidebar/academy/courses/'
@@ -1174,6 +1187,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppbarAdminSidebarPersonnelIndexRouteImport
       parentRoute: typeof AppbarAdminSidebarPersonnelRoute
     }
+    '/_appbar/_sidebar/hub/intacct/tradogram': {
+      id: '/_appbar/_sidebar/hub/intacct/tradogram'
+      path: '/tradogram'
+      fullPath: '/hub/intacct/tradogram'
+      preLoaderRoute: typeof AppbarSidebarHubIntacctTradogramRouteImport
+      parentRoute: typeof AppbarSidebarHubIntacctRoute
+    }
     '/_appbar/_sidebar/hub/intacct/payroll': {
       id: '/_appbar/_sidebar/hub/intacct/payroll'
       path: '/payroll'
@@ -1453,6 +1473,7 @@ const AppbarSidebarCipherRouteWithChildren =
 interface AppbarSidebarHubIntacctRouteChildren {
   AppbarSidebarHubIntacctArEntriesRoute: typeof AppbarSidebarHubIntacctArEntriesRoute
   AppbarSidebarHubIntacctPayrollRoute: typeof AppbarSidebarHubIntacctPayrollRoute
+  AppbarSidebarHubIntacctTradogramRoute: typeof AppbarSidebarHubIntacctTradogramRoute
   AppbarSidebarHubIntacctIndexRoute: typeof AppbarSidebarHubIntacctIndexRoute
 }
 
@@ -1461,6 +1482,8 @@ const AppbarSidebarHubIntacctRouteChildren: AppbarSidebarHubIntacctRouteChildren
     AppbarSidebarHubIntacctArEntriesRoute:
       AppbarSidebarHubIntacctArEntriesRoute,
     AppbarSidebarHubIntacctPayrollRoute: AppbarSidebarHubIntacctPayrollRoute,
+    AppbarSidebarHubIntacctTradogramRoute:
+      AppbarSidebarHubIntacctTradogramRoute,
     AppbarSidebarHubIntacctIndexRoute: AppbarSidebarHubIntacctIndexRoute,
   }
 
