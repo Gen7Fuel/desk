@@ -10,6 +10,7 @@ import { can } from '@/lib/permissions'
 import { apiFetch } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 
 export const Route = createFileRoute('/_appbar/_fuel/fuel-invoicing')({
   component: RouteComponent,
@@ -119,6 +120,8 @@ function RouteComponent() {
     file,
     submitting,
     submitMsg,
+    includeLitres,
+    setIncludeLitres,
     handleSubmitToAzure,
     handleInputChange,
     handleDrop,
@@ -160,6 +163,7 @@ function RouteComponent() {
           onDragLeave={handleDragLeave}
         >
           <input
+            id="pdf-upload-input"
             ref={inputRef}
             type="file"
             accept="application/pdf"
@@ -196,6 +200,29 @@ function RouteComponent() {
       ) : null}
 
       {error && <p className="text-sm text-destructive">{error}</p>}
+
+      {canCreate && (
+        <div className="flex items-center gap-3">
+          <Switch
+            id="include-ar-litres"
+            checked={includeLitres}
+            onCheckedChange={setIncludeLitres}
+            disabled={submitting}
+            aria-describedby="include-ar-litres-description"
+          />
+          <div>
+            <label htmlFor="include-ar-litres" className="text-sm font-medium">
+              Include Litres in Sage AR invoice
+            </label>
+            <p
+              id="include-ar-litres-description"
+              className="text-sm text-muted-foreground"
+            >
+              Use each fuel product's Qty Delivered for Litres.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       {canCreate && file && (

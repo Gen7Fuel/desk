@@ -3,6 +3,7 @@ import { createLog } from '../log-api'
 import { extractFieldsFromRects } from './pdf-extractor'
 import { buildFilename } from './filename'
 import { createAttachment, createBill, createInvoice } from './sage-api'
+import { validateDeliveredLitres } from './litres'
 import type { ExtractedFields } from './types'
 
 export function useFuelInvoicing(sageToken: string) {
@@ -13,6 +14,7 @@ export function useFuelInvoicing(sageToken: string) {
   const [file, setFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitMsg, setSubmitMsg] = useState<string | null>(null)
+  const [includeLitres, setIncludeLitres] = useState(false)
 
   const handleFileUpload = async (uploadedFile: File) => {
     setFields(null)
@@ -48,6 +50,8 @@ export function useFuelInvoicing(sageToken: string) {
         : 'pdf'
 
       if (!fields) throw new Error('No invoice data extracted from the PDF.')
+      // Validate before any Sage writes, including the attachment and AP bill.
+      if (includeLitres) validateDeliveredLitres(fields)
 
       // ── Step 1: create attachment in Sage Intacct ──────────────────────────
       const attachmentKey = await createAttachment(
@@ -62,7 +66,9 @@ export function useFuelInvoicing(sageToken: string) {
       void billKey
 
       // ── Step 3: create accounts-receivable invoice ───────────────────────
-      const invoiceKey = await createInvoice(fields, attachmentKey, sageToken)
+      const invoiceKey = await createInvoice(fields, attachmentKey, sageToken, {
+        includeLitres,
+      })
       void invoiceKey
 
       void createLog({
@@ -82,8 +88,8 @@ export function useFuelInvoicing(sageToken: string) {
       setFields(null)
       const input = document.getElementById(
         'pdf-upload-input',
-      ) as HTMLInputElement
-      input.value = ''
+      ) as HTMLInputElement | null
+      if (input) input.value = ''
     } catch (err) {
       setSubmitMsg(
         err instanceof Error
@@ -132,6 +138,8 @@ export function useFuelInvoicing(sageToken: string) {
     file,
     submitting,
     submitMsg,
+    includeLitres,
+    setIncludeLitres,
     handleSubmitToAzure,
     handleInputChange,
     handleDrop,

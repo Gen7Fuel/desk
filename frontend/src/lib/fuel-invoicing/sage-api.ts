@@ -1,3 +1,4 @@
+import { deliveredLitres, validateDeliveredLitres } from './litres'
 import type { ExtractedFields } from './types'
 import { apiFetch } from '@/lib/api'
 
@@ -257,7 +258,9 @@ export async function createInvoice(
   fields: ExtractedFields,
   attachmentKey: string,
   sageToken: string,
+  { includeLitres = false }: { includeLitres?: boolean } = {},
 ): Promise<string> {
+  if (includeLitres) validateDeliveredLitres(fields)
   const manifest = fields.manifest ?? 'Unknown'
   const siteName = parseShipToSiteName(fields.shipTo)
   const customerId = resolveCustomerId(siteName)
@@ -294,6 +297,9 @@ export async function createInvoice(
         txnAmount: parseCurrency(entry.productTotal).toFixed(2),
         glAccount: { id: '40010' },
         memo: entry.description || entry.product,
+        ...(includeLitres
+          ? { 'nsp::FUEL_LITRES': deliveredLitres(entry) }
+          : {}),
       },
     ]
 
