@@ -4,14 +4,17 @@ import type {
   DeliveryDetail,
   DeliverySummary,
   Draft,
+  GLAccount,
   SiteAccount,
+  VendorLookup,
 } from '@/lib/tradogram-api'
-import { tradogramRequest } from '@/lib/tradogram-api'
+import { suggestedAccountCodes, tradogramRequest } from '@/lib/tradogram-api'
 import { can } from '@/lib/permissions'
 import { SitePicker } from '@/components/custom/SitePicker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { TradogramGLAccountSelect } from '@/components/custom/TradogramGLAccountSelect'
 import {
   Table,
   TableBody,
@@ -69,14 +72,42 @@ function Tradogram() {
   const [detail, setDetail] = useState<DeliveryDetail | null>(null)
   const [form, setForm] = useState({
     site: '',
-    vendorId: '',
     invoiceNumber: '',
     notes: '',
   })
-  const [choices, setChoices] = useState<
-    Record<string, '' | 'loan' | 'inventory'>
-  >({})
+  const [accountCodes, setAccountCodes] = useState<Record<string, string>>({})
+  const [accounts, setAccounts] = useState<Array<GLAccount>>([])
+  const [accountsLoading, setAccountsLoading] = useState(true)
+  const [accountsError, setAccountsError] = useState('')
+  const [accountRefresh, setAccountRefresh] = useState(0)
   const [dirty, setDirty] = useState(false)
+  const [vendorRefresh, setVendorRefresh] = useState(0)
+  const [vendorLookup, setVendorLookup] = useState<
+    | (VendorLookup & {
+        deliveryCode: string
+        site: string
+        entityId: string
+        reviewHash: string
+      })
+    | null
+  >(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    setAccountsLoading(true)
+    setAccountsError('')
+    tradogramRequest<Array<GLAccount>>('/gl-accounts', {
+      signal: controller.signal,
+    })
+      .then(setAccounts)
+      .catch((e) => {
+        if (!controller.signal.aborted) setAccountsError(message(e))
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setAccountsLoading(false)
+      })
+    return () => controller.abort()
+  }, [accountRefresh])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -135,14 +166,20 @@ function Tradogram() {
       setDetail(data)
       setForm({
         site: data.draft?.site || suggested?.site || '',
-        vendorId: data.draft?.vendorId || '',
         invoiceNumber:
           data.draft?.invoiceNumber || data.source.invoiceNumber || '',
         notes: data.draft?.notes || '',
       })
-      setChoices(
-        Object.fromEntries(
-          data.draft?.lines.map((l) => [l.id, l.accountType]) || [],
+      setAccounts(data.accounts)
+      setAccountsError('')
+      setAccountCodes(
+        suggestedAccountCodes(
+          data.source,
+          data.draft,
+          sites.find(
+            (site) => site.site === (data.draft?.site || suggested?.site),
+          ),
+          data.accounts,
         ),
       )
       setDirty(false)
@@ -159,23 +196,30 @@ function Tradogram() {
     setError('')
     setNotice('')
     try {
-      const result = await tradogramRequest<{ draft: Draft }>(
-        `/deliveries/${detail.source.deliveryCode}/draft`,
-        {
-          method: 'PUT',
-          body: JSON.stringify({
-            ...form,
-            status: targetStatus,
-            sourceHash: detail.source.sourceHash,
-            revision: detail.draft?.revision ?? null,
-            lines: detail.source.lines.map((l) => ({
-              id: l.id,
-              accountType: choices[l.id] || '',
-            })),
-          }),
-        },
-      )
+      const result = await tradogramRequest<{
+        draft: Draft
+        vendorReference: VendorLookup
+      }>(`/deliveries/${detail.source.deliveryCode}/draft`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          ...form,
+          status: targetStatus,
+          sourceHash: detail.source.sourceHash,
+          revision: detail.draft?.revision ?? null,
+          lines: detail.source.lines.map((l) => ({
+            id: l.id,
+            glAccountCode: accountCodes[l.id] || '',
+          })),
+        }),
+      })
       setDetail({ ...detail, draft: result.draft, stale: false })
+      setVendorLookup({
+        ...result.vendorReference,
+        deliveryCode: detail.source.deliveryCode,
+        site: form.site,
+        entityId: config?.sageLocationId || '',
+        reviewHash: detail.source.sourceHash,
+      })
       setDirty(false)
       setNotice(
         targetStatus === 'ready'
@@ -217,6 +261,79 @@ function Tradogram() {
   }
 
   const config = sites.find((s) => s.site === form.site)
+  const deliveryCode = detail?.source.deliveryCode || ''
+  const reviewHash = detail?.source.sourceHash || ''
+  const supplierAccountNumber = detail?.source.supplierAccountNumber || ''
+  const entityId = config?.sageLocationId || ''
+  const receivingSite = form.site
+
+  useEffect(() => {
+    if (!deliveryCode) {
+      setVendorLookup(null)
+      return
+    }
+    const context = { deliveryCode, site: receivingSite, entityId, reviewHash }
+    const missing = !supplierAccountNumber
+      ? 'Set the supplier account number in Tradogram to its Intacct vendor ID, then reload this delivery.'
+      : !receivingSite || !entityId
+        ? 'Choose a site with a configured Intacct location/entity ID.'
+        : ''
+    if (missing) {
+      setVendorLookup({
+        ...context,
+        sourceHash: reviewHash,
+        vendor: null,
+        issue: missing,
+      })
+      return
+    }
+    const controller = new AbortController()
+    setVendorLookup(null)
+    tradogramRequest<VendorLookup>(
+      `/deliveries/${deliveryCode}/vendor?site=${encodeURIComponent(receivingSite)}`,
+      { signal: controller.signal },
+    )
+      .then((result) => {
+        if (controller.signal.aborted) return
+        const changed = result.sourceHash !== reviewHash
+        setVendorLookup({
+          ...result,
+          ...context,
+          vendor: changed ? null : result.vendor,
+          issue: changed
+            ? 'The delivery or supplier changed. Reload the delivery before proceeding.'
+            : result.issue,
+        })
+      })
+      .catch((e) => {
+        if (!controller.signal.aborted)
+          setVendorLookup({
+            ...context,
+            sourceHash: reviewHash,
+            vendor: null,
+            issue: message(e),
+          })
+      })
+    return () => controller.abort()
+  }, [
+    deliveryCode,
+    reviewHash,
+    supplierAccountNumber,
+    receivingSite,
+    entityId,
+    vendorRefresh,
+  ])
+
+  const vendorReference =
+    vendorLookup?.deliveryCode === deliveryCode &&
+    vendorLookup.site === receivingSite &&
+    vendorLookup.entityId === entityId &&
+    vendorLookup.reviewHash === reviewHash
+      ? vendorLookup
+      : null
+  const vendorIssue =
+    vendorReference?.issue ||
+    (!vendorReference?.vendor ? 'Resolving the Intacct vendor reference…' : '')
   const issues = detail
     ? [
         ...detail.source.issues,
@@ -228,16 +345,17 @@ function Tradogram() {
         ...(!config?.sageLocationId
           ? ['Configure the Intacct location/entity ID.']
           : []),
-        ...(!form.vendorId ? ['Enter the Intacct vendor ID.'] : []),
+        ...(vendorIssue ? [vendorIssue] : []),
+        ...(accountsError || accountsLoading
+          ? ['Wait for the Tradogram GL account list to load successfully.']
+          : []),
         ...detail.source.lines.flatMap((line) => {
-          const choice = choices[line.id]
-          return !choice
-            ? [`Choose Loan or Inventory for ${line.name}.`]
-            : !(choice === 'loan'
-                  ? config?.loanAccountId
-                  : config?.inventoryAccountId)
-              ? [`Configure the ${choice} account for ${form.site}.`]
-              : []
+          const account = accounts.find((a) => a.code === accountCodes[line.id])
+          return account
+            ? []
+            : [
+                `Choose an active Loan or Inventory GL account for ${line.name}.`,
+              ]
         }),
       ]
     : []
@@ -309,6 +427,24 @@ function Tradogram() {
           {notice}
         </p>
       )}
+      <div className="flex flex-wrap items-center gap-3 text-sm">
+        <span
+          className={accountsError ? 'text-red-700' : 'text-muted-foreground'}
+          role={accountsError ? 'alert' : 'status'}
+        >
+          {accountsError ||
+            (accountsLoading
+              ? 'Loading Tradogram GL accounts…'
+              : `${accounts.length} active Loan / Inventory GL accounts from Tradogram.`)}
+        </span>
+        <Button
+          variant="outline"
+          disabled={busy || accountsLoading}
+          onClick={() => setAccountRefresh((value) => value + 1)}
+        >
+          Refresh GL accounts
+        </Button>
+      </div>
 
       {tab === 'sites' ? (
         <section className="space-y-4 rounded-lg border p-5">
@@ -316,7 +452,9 @@ function Tradogram() {
           <p className="text-sm text-muted-foreground">
             Choose a Hub site and save its Intacct IDs. Tradogram location name
             is an optional exact match used to suggest a receiving site; confirm
-            it on each delivery.
+            it on each delivery. Select the site’s default Loan and Inventory
+            accounts from Tradogram. Other account types, including Accounts
+            Payable, are excluded.
           </p>
           <fieldset
             disabled={!writable || busy}
@@ -340,8 +478,6 @@ function Tradogram() {
               [
                 ['tradogramLocation', 'Tradogram location / branch name'],
                 ['sageLocationId', 'Intacct location/entity ID'],
-                ['loanAccountId', 'Loan GL account ID'],
-                ['inventoryAccountId', 'Inventory GL account ID'],
               ] as const
             ).map(([key, label]) => (
               <div key={key} className="space-y-2">
@@ -355,8 +491,59 @@ function Tradogram() {
                 />
               </div>
             ))}
+            {(['loan', 'inventory'] as const).map((type) => {
+              const key =
+                type === 'loan' ? 'loanAccountId' : 'inventoryAccountId'
+              const eligible = accounts.filter(
+                (account) => account.type === type,
+              )
+              const matches = eligible.filter(
+                (account) => account.number === siteForm[key],
+              )
+              return (
+                <div key={key} className="space-y-2">
+                  <Label htmlFor={`site-${key}`}>
+                    {type === 'loan'
+                      ? 'Default Loan GL account'
+                      : 'Default Inventory GL account'}
+                  </Label>
+                  <TradogramGLAccountSelect
+                    id={`site-${key}`}
+                    label={`${type} GL account for site`}
+                    accounts={eligible}
+                    value={
+                      matches.length === 1
+                        ? matches[0].code
+                        : siteForm[key]
+                          ? `unavailable:${siteForm[key]}`
+                          : ''
+                    }
+                    disabled={
+                      !writable || busy || accountsLoading || !!accountsError
+                    }
+                    onValueChange={(code) =>
+                      setSiteForm({
+                        ...siteForm,
+                        [key]:
+                          eligible.find((account) => account.code === code)
+                            ?.number || '',
+                      })
+                    }
+                  />
+                  {siteForm[key] && matches.length !== 1 && (
+                    <p className="text-xs text-amber-700">
+                      Saved GL number {siteForm[key]} is unavailable or
+                      ambiguous. Select an active account again.
+                    </p>
+                  )}
+                </div>
+              )
+            })}
             <div className="self-end">
-              <Button disabled={!siteForm.site} onClick={saveSite}>
+              <Button
+                disabled={!siteForm.site || accountsLoading || !!accountsError}
+                onClick={saveSite}
+              >
                 Save site accounts
               </Button>
             </div>
@@ -557,7 +744,6 @@ function Tradogram() {
                 </div>
                 {(
                   [
-                    ['vendorId', 'Intacct vendor ID'],
                     ['invoiceNumber', 'Supplier invoice reference'],
                     ['notes', 'Preparation notes'],
                   ] as const
@@ -572,6 +758,55 @@ function Tradogram() {
                   </div>
                 ))}
               </fieldset>
+              <div className="space-y-2">
+                <Label>Intacct vendor reference</Label>
+                <div
+                  className="rounded-md border bg-muted/30 p-3 text-sm"
+                  role="status"
+                >
+                  <p className="text-muted-foreground">
+                    Tradogram supplier account:{' '}
+                    {supplierAccountNumber || 'Not configured'}
+                  </p>
+                  {vendorReference?.vendor && (
+                    <>
+                      <p className="mt-1 font-medium">
+                        {vendorReference.vendor.name} ·{' '}
+                        {vendorReference.vendor.id}
+                      </p>
+                      <p className="text-muted-foreground">
+                        Entity {vendorReference.vendor.entityId} · Vendor key{' '}
+                        {vendorReference.vendor.key} ·{' '}
+                        {vendorReference.vendor.status}
+                      </p>
+                    </>
+                  )}
+                  {vendorIssue && (
+                    <p
+                      className={
+                        vendorReference?.issue
+                          ? 'mt-1 text-amber-700'
+                          : 'mt-1 text-muted-foreground'
+                      }
+                    >
+                      {vendorIssue}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  disabled={
+                    busy ||
+                    !supplierAccountNumber ||
+                    !receivingSite ||
+                    !entityId ||
+                    !vendorReference
+                  }
+                  onClick={() => setVendorRefresh((value) => value + 1)}
+                >
+                  Refresh vendor reference
+                </Button>
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -596,6 +831,12 @@ function Tradogram() {
                         <div className="text-xs text-muted-foreground">
                           {line.description}
                         </div>
+                        {line.poGLAccountNumber && (
+                          <div className="text-xs text-muted-foreground">
+                            PO account: {line.poGLAccountNumber} —{' '}
+                            {line.poGLAccountName}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         {line.ordered} {line.unit}
@@ -606,35 +847,30 @@ function Tradogram() {
                       <TableCell>{amount(line.unitPrice)}</TableCell>
                       <TableCell>{amount(line.amount)}</TableCell>
                       <TableCell>
-                        <select
-                          aria-label={`Debit account for ${line.name}`}
-                          className="rounded-md border p-2 text-sm"
+                        <TradogramGLAccountSelect
+                          label={`Debit account for ${line.name}`}
+                          accounts={accounts}
                           disabled={
-                            !writable || busy || !!detail.draft?.intacctBillKey
+                            !writable ||
+                            busy ||
+                            accountsLoading ||
+                            !!accountsError ||
+                            !!detail.draft?.intacctBillKey
                           }
-                          value={choices[line.id] || ''}
-                          onChange={(e) => {
-                            setChoices({
-                              ...choices,
-                              [line.id]: e.target.value as
-                                | ''
-                                | 'loan'
-                                | 'inventory',
-                            })
+                          value={accountCodes[line.id] || ''}
+                          onValueChange={(code) => {
+                            setAccountCodes((previous) => ({
+                              ...previous,
+                              [line.id]: code,
+                            }))
                             setDirty(true)
                           }}
-                        >
-                          <option value="">Choose account</option>
-                          <option value="loan">Loan</option>
-                          <option value="inventory">Inventory</option>
-                        </select>
+                        />
                       </TableCell>
                       <TableCell>
-                        {(choices[line.id] === 'loan'
-                          ? config?.loanAccountId
-                          : choices[line.id] === 'inventory'
-                            ? config?.inventoryAccountId
-                            : '') || 'Not selected / configured'}
+                        {accounts.find(
+                          (account) => account.code === accountCodes[line.id],
+                        )?.number || 'Not selected / unavailable'}
                       </TableCell>
                     </TableRow>
                   ))}

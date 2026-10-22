@@ -46,7 +46,46 @@ function summary(d) {
   }
 }
 
-function normalize(d, po) {
+// Tradogram exposes names/numbers, not an accounting category. Only explicit
+// Loan/Inventory names are eligible; never infer a category from an account number.
+function accountType(name) {
+  if (/\baccounts?\s+payable\b|\bpayables?\b/i.test(name)) return ''
+  const loan = /\bloans?\b/i.test(name)
+  const inventory = /\binventory\b/i.test(name)
+  return loan !== inventory ? loan ? 'loan' : 'inventory' : ''
+}
+
+async function listGLAccounts() {
+  const all = []
+  const seen = new Set()
+  for (let page = 1; page <= 1000; page++) {
+    const body = await get('/gl_accounts', { page: String(page), pageSize: '100', isActive: 'true' })
+    if (!Array.isArray(body.GLAccounts)) throw error('Tradogram response is missing GLAccounts.', 502)
+    for (const raw of body.GLAccounts) {
+      if (!raw.GLAccountCode || seen.has(raw.GLAccountCode)) throw error('Tradogram repeated GL accounts while paging. Retry before selecting an account.', 502)
+      seen.add(raw.GLAccountCode)
+      const name = String(raw.GLAccountName || '').trim()
+      const number = String(raw.GLAccountNumber || '').trim()
+      const type = accountType(name)
+      if (raw.IsActive === true && type && number) all.push({ code: raw.GLAccountCode, name, number, type })
+    }
+    if (body.HasMorePages === false || (body.HasMorePages !== true && body.GLAccounts.length < 100)) {
+      return all.sort((a, b) => a.name.localeCompare(b.name) || a.number.localeCompare(b.number))
+    }
+  }
+  throw error('The Tradogram GL account list is incomplete. Retry before selecting an account.', 502)
+}
+
+function validateSiteAccounts(config, accounts) {
+  for (const type of ['loan', 'inventory']) {
+    const number = config[`${type}AccountId`]
+    if (!number) continue
+    const matches = accounts.filter((a) => a.number === number && a.type === type)
+    if (matches.length !== 1) throw error(`Select a unique active ${type} account from Tradogram for this site.`, 422)
+  }
+}
+
+function normalize(d, po, supplier = null) {
   const issues = []
   const seen = new Set()
   const lines = (d.DeliveryItems || []).map((line) => {
@@ -64,6 +103,8 @@ function normalize(d, po) {
       unit: line.UOM || '', unitPrice: Number.isFinite(unitPrice) ? unitPrice : null,
       amount: Number.isFinite(quantity) && Number.isFinite(unitPrice) ? money(quantity * unitPrice) : null,
       department: line.DepartmentNumber || item?.DepartmentNumber || '',
+      poGLAccountName: item?.GLAccountName || '',
+      poGLAccountNumber: String(item?.GLAccountNumber || '').trim(),
     }
   }).filter((line) => line.quantity > 0)
   if (!lines.length) issues.push('There are no received quantities to prepare.')
@@ -72,6 +113,10 @@ function normalize(d, po) {
   if (!po.Currency) issues.push('The PO currency is missing.')
   const source = {
     ...summary(d), poCode: d.POCode, currency: po.Currency || '', booked: d.IsBooked === true,
+    supplierCode: supplier?.SupplierCode || po.SupplierCode || '',
+    // Prefer the current supplier master over copied PO/delivery references.
+    // If the master exists but its account is blank, do not reuse a stale number.
+    supplierAccountNumber: String(supplier ? supplier.AccountNumber || '' : po.SupplierAccountNumber || d.SupplierAccount || '').trim(),
     lines, issues, subtotal: money(lines.reduce((sum, line) => sum + (line.amount || 0), 0)),
     poTax: po.TaxTotal || '0', poDiscount: po.DiscountTotal || '0', poFees: po.FeesTotal || '0',
   }
@@ -87,27 +132,40 @@ async function loadDelivery(code) {
   const poBody = await get(`/purchase_orders/${delivery.POCode}`, { fetchType: 'Both', updateFetchFlag: 'false' })
   const po = poBody.PurchaseOrders?.find((p) => p.POCode === delivery.POCode)
   if (!po) throw error('The delivery purchase order could not be loaded.', 422)
-  return normalize(delivery, po)
+  let supplier = null
+  if (po.SupplierCode) {
+    if (!codePattern.test(po.SupplierCode)) throw error('The PO has no valid supplier link.', 422)
+    const supplierBody = await get(`/suppliers/${po.SupplierCode}`)
+    supplier = supplierBody.Suppliers?.find((s) => s.SupplierCode === po.SupplierCode)
+    if (!supplier) throw error('The Tradogram supplier could not be loaded.', 422)
+  }
+  return normalize(delivery, po, supplier)
 }
 
-function prepare(source, input, config) {
+function prepare(source, input, config, accounts = []) {
   const issues = [...source.issues]
   if (!input.site) issues.push('Choose the receiving site.')
   if (!config) issues.push('Save account settings for this site.')
   if (!config?.sageLocationId) issues.push('Configure the site Intacct location/entity ID.')
-  if (!input.vendorId) issues.push('Enter the Intacct supplier/vendor ID.')
-  const choices = new Map((input.lines || []).map((line) => [line.id, line.accountType]))
+  if (!source.supplierAccountNumber) issues.push('Set the supplier account number in Tradogram to its Intacct vendor ID.')
+  const choices = new Map((input.lines || []).map((line) => [line.id, line]))
   if ((input.lines || []).some((line) => !source.lines.some((s) => s.id === line.id))) throw error('Selections contain a line outside this delivery.')
   const lines = source.lines.map((line) => {
-    const accountType = choices.get(line.id) || ''
-    const accountId = accountType === 'loan' ? config?.loanAccountId : accountType === 'inventory' ? config?.inventoryAccountId : ''
-    if (!['loan', 'inventory'].includes(accountType)) issues.push(`Choose Loan or Inventory for ${line.name}.`)
-    else if (!accountId) issues.push(`Configure the ${accountType} account for ${input.site}.`)
-    return { ...line, accountType, accountId: accountId || '' }
+    const choice = choices.get(line.id)
+    // Existing drafts stored only Loan/Inventory. Resolve those through the
+    // site's saved default; an explicit but stale selection must never fall back.
+    const candidates = choice?.glAccountCode
+      ? accounts.filter((a) => a.code === choice.glAccountCode)
+      : choice?.accountType ? accounts.filter((a) => a.type === choice.accountType && a.number === config?.[`${choice.accountType}AccountId`]) : []
+    const account = candidates.length === 1 ? candidates[0] : null
+    if (!account) issues.push(`Choose a unique active Loan or Inventory GL account from Tradogram for ${line.name}.`)
+    return { ...line, accountType: account?.type || '', accountId: account?.number || '',
+      glAccountCode: choice?.glAccountCode || account?.code || '', accountName: account?.name || '' }
   })
   return { lines, issues: [...new Set(issues)], subtotal: source.subtotal, credit: 'Accounts Payable', configHash: hash(config ? {
     site: config.site, sageLocationId: config.sageLocationId, loanAccountId: config.loanAccountId, inventoryAccountId: config.inventoryAccountId,
+    selectedAccounts: lines.map((line) => ({ code: line.glAccountCode, name: line.accountName, number: line.accountId, type: line.accountType })),
   } : null) }
 }
 
-module.exports = { listDeliveries, loadDelivery, normalize, prepare, summary, error }
+module.exports = { listDeliveries, loadDelivery, listGLAccounts, validateSiteAccounts, accountType, normalize, prepare, summary, error }
