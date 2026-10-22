@@ -11,13 +11,7 @@ import type {
 } from '@/lib/tradogram-api'
 import { suggestedAccountCodes, tradogramRequest } from '@/lib/tradogram-api'
 import { can } from '@/lib/permissions'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { SitePicker } from '@/components/custom/SitePicker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -739,25 +733,14 @@ function Tradogram() {
                 className="grid gap-4 sm:grid-cols-2"
               >
                 <div className="space-y-2">
-                  <Label>Receiving site</Label>
-                  <Select
+                  <Label htmlFor="draft-site">Site</Label>
+                  <SitePicker
+                    id="draft-site"
                     value={form.site}
+                    placeholder="Select a site"
+                    additionalSites={sites.map((site) => site.site)}
                     onValueChange={(site) => updateForm('site', site)}
-                  >
-                    <SelectTrigger aria-label="Receiving construction site">
-                      <SelectValue placeholder="Select a construction site" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sites.map((site) => (
-                        <SelectItem key={site.site} value={site.site}>
-                          {site.site}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Create construction sites in Site accounts.
-                  </p>
+                  />
                   <p className="text-xs text-muted-foreground">
                     Tradogram location:{' '}
                     {detail.source.location || 'Not provided'}

@@ -30,6 +30,23 @@ const source = {
   lines: [],
 }
 beforeEach(() => {
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve([
+            {
+              _id: 'station-1',
+              site: 'Walpole',
+              stationName: 'Walpole station',
+            },
+          ]),
+      }),
+  )
+  HTMLElement.prototype.scrollIntoView = vi.fn()
   apiFetch.mockImplementation((url: string, init?: RequestInit) => {
     let body: unknown
     if (url.endsWith('/settings'))
@@ -60,6 +77,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   vi.clearAllMocks()
+  vi.unstubAllGlobals()
 })
 it('resolves the vendor in T010 before any construction site has been selected', async () => {
   render(<Component />)
@@ -103,4 +121,25 @@ it('creates a construction site without requiring a Hub station or per-site comp
   expect(JSON.parse(String(call?.[1].body))).not.toHaveProperty(
     'sageLocationId',
   )
+})
+
+it('offers Hub sites even without saved mappings and keeps the vendor scoped to the company', async () => {
+  render(<Component />)
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Review delivery' }),
+  )
+  await screen.findByText(/Verified Supplier/)
+  const picker = await screen.findByRole('combobox', { name: 'Site' })
+  await waitFor(() =>
+    expect((picker as HTMLButtonElement).disabled).toBe(false),
+  )
+  expect(picker.textContent).toBe('Select a site')
+  fireEvent.keyDown(picker, { key: 'ArrowDown' })
+  fireEvent.click(await screen.findByRole('option', { name: 'Walpole' }))
+  await waitFor(() => expect(picker.textContent).toBe('Walpole'))
+  expect(screen.queryByText(/Select a construction site/)).toBeNull()
+  expect(screen.queryByText(/Receiving site/)).toBeNull()
+  expect(
+    apiFetch.mock.calls.filter(([url]) => url.endsWith('/vendor')),
+  ).toHaveLength(1)
 })
