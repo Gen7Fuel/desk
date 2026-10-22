@@ -2,6 +2,7 @@ const express = require('express')
 const { authenticate, requirePermission } = require('../../middleware/auth')
 const { SiteAccount, DeliveryDraft } = require('./tradogram.model')
 const service = require('./tradogram.service')
+const vendorService = require('./tradogram.vendor')
 const router = express.Router()
 router.use(authenticate, requirePermission('hub.intacct', 'read'))
 const write = requirePermission('hub.intacct', 'update')
@@ -48,6 +49,13 @@ router.get('/drafts', handle(async (_req, res) => {
   })))
 }))
 
+router.get('/deliveries/:code/vendor', handle(async (req, res) => {
+  const source = await service.loadDelivery(req.params.code)
+  const site = text(req.query.site)
+  const config = site ? await SiteAccount.findOne({ site }).lean() : null
+  res.json({ ...await vendorService.resolveVendor(source, config), sourceHash: source.sourceHash })
+}))
+
 router.get('/deliveries/:code', handle(async (req, res) => {
   const [source, accounts] = await Promise.all([service.loadDelivery(req.params.code), service.listGLAccounts()])
   const draft = await DeliveryDraft.findOne({ deliveryCode: req.params.code }).lean()
@@ -58,20 +66,23 @@ router.get('/deliveries/:code', handle(async (req, res) => {
 
 router.put('/deliveries/:code/draft', write, handle(async (req, res) => {
   const input = {
-    site: text(req.body.site), vendorId: text(req.body.vendorId), invoiceNumber: text(req.body.invoiceNumber), notes: text(req.body.notes, 2000),
+    site: text(req.body.site), invoiceNumber: text(req.body.invoiceNumber), notes: text(req.body.notes, 2000),
     lines: Array.isArray(req.body.lines) ? req.body.lines.map((line) => ({ id: text(line?.id), accountType: text(line?.accountType), glAccountCode: text(line?.glAccountCode) })) : [],
   }
   if (!['draft', 'ready'].includes(req.body.status) || input.lines.some((line) => !['', 'loan', 'inventory'].includes(line.accountType)) || new Set(input.lines.map((l) => l.id)).size !== input.lines.length) throw service.error('Invalid draft status or line selections.')
   const source = await service.loadDelivery(req.params.code)
   if (req.body.sourceHash !== source.sourceHash) throw service.error('Tradogram changed while you were reviewing. Reload the delivery before saving.', 409)
   const config = input.site ? await SiteAccount.findOne({ site: input.site }).lean() : null
+  const reference = await vendorService.resolveVendor(source, config)
+  input.vendorId = source.supplierAccountNumber || ''
   const preview = service.prepare(source, input, config, await service.listGLAccounts())
+  if (reference.issue) preview.issues.push(reference.issue)
   if (req.body.status === 'ready' && preview.issues.length) return res.status(422).json({ message: preview.issues.join(' '), issues: preview.issues })
   const values = { ...input, lines: input.lines.map((line) => {
     const resolved = preview.lines.find((l) => l.id === line.id)
     return { ...line, accountType: resolved?.accountType || '', glAccountCode: resolved?.glAccountCode || line.glAccountCode }
-  }), status: req.body.status, sourceHash: source.sourceHash, configHash: preview.configHash,
-    snapshot: { ...source, ...preview, sageLocationId: config?.sageLocationId || '' }, updatedBy: req.user.email }
+  }), vendorReference: reference.vendor, status: req.body.status, sourceHash: source.sourceHash, configHash: preview.configHash,
+    snapshot: { ...source, ...preview, vendorReference: reference.vendor, sageLocationId: config?.sageLocationId || '' }, updatedBy: req.user.email }
   let saved
   if (req.body.revision == null) saved = await DeliveryDraft.create({ ...values, deliveryCode: req.params.code })
   else {
@@ -79,7 +90,7 @@ router.put('/deliveries/:code/draft', write, handle(async (req, res) => {
     saved = await DeliveryDraft.findOneAndUpdate({ deliveryCode: req.params.code, revision: req.body.revision, intacctBillKey: '' }, { $set: values, $inc: { revision: 1 } }, { returnDocument: 'after', runValidators: true })
     if (!saved) throw service.error('This delivery was changed or already posted. Reload before saving.', 409)
   }
-  res.json({ draft: saved, preview, source })
+  res.json({ draft: saved, preview, source, vendorReference: { ...reference, sourceHash: source.sourceHash } })
 }))
 
 module.exports = router

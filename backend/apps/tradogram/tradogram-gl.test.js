@@ -1,6 +1,7 @@
 const request = require('supertest')
 const express = require('express')
 const service = require('./tradogram.service')
+const vendorService = require('./tradogram.vendor')
 const { SiteAccount, DeliveryDraft } = require('./tradogram.model')
 const { authHeader } = require('../../tests/helpers/auth')
 const auth = authHeader({ permissions: { hub: { intacct: { read: true, update: true } } } })
@@ -11,7 +12,8 @@ const accounts = [
   { code: 'stock', name: 'Station Build Inventory', number: '10760', type: 'inventory' },
 ]
 const config = { site: 'Walpole', sageLocationId: 'T010', loanAccountId: '16250', inventoryAccountId: '10760' }
-const source = { sourceHash: 'current', issues: [], subtotal: 500, lines: [{ id: 'line1', name: 'Pump' }] }
+const source = { sourceHash: 'current', supplierAccountNumber: 'V1', issues: [], subtotal: 500, lines: [{ id: 'line1', name: 'Pump' }] }
+beforeEach(() => { vi.spyOn(vendorService, 'resolveVendor').mockResolvedValue({ vendor: { id: 'V1', key: '1', name: 'Supplier', status: 'active', entityId: 'T010' }, issue: '' }) })
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs() })
 
 describe('Tradogram debit account catalogue', () => {

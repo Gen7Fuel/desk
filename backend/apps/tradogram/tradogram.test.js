@@ -1,12 +1,13 @@
 const request = require('supertest')
 const express = require('express')
 const service = require('./tradogram.service')
+const vendorService = require('./tradogram.vendor')
 const { SiteAccount, DeliveryDraft } = require('./tradogram.model')
 const { authHeader } = require('../../tests/helpers/auth')
 
 const delivery = { DeliveryCode: 'abcdefghijkl', POCode: 'mnopqrstuvwx', SupplierName: 'Supplier', POStatus: 'In Delivery', IsBooked: true, ReceiveDate: '2026-10-20',
   DeliveryItems: [{ DeliveryItemCode: 'line1', LineItemCode: 'po-line', ItemName: 'Pump', QtyOrdered: '100', QtyReceived: '40' }] }
-const po = { Currency: 'CAD', LineItems: [{ LineItemCode: 'po-line', UnitPrice: '12.25' }] }
+const po = { Currency: 'CAD', SupplierAccountNumber: 'V001', LineItems: [{ LineItemCode: 'po-line', UnitPrice: '12.25' }] }
 const config = { site: 'Walpole', sageLocationId: 'G100', loanAccountId: '13001', inventoryAccountId: '14000' }
 const input = { site: 'Walpole', vendorId: 'V001', lines: [{ id: 'line1', accountType: 'loan' }] }
 const accounts = [
@@ -53,6 +54,7 @@ describe('delivery accounting preparation', () => {
 
 describe('Tradogram API authorization and drafts', () => {
   beforeEach(() => { vi.spyOn(service, 'listGLAccounts').mockResolvedValue(accounts) })
+  beforeEach(() => { vi.spyOn(vendorService, 'resolveVendor').mockResolvedValue({ vendor: { id: 'V001', key: '1', name: 'Supplier', status: 'active', entityId: 'G100' }, issue: '' }) })
   it('rejects anonymous readers and read-only writers before accessing upstream or Mongo', async () => {
     expect((await request(app()).get('/tradogram/sites')).status).toBe(401)
     expect((await request(app()).put('/tradogram/sites').set('Authorization', auth(false)).send(config)).status).toBe(403)

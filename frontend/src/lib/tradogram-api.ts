@@ -41,6 +41,7 @@ export type DeliveryLine = {
   poGLAccountNumber?: string
 }
 export type DeliverySource = DeliverySummary & {
+  supplierAccountNumber: string
   sourceHash: string
   currency: string
   subtotal: number
@@ -49,6 +50,17 @@ export type DeliverySource = DeliverySummary & {
   poTax: string
   poDiscount: string
   poFees: string
+}
+export type VendorLookup = {
+  sourceHash: string
+  issue: string
+  vendor: {
+    id: string
+    key: string
+    name: string
+    status: string
+    entityId: string
+  } | null
 }
 export type Draft = {
   revision: number

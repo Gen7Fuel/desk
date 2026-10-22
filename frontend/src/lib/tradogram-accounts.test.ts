@@ -24,6 +24,7 @@ const site: SiteAccount = {
   inventoryAccountId: '10760',
 }
 const source: DeliverySource = {
+  supplierAccountNumber: 'V001',
   deliveryCode: 'abcdefghijkl',
   poNumber: 'PO1',
   supplier: 'Supplier',

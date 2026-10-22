@@ -6,6 +6,7 @@ import type {
   Draft,
   GLAccount,
   SiteAccount,
+  VendorLookup,
 } from '@/lib/tradogram-api'
 import { suggestedAccountCodes, tradogramRequest } from '@/lib/tradogram-api'
 import { can } from '@/lib/permissions'
@@ -71,7 +72,6 @@ function Tradogram() {
   const [detail, setDetail] = useState<DeliveryDetail | null>(null)
   const [form, setForm] = useState({
     site: '',
-    vendorId: '',
     invoiceNumber: '',
     notes: '',
   })
@@ -81,6 +81,16 @@ function Tradogram() {
   const [accountsError, setAccountsError] = useState('')
   const [accountRefresh, setAccountRefresh] = useState(0)
   const [dirty, setDirty] = useState(false)
+  const [vendorRefresh, setVendorRefresh] = useState(0)
+  const [vendorLookup, setVendorLookup] = useState<
+    | (VendorLookup & {
+        deliveryCode: string
+        site: string
+        entityId: string
+        reviewHash: string
+      })
+    | null
+  >(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -156,7 +166,6 @@ function Tradogram() {
       setDetail(data)
       setForm({
         site: data.draft?.site || suggested?.site || '',
-        vendorId: data.draft?.vendorId || '',
         invoiceNumber:
           data.draft?.invoiceNumber || data.source.invoiceNumber || '',
         notes: data.draft?.notes || '',
@@ -187,23 +196,30 @@ function Tradogram() {
     setError('')
     setNotice('')
     try {
-      const result = await tradogramRequest<{ draft: Draft }>(
-        `/deliveries/${detail.source.deliveryCode}/draft`,
-        {
-          method: 'PUT',
-          body: JSON.stringify({
-            ...form,
-            status: targetStatus,
-            sourceHash: detail.source.sourceHash,
-            revision: detail.draft?.revision ?? null,
-            lines: detail.source.lines.map((l) => ({
-              id: l.id,
-              glAccountCode: accountCodes[l.id] || '',
-            })),
-          }),
-        },
-      )
+      const result = await tradogramRequest<{
+        draft: Draft
+        vendorReference: VendorLookup
+      }>(`/deliveries/${detail.source.deliveryCode}/draft`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          ...form,
+          status: targetStatus,
+          sourceHash: detail.source.sourceHash,
+          revision: detail.draft?.revision ?? null,
+          lines: detail.source.lines.map((l) => ({
+            id: l.id,
+            glAccountCode: accountCodes[l.id] || '',
+          })),
+        }),
+      })
       setDetail({ ...detail, draft: result.draft, stale: false })
+      setVendorLookup({
+        ...result.vendorReference,
+        deliveryCode: detail.source.deliveryCode,
+        site: form.site,
+        entityId: config?.sageLocationId || '',
+        reviewHash: detail.source.sourceHash,
+      })
       setDirty(false)
       setNotice(
         targetStatus === 'ready'
@@ -245,6 +261,79 @@ function Tradogram() {
   }
 
   const config = sites.find((s) => s.site === form.site)
+  const deliveryCode = detail?.source.deliveryCode || ''
+  const reviewHash = detail?.source.sourceHash || ''
+  const supplierAccountNumber = detail?.source.supplierAccountNumber || ''
+  const entityId = config?.sageLocationId || ''
+  const receivingSite = form.site
+
+  useEffect(() => {
+    if (!deliveryCode) {
+      setVendorLookup(null)
+      return
+    }
+    const context = { deliveryCode, site: receivingSite, entityId, reviewHash }
+    const missing = !supplierAccountNumber
+      ? 'Set the supplier account number in Tradogram to its Intacct vendor ID, then reload this delivery.'
+      : !receivingSite || !entityId
+        ? 'Choose a site with a configured Intacct location/entity ID.'
+        : ''
+    if (missing) {
+      setVendorLookup({
+        ...context,
+        sourceHash: reviewHash,
+        vendor: null,
+        issue: missing,
+      })
+      return
+    }
+    const controller = new AbortController()
+    setVendorLookup(null)
+    tradogramRequest<VendorLookup>(
+      `/deliveries/${deliveryCode}/vendor?site=${encodeURIComponent(receivingSite)}`,
+      { signal: controller.signal },
+    )
+      .then((result) => {
+        if (controller.signal.aborted) return
+        const changed = result.sourceHash !== reviewHash
+        setVendorLookup({
+          ...result,
+          ...context,
+          vendor: changed ? null : result.vendor,
+          issue: changed
+            ? 'The delivery or supplier changed. Reload the delivery before proceeding.'
+            : result.issue,
+        })
+      })
+      .catch((e) => {
+        if (!controller.signal.aborted)
+          setVendorLookup({
+            ...context,
+            sourceHash: reviewHash,
+            vendor: null,
+            issue: message(e),
+          })
+      })
+    return () => controller.abort()
+  }, [
+    deliveryCode,
+    reviewHash,
+    supplierAccountNumber,
+    receivingSite,
+    entityId,
+    vendorRefresh,
+  ])
+
+  const vendorReference =
+    vendorLookup?.deliveryCode === deliveryCode &&
+    vendorLookup.site === receivingSite &&
+    vendorLookup.entityId === entityId &&
+    vendorLookup.reviewHash === reviewHash
+      ? vendorLookup
+      : null
+  const vendorIssue =
+    vendorReference?.issue ||
+    (!vendorReference?.vendor ? 'Resolving the Intacct vendor reference…' : '')
   const issues = detail
     ? [
         ...detail.source.issues,
@@ -256,7 +345,7 @@ function Tradogram() {
         ...(!config?.sageLocationId
           ? ['Configure the Intacct location/entity ID.']
           : []),
-        ...(!form.vendorId ? ['Enter the Intacct vendor ID.'] : []),
+        ...(vendorIssue ? [vendorIssue] : []),
         ...(accountsError || accountsLoading
           ? ['Wait for the Tradogram GL account list to load successfully.']
           : []),
@@ -655,7 +744,6 @@ function Tradogram() {
                 </div>
                 {(
                   [
-                    ['vendorId', 'Intacct vendor ID'],
                     ['invoiceNumber', 'Supplier invoice reference'],
                     ['notes', 'Preparation notes'],
                   ] as const
@@ -670,6 +758,55 @@ function Tradogram() {
                   </div>
                 ))}
               </fieldset>
+              <div className="space-y-2">
+                <Label>Intacct vendor reference</Label>
+                <div
+                  className="rounded-md border bg-muted/30 p-3 text-sm"
+                  role="status"
+                >
+                  <p className="text-muted-foreground">
+                    Tradogram supplier account:{' '}
+                    {supplierAccountNumber || 'Not configured'}
+                  </p>
+                  {vendorReference?.vendor && (
+                    <>
+                      <p className="mt-1 font-medium">
+                        {vendorReference.vendor.name} ·{' '}
+                        {vendorReference.vendor.id}
+                      </p>
+                      <p className="text-muted-foreground">
+                        Entity {vendorReference.vendor.entityId} · Vendor key{' '}
+                        {vendorReference.vendor.key} ·{' '}
+                        {vendorReference.vendor.status}
+                      </p>
+                    </>
+                  )}
+                  {vendorIssue && (
+                    <p
+                      className={
+                        vendorReference?.issue
+                          ? 'mt-1 text-amber-700'
+                          : 'mt-1 text-muted-foreground'
+                      }
+                    >
+                      {vendorIssue}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  disabled={
+                    busy ||
+                    !supplierAccountNumber ||
+                    !receivingSite ||
+                    !entityId ||
+                    !vendorReference
+                  }
+                  onClick={() => setVendorRefresh((value) => value + 1)}
+                >
+                  Refresh vendor reference
+                </Button>
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>

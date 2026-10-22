@@ -85,7 +85,7 @@ function validateSiteAccounts(config, accounts) {
   }
 }
 
-function normalize(d, po) {
+function normalize(d, po, supplier = null) {
   const issues = []
   const seen = new Set()
   const lines = (d.DeliveryItems || []).map((line) => {
@@ -113,6 +113,10 @@ function normalize(d, po) {
   if (!po.Currency) issues.push('The PO currency is missing.')
   const source = {
     ...summary(d), poCode: d.POCode, currency: po.Currency || '', booked: d.IsBooked === true,
+    supplierCode: supplier?.SupplierCode || po.SupplierCode || '',
+    // Prefer the current supplier master over copied PO/delivery references.
+    // If the master exists but its account is blank, do not reuse a stale number.
+    supplierAccountNumber: String(supplier ? supplier.AccountNumber || '' : po.SupplierAccountNumber || d.SupplierAccount || '').trim(),
     lines, issues, subtotal: money(lines.reduce((sum, line) => sum + (line.amount || 0), 0)),
     poTax: po.TaxTotal || '0', poDiscount: po.DiscountTotal || '0', poFees: po.FeesTotal || '0',
   }
@@ -128,7 +132,14 @@ async function loadDelivery(code) {
   const poBody = await get(`/purchase_orders/${delivery.POCode}`, { fetchType: 'Both', updateFetchFlag: 'false' })
   const po = poBody.PurchaseOrders?.find((p) => p.POCode === delivery.POCode)
   if (!po) throw error('The delivery purchase order could not be loaded.', 422)
-  return normalize(delivery, po)
+  let supplier = null
+  if (po.SupplierCode) {
+    if (!codePattern.test(po.SupplierCode)) throw error('The PO has no valid supplier link.', 422)
+    const supplierBody = await get(`/suppliers/${po.SupplierCode}`)
+    supplier = supplierBody.Suppliers?.find((s) => s.SupplierCode === po.SupplierCode)
+    if (!supplier) throw error('The Tradogram supplier could not be loaded.', 422)
+  }
+  return normalize(delivery, po, supplier)
 }
 
 function prepare(source, input, config, accounts = []) {
@@ -136,7 +147,7 @@ function prepare(source, input, config, accounts = []) {
   if (!input.site) issues.push('Choose the receiving site.')
   if (!config) issues.push('Save account settings for this site.')
   if (!config?.sageLocationId) issues.push('Configure the site Intacct location/entity ID.')
-  if (!input.vendorId) issues.push('Enter the Intacct supplier/vendor ID.')
+  if (!source.supplierAccountNumber) issues.push('Set the supplier account number in Tradogram to its Intacct vendor ID.')
   const choices = new Map((input.lines || []).map((line) => [line.id, line]))
   if ((input.lines || []).some((line) => !source.lines.some((s) => s.id === line.id))) throw error('Selections contain a line outside this delivery.')
   const lines = source.lines.map((line) => {

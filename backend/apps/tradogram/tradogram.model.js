@@ -13,6 +13,7 @@ const siteSchema = new Schema({
 const draftSchema = new Schema({
   deliveryCode: { type: String, required: true, unique: true },
   site: { type: String, default: '' }, vendorId: { type: String, default: '' },
+  vendorReference: { type: new Schema({ id: String, key: String, name: String, status: String, entityId: String }, { _id: false }), default: null },
   invoiceNumber: { type: String, default: '' }, notes: { type: String, default: '' },
   lines: [{ _id: false, id: { type: String, required: true }, accountType: { type: String, enum: ['', 'loan', 'inventory'], default: '' }, glAccountCode: { type: String, default: '' } }],
   status: { type: String, enum: ['draft', 'ready'], default: 'draft' },
