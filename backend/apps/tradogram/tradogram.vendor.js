@@ -1,5 +1,5 @@
-// Read-only Intacct vendor resolution. Always scope to the configured site;
-// never fall back to the production entity when a site has no entity mapping.
+// Read-only vendor resolution in the integration's configured company.
+const { getSettings } = require('./tradogram.settings')
 const BASE = 'https://api.intacct.com/ia/api/v1/'
 
 async function findVendor(accountNumber, entityId) {
@@ -35,11 +35,10 @@ async function findVendor(accountNumber, entityId) {
   return { vendor, issue: vendor.status.toLowerCase() === 'active' ? '' : `Intacct vendor ${accountNumber} is not active in entity ${entityId}.` }
 }
 
-async function resolveVendor(source, config) {
+async function resolveVendor(source) {
   const accountNumber = String(source.supplierAccountNumber || '').trim()
-  const entityId = String(config?.sageLocationId || '').trim()
+  const { entityId } = getSettings()
   if (!accountNumber) return { vendor: null, issue: 'Set the supplier account number in Tradogram to its Intacct vendor ID, then reload this delivery.' }
-  if (!entityId) return { vendor: null, issue: 'Choose a receiving site with a configured Intacct location/entity ID to resolve the vendor.' }
   try { return await findVendor(accountNumber, entityId) } catch (err) {
     // Do not forward upstream bodies or credentials. Network errors get a stable message.
     return { vendor: null, issue: err instanceof TypeError || err.name === 'TimeoutError' || err.name === 'AbortError'

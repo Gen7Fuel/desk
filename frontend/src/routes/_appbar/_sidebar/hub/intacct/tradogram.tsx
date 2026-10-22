@@ -5,12 +5,19 @@ import type {
   DeliverySummary,
   Draft,
   GLAccount,
+  IntegrationSettings,
   SiteAccount,
   VendorLookup,
 } from '@/lib/tradogram-api'
 import { suggestedAccountCodes, tradogramRequest } from '@/lib/tradogram-api'
 import { can } from '@/lib/permissions'
-import { SitePicker } from '@/components/custom/SitePicker'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -31,7 +38,6 @@ export const Route = createFileRoute('/_appbar/_sidebar/hub/intacct/tradogram')(
 const blankSite: SiteAccount = {
   site: '',
   tradogramLocation: '',
-  sageLocationId: '',
   loanAccountId: '',
   inventoryAccountId: '',
 }
@@ -57,6 +63,8 @@ function Tradogram() {
   const [tab, setTab] = useState<'deliveries' | 'prepared' | 'sites'>(
     'deliveries',
   )
+  const [settings, setSettings] = useState<IntegrationSettings | null>(null)
+  const [settingsError, setSettingsError] = useState('')
   const [sites, setSites] = useState<Array<SiteAccount>>([])
   const [siteForm, setSiteForm] = useState<SiteAccount>(blankSite)
   const [rows, setRows] = useState<Array<DeliverySummary>>([])
@@ -85,7 +93,6 @@ function Tradogram() {
   const [vendorLookup, setVendorLookup] = useState<
     | (VendorLookup & {
         deliveryCode: string
-        site: string
         entityId: string
         reviewHash: string
       })
@@ -111,6 +118,13 @@ function Tradogram() {
 
   useEffect(() => {
     const controller = new AbortController()
+    tradogramRequest<IntegrationSettings>('/settings', {
+      signal: controller.signal,
+    })
+      .then(setSettings)
+      .catch((e) => {
+        if (!controller.signal.aborted) setSettingsError(message(e))
+      })
     tradogramRequest<Array<SiteAccount>>('/sites', {
       signal: controller.signal,
     })
@@ -216,8 +230,7 @@ function Tradogram() {
       setVendorLookup({
         ...result.vendorReference,
         deliveryCode: detail.source.deliveryCode,
-        site: form.site,
-        entityId: config?.sageLocationId || '',
+        entityId: settings?.entityId || '',
         reviewHash: detail.source.sourceHash,
       })
       setDirty(false)
@@ -264,19 +277,18 @@ function Tradogram() {
   const deliveryCode = detail?.source.deliveryCode || ''
   const reviewHash = detail?.source.sourceHash || ''
   const supplierAccountNumber = detail?.source.supplierAccountNumber || ''
-  const entityId = config?.sageLocationId || ''
-  const receivingSite = form.site
+  const entityId = settings?.entityId || ''
 
   useEffect(() => {
     if (!deliveryCode) {
       setVendorLookup(null)
       return
     }
-    const context = { deliveryCode, site: receivingSite, entityId, reviewHash }
+    const context = { deliveryCode, entityId, reviewHash }
     const missing = !supplierAccountNumber
       ? 'Set the supplier account number in Tradogram to its Intacct vendor ID, then reload this delivery.'
-      : !receivingSite || !entityId
-        ? 'Choose a site with a configured Intacct location/entity ID.'
+      : !entityId
+        ? settingsError || 'Loading the Intacct company settings…'
         : ''
     if (missing) {
       setVendorLookup({
@@ -289,10 +301,9 @@ function Tradogram() {
     }
     const controller = new AbortController()
     setVendorLookup(null)
-    tradogramRequest<VendorLookup>(
-      `/deliveries/${deliveryCode}/vendor?site=${encodeURIComponent(receivingSite)}`,
-      { signal: controller.signal },
-    )
+    tradogramRequest<VendorLookup>(`/deliveries/${deliveryCode}/vendor`, {
+      signal: controller.signal,
+    })
       .then((result) => {
         if (controller.signal.aborted) return
         const changed = result.sourceHash !== reviewHash
@@ -319,14 +330,13 @@ function Tradogram() {
     deliveryCode,
     reviewHash,
     supplierAccountNumber,
-    receivingSite,
     entityId,
+    settingsError,
     vendorRefresh,
   ])
 
   const vendorReference =
     vendorLookup?.deliveryCode === deliveryCode &&
-    vendorLookup.site === receivingSite &&
     vendorLookup.entityId === entityId &&
     vendorLookup.reviewHash === reviewHash
       ? vendorLookup
@@ -342,9 +352,6 @@ function Tradogram() {
           : !config
             ? ['Save account settings for this site.']
             : []),
-        ...(!config?.sageLocationId
-          ? ['Configure the Intacct location/entity ID.']
-          : []),
         ...(vendorIssue ? [vendorIssue] : []),
         ...(accountsError || accountsLoading
           ? ['Wait for the Tradogram GL account list to load successfully.']
@@ -380,6 +387,11 @@ function Tradogram() {
           partial deliveries.
         </p>
       </div>
+      <p className="rounded-md border p-3 text-sm" role="status">
+        {settings
+          ? `Intacct company: ${settings.entityId} · ${settings.company} (${settings.environment})`
+          : settingsError || 'Loading Intacct company settings…'}
+      </p>
       <ol className="grid gap-2 rounded-lg border bg-muted/30 p-4 text-sm sm:grid-cols-3">
         <li>1. Create a PO and record receipt in Tradogram.</li>
         <li>2. Review received lines and choose Loan or Inventory.</li>
@@ -450,11 +462,12 @@ function Tradogram() {
         <section className="space-y-4 rounded-lg border p-5">
           <h2 className="font-semibold">Site account mappings</h2>
           <p className="text-sm text-muted-foreground">
-            Choose a Hub site and save its Intacct IDs. Tradogram location name
-            is an optional exact match used to suggest a receiving site; confirm
-            it on each delivery. Select the site’s default Loan and Inventory
-            accounts from Tradogram. Other account types, including Accounts
-            Payable, are excluded.
+            Create a construction site and save its default GL accounts. The
+            Intacct company is configured once for this integration. Tradogram
+            location name is an optional exact match used to suggest a receiving
+            site; confirm it on each delivery. Select the site’s default Loan
+            and Inventory accounts from Tradogram. Other account types,
+            including Accounts Payable, are excluded.
           </p>
           <fieldset
             disabled={!writable || busy}
@@ -462,22 +475,21 @@ function Tradogram() {
           >
             <div className="space-y-2">
               <Label>Site</Label>
-              <SitePicker
+              <Input
+                aria-label="Construction site name"
+                placeholder="New construction site name"
                 value={siteForm.site}
-                onValueChange={(site) =>
-                  setSiteForm(
-                    sites.find((s) => s.site === site) || {
-                      ...blankSite,
-                      site,
-                    },
-                  )
+                onChange={(e) =>
+                  setSiteForm({ ...siteForm, site: e.target.value })
                 }
               />
+              <Button variant="outline" onClick={() => setSiteForm(blankSite)}>
+                New construction site
+              </Button>
             </div>
             {(
               [
                 ['tradogramLocation', 'Tradogram location / branch name'],
-                ['sageLocationId', 'Intacct location/entity ID'],
               ] as const
             ).map(([key, label]) => (
               <div key={key} className="space-y-2">
@@ -551,22 +563,17 @@ function Tradogram() {
           <Table>
             <TableHeader>
               <TableRow>
-                {[
-                  'Site',
-                  'Location/entity',
-                  'Loan account',
-                  'Inventory account',
-                  '',
-                ].map((label) => (
-                  <TableHead key={label}>{label}</TableHead>
-                ))}
+                {['Site', 'Loan account', 'Inventory account', ''].map(
+                  (label) => (
+                    <TableHead key={label}>{label}</TableHead>
+                  ),
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
               {sites.map((site) => (
                 <TableRow key={site.site}>
                   <TableCell>{site.site}</TableCell>
-                  <TableCell>{site.sageLocationId || 'Not set'}</TableCell>
                   <TableCell>{site.loanAccountId || 'Not set'}</TableCell>
                   <TableCell>{site.inventoryAccountId || 'Not set'}</TableCell>
                   <TableCell>
@@ -733,10 +740,24 @@ function Tradogram() {
               >
                 <div className="space-y-2">
                   <Label>Receiving site</Label>
-                  <SitePicker
+                  <Select
                     value={form.site}
                     onValueChange={(site) => updateForm('site', site)}
-                  />
+                  >
+                    <SelectTrigger aria-label="Receiving construction site">
+                      <SelectValue placeholder="Select a construction site" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sites.map((site) => (
+                        <SelectItem key={site.site} value={site.site}>
+                          {site.site}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Create construction sites in Site accounts.
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     Tradogram location:{' '}
                     {detail.source.location || 'Not provided'}
@@ -798,7 +819,6 @@ function Tradogram() {
                   disabled={
                     busy ||
                     !supplierAccountNumber ||
-                    !receivingSite ||
                     !entityId ||
                     !vendorReference
                   }

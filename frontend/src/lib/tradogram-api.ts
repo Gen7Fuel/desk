@@ -3,9 +3,14 @@ import { apiFetch } from '@/lib/api'
 export type SiteAccount = {
   site: string
   tradogramLocation: string
-  sageLocationId: string
+  sageLocationId?: string
   loanAccountId: string
   inventoryAccountId: string
+}
+export type IntegrationSettings = {
+  entityId: 'T010' | 'A210'
+  company: string
+  environment: 'test' | 'production'
 }
 export type GLAccount = {
   code: string

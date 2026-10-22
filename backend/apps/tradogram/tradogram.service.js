@@ -1,3 +1,4 @@
+const { getSettings } = require('./tradogram.settings')
 const { createHash } = require('node:crypto')
 
 const BASE = 'https://api.tradogram.com/v1.0.4'
@@ -146,7 +147,6 @@ function prepare(source, input, config, accounts = []) {
   const issues = [...source.issues]
   if (!input.site) issues.push('Choose the receiving site.')
   if (!config) issues.push('Save account settings for this site.')
-  if (!config?.sageLocationId) issues.push('Configure the site Intacct location/entity ID.')
   if (!source.supplierAccountNumber) issues.push('Set the supplier account number in Tradogram to its Intacct vendor ID.')
   const choices = new Map((input.lines || []).map((line) => [line.id, line]))
   if ((input.lines || []).some((line) => !source.lines.some((s) => s.id === line.id))) throw error('Selections contain a line outside this delivery.')
@@ -163,7 +163,7 @@ function prepare(source, input, config, accounts = []) {
       glAccountCode: choice?.glAccountCode || account?.code || '', accountName: account?.name || '' }
   })
   return { lines, issues: [...new Set(issues)], subtotal: source.subtotal, credit: 'Accounts Payable', configHash: hash(config ? {
-    site: config.site, sageLocationId: config.sageLocationId, loanAccountId: config.loanAccountId, inventoryAccountId: config.inventoryAccountId,
+    site: config.site, entityId: getSettings().entityId, loanAccountId: config.loanAccountId, inventoryAccountId: config.inventoryAccountId,
     selectedAccounts: lines.map((line) => ({ code: line.glAccountCode, name: line.accountName, number: line.accountId, type: line.accountType })),
   } : null) }
 }

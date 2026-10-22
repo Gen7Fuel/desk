@@ -7,7 +7,7 @@ const { authHeader } = require('../../tests/helpers/auth')
 const auth = authHeader({ permissions: { hub: { intacct: { read: true, update: true } } } })
 const app = () => express().use(express.json()).use('/tradogram', require('./tradogram.routes'))
 const source = { sourceHash: 'current', supplierAccountNumber: 'V001', issues: [], subtotal: 5, lines: [{ id: 'line', name: 'Pump' }] }
-const config = { site: 'Walpole', sageLocationId: 'T010' }
+const config = { site: 'New construction', sageLocationId: 'A210' }
 const vendor = { id: 'V001', key: '55', name: 'Intacct Supplier', status: 'active', entityId: 'T010' }
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs() })
 
@@ -29,10 +29,9 @@ describe('Intacct vendor reference', () => {
     expect(options.headers['X-IA-API-Param-Entity']).toBe('T010')
     expect(JSON.parse(options.body)).toMatchObject({ object: 'accounts-payable/vendor', filters: [{ $eq: { id: 'V001' } }], size: 2 })
   })
-  it('does not query production or fall back to a name when the site or account is missing', async () => {
+  it('does not query when the supplier account is missing', async () => {
     const fetch = vi.fn()
     vi.stubGlobal('fetch', fetch)
-    expect((await vendorService.resolveVendor(source, null)).issue).toContain('Choose a receiving site')
     expect((await vendorService.resolveVendor({ ...source, supplierAccountNumber: '' }, config)).issue).toContain('supplier account number')
     expect(fetch).not.toHaveBeenCalled()
   })
@@ -77,12 +76,12 @@ describe('vendor reference routes', () => {
     vi.spyOn(service, 'listGLAccounts').mockResolvedValue([{ code: 'stock', name: 'Build Inventory', number: '10760', type: 'inventory' }])
     vi.spyOn(SiteAccount, 'findOne').mockReturnValue({ lean: async () => config })
   })
-  it('returns the resolved reference and source fingerprint for the selected site', async () => {
+  it('returns the company-scoped reference without a receiving site', async () => {
     const resolve = vi.spyOn(vendorService, 'resolveVendor').mockResolvedValue({ vendor, issue: '' })
-    const result = await request(app()).get('/tradogram/deliveries/abcdefghijkl/vendor?site=Walpole').set('Authorization', auth)
+    const result = await request(app()).get('/tradogram/deliveries/abcdefghijkl/vendor').set('Authorization', auth)
     expect(result.status).toBe(200)
     expect(result.body).toMatchObject({ vendor, sourceHash: 'current' })
-    expect(resolve).toHaveBeenCalledWith(source, config)
+    expect(resolve).toHaveBeenCalledWith(source)
     expect((await request(app()).get('/tradogram/deliveries/abcdefghijkl/vendor?site=Walpole')).status).toBe(401)
   })
   it('ignores a manually supplied vendor ID and stores the server-derived reference', async () => {
