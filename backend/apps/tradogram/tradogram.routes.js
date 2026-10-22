@@ -16,10 +16,15 @@ router.get('/sites', handle(async (_req, res) => {
   res.json(await SiteAccount.find().sort({ site: 1 }).lean())
 }))
 
+router.get('/gl-accounts', handle(async (_req, res) => {
+  res.json(await service.listGLAccounts())
+}))
+
 router.put('/sites', write, handle(async (req, res) => {
   const site = text(req.body.site)
   if (!site) throw service.error('Site is required.')
   const values = Object.fromEntries(['tradogramLocation', 'sageLocationId', 'loanAccountId', 'inventoryAccountId'].map((key) => [key, text(req.body[key])]))
+  if (values.loanAccountId || values.inventoryAccountId) service.validateSiteAccounts(values, await service.listGLAccounts())
   const saved = await SiteAccount.findOneAndUpdate({ site }, { $set: { ...values, updatedBy: req.user.email } }, { upsert: true, returnDocument: 'after', runValidators: true })
   res.json(saved)
 }))
@@ -44,25 +49,28 @@ router.get('/drafts', handle(async (_req, res) => {
 }))
 
 router.get('/deliveries/:code', handle(async (req, res) => {
-  const source = await service.loadDelivery(req.params.code)
+  const [source, accounts] = await Promise.all([service.loadDelivery(req.params.code), service.listGLAccounts()])
   const draft = await DeliveryDraft.findOne({ deliveryCode: req.params.code }).lean()
   const config = draft?.site ? await SiteAccount.findOne({ site: draft.site }).lean() : null
-  const preview = service.prepare(source, draft || {}, config)
-  res.json({ source, draft, stale: !!draft && (draft.sourceHash !== source.sourceHash || draft.configHash !== preview.configHash), preview })
+  const preview = service.prepare(source, draft || {}, config, accounts)
+  res.json({ source, draft, accounts, stale: !!draft && (draft.sourceHash !== source.sourceHash || draft.configHash !== preview.configHash), preview })
 }))
 
 router.put('/deliveries/:code/draft', write, handle(async (req, res) => {
   const input = {
     site: text(req.body.site), vendorId: text(req.body.vendorId), invoiceNumber: text(req.body.invoiceNumber), notes: text(req.body.notes, 2000),
-    lines: Array.isArray(req.body.lines) ? req.body.lines.map((line) => ({ id: text(line?.id), accountType: text(line?.accountType) })) : [],
+    lines: Array.isArray(req.body.lines) ? req.body.lines.map((line) => ({ id: text(line?.id), accountType: text(line?.accountType), glAccountCode: text(line?.glAccountCode) })) : [],
   }
   if (!['draft', 'ready'].includes(req.body.status) || input.lines.some((line) => !['', 'loan', 'inventory'].includes(line.accountType)) || new Set(input.lines.map((l) => l.id)).size !== input.lines.length) throw service.error('Invalid draft status or line selections.')
   const source = await service.loadDelivery(req.params.code)
   if (req.body.sourceHash !== source.sourceHash) throw service.error('Tradogram changed while you were reviewing. Reload the delivery before saving.', 409)
   const config = input.site ? await SiteAccount.findOne({ site: input.site }).lean() : null
-  const preview = service.prepare(source, input, config)
+  const preview = service.prepare(source, input, config, await service.listGLAccounts())
   if (req.body.status === 'ready' && preview.issues.length) return res.status(422).json({ message: preview.issues.join(' '), issues: preview.issues })
-  const values = { ...input, status: req.body.status, sourceHash: source.sourceHash, configHash: preview.configHash,
+  const values = { ...input, lines: input.lines.map((line) => {
+    const resolved = preview.lines.find((l) => l.id === line.id)
+    return { ...line, accountType: resolved?.accountType || '', glAccountCode: resolved?.glAccountCode || line.glAccountCode }
+  }), status: req.body.status, sourceHash: source.sourceHash, configHash: preview.configHash,
     snapshot: { ...source, ...preview, sageLocationId: config?.sageLocationId || '' }, updatedBy: req.user.email }
   let saved
   if (req.body.revision == null) saved = await DeliveryDraft.create({ ...values, deliveryCode: req.params.code })

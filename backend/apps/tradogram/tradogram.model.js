@@ -14,7 +14,7 @@ const draftSchema = new Schema({
   deliveryCode: { type: String, required: true, unique: true },
   site: { type: String, default: '' }, vendorId: { type: String, default: '' },
   invoiceNumber: { type: String, default: '' }, notes: { type: String, default: '' },
-  lines: [{ _id: false, id: { type: String, required: true }, accountType: { type: String, enum: ['', 'loan', 'inventory'], default: '' } }],
+  lines: [{ _id: false, id: { type: String, required: true }, accountType: { type: String, enum: ['', 'loan', 'inventory'], default: '' }, glAccountCode: { type: String, default: '' } }],
   status: { type: String, enum: ['draft', 'ready'], default: 'draft' },
   sourceHash: String, configHash: String,
   snapshot: Schema.Types.Mixed,

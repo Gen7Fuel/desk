@@ -4,14 +4,16 @@ import type {
   DeliveryDetail,
   DeliverySummary,
   Draft,
+  GLAccount,
   SiteAccount,
 } from '@/lib/tradogram-api'
-import { tradogramRequest } from '@/lib/tradogram-api'
+import { suggestedAccountCodes, tradogramRequest } from '@/lib/tradogram-api'
 import { can } from '@/lib/permissions'
 import { SitePicker } from '@/components/custom/SitePicker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { TradogramGLAccountSelect } from '@/components/custom/TradogramGLAccountSelect'
 import {
   Table,
   TableBody,
@@ -73,10 +75,29 @@ function Tradogram() {
     invoiceNumber: '',
     notes: '',
   })
-  const [choices, setChoices] = useState<
-    Record<string, '' | 'loan' | 'inventory'>
-  >({})
+  const [accountCodes, setAccountCodes] = useState<Record<string, string>>({})
+  const [accounts, setAccounts] = useState<Array<GLAccount>>([])
+  const [accountsLoading, setAccountsLoading] = useState(true)
+  const [accountsError, setAccountsError] = useState('')
+  const [accountRefresh, setAccountRefresh] = useState(0)
   const [dirty, setDirty] = useState(false)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    setAccountsLoading(true)
+    setAccountsError('')
+    tradogramRequest<Array<GLAccount>>('/gl-accounts', {
+      signal: controller.signal,
+    })
+      .then(setAccounts)
+      .catch((e) => {
+        if (!controller.signal.aborted) setAccountsError(message(e))
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setAccountsLoading(false)
+      })
+    return () => controller.abort()
+  }, [accountRefresh])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -140,9 +161,16 @@ function Tradogram() {
           data.draft?.invoiceNumber || data.source.invoiceNumber || '',
         notes: data.draft?.notes || '',
       })
-      setChoices(
-        Object.fromEntries(
-          data.draft?.lines.map((l) => [l.id, l.accountType]) || [],
+      setAccounts(data.accounts)
+      setAccountsError('')
+      setAccountCodes(
+        suggestedAccountCodes(
+          data.source,
+          data.draft,
+          sites.find(
+            (site) => site.site === (data.draft?.site || suggested?.site),
+          ),
+          data.accounts,
         ),
       )
       setDirty(false)
@@ -170,7 +198,7 @@ function Tradogram() {
             revision: detail.draft?.revision ?? null,
             lines: detail.source.lines.map((l) => ({
               id: l.id,
-              accountType: choices[l.id] || '',
+              glAccountCode: accountCodes[l.id] || '',
             })),
           }),
         },
@@ -229,15 +257,16 @@ function Tradogram() {
           ? ['Configure the Intacct location/entity ID.']
           : []),
         ...(!form.vendorId ? ['Enter the Intacct vendor ID.'] : []),
+        ...(accountsError || accountsLoading
+          ? ['Wait for the Tradogram GL account list to load successfully.']
+          : []),
         ...detail.source.lines.flatMap((line) => {
-          const choice = choices[line.id]
-          return !choice
-            ? [`Choose Loan or Inventory for ${line.name}.`]
-            : !(choice === 'loan'
-                  ? config?.loanAccountId
-                  : config?.inventoryAccountId)
-              ? [`Configure the ${choice} account for ${form.site}.`]
-              : []
+          const account = accounts.find((a) => a.code === accountCodes[line.id])
+          return account
+            ? []
+            : [
+                `Choose an active Loan or Inventory GL account for ${line.name}.`,
+              ]
         }),
       ]
     : []
@@ -309,6 +338,24 @@ function Tradogram() {
           {notice}
         </p>
       )}
+      <div className="flex flex-wrap items-center gap-3 text-sm">
+        <span
+          className={accountsError ? 'text-red-700' : 'text-muted-foreground'}
+          role={accountsError ? 'alert' : 'status'}
+        >
+          {accountsError ||
+            (accountsLoading
+              ? 'Loading Tradogram GL accounts…'
+              : `${accounts.length} active Loan / Inventory GL accounts from Tradogram.`)}
+        </span>
+        <Button
+          variant="outline"
+          disabled={busy || accountsLoading}
+          onClick={() => setAccountRefresh((value) => value + 1)}
+        >
+          Refresh GL accounts
+        </Button>
+      </div>
 
       {tab === 'sites' ? (
         <section className="space-y-4 rounded-lg border p-5">
@@ -316,7 +363,9 @@ function Tradogram() {
           <p className="text-sm text-muted-foreground">
             Choose a Hub site and save its Intacct IDs. Tradogram location name
             is an optional exact match used to suggest a receiving site; confirm
-            it on each delivery.
+            it on each delivery. Select the site’s default Loan and Inventory
+            accounts from Tradogram. Other account types, including Accounts
+            Payable, are excluded.
           </p>
           <fieldset
             disabled={!writable || busy}
@@ -340,8 +389,6 @@ function Tradogram() {
               [
                 ['tradogramLocation', 'Tradogram location / branch name'],
                 ['sageLocationId', 'Intacct location/entity ID'],
-                ['loanAccountId', 'Loan GL account ID'],
-                ['inventoryAccountId', 'Inventory GL account ID'],
               ] as const
             ).map(([key, label]) => (
               <div key={key} className="space-y-2">
@@ -355,8 +402,59 @@ function Tradogram() {
                 />
               </div>
             ))}
+            {(['loan', 'inventory'] as const).map((type) => {
+              const key =
+                type === 'loan' ? 'loanAccountId' : 'inventoryAccountId'
+              const eligible = accounts.filter(
+                (account) => account.type === type,
+              )
+              const matches = eligible.filter(
+                (account) => account.number === siteForm[key],
+              )
+              return (
+                <div key={key} className="space-y-2">
+                  <Label htmlFor={`site-${key}`}>
+                    {type === 'loan'
+                      ? 'Default Loan GL account'
+                      : 'Default Inventory GL account'}
+                  </Label>
+                  <TradogramGLAccountSelect
+                    id={`site-${key}`}
+                    label={`${type} GL account for site`}
+                    accounts={eligible}
+                    value={
+                      matches.length === 1
+                        ? matches[0].code
+                        : siteForm[key]
+                          ? `unavailable:${siteForm[key]}`
+                          : ''
+                    }
+                    disabled={
+                      !writable || busy || accountsLoading || !!accountsError
+                    }
+                    onValueChange={(code) =>
+                      setSiteForm({
+                        ...siteForm,
+                        [key]:
+                          eligible.find((account) => account.code === code)
+                            ?.number || '',
+                      })
+                    }
+                  />
+                  {siteForm[key] && matches.length !== 1 && (
+                    <p className="text-xs text-amber-700">
+                      Saved GL number {siteForm[key]} is unavailable or
+                      ambiguous. Select an active account again.
+                    </p>
+                  )}
+                </div>
+              )
+            })}
             <div className="self-end">
-              <Button disabled={!siteForm.site} onClick={saveSite}>
+              <Button
+                disabled={!siteForm.site || accountsLoading || !!accountsError}
+                onClick={saveSite}
+              >
                 Save site accounts
               </Button>
             </div>
@@ -596,6 +694,12 @@ function Tradogram() {
                         <div className="text-xs text-muted-foreground">
                           {line.description}
                         </div>
+                        {line.poGLAccountNumber && (
+                          <div className="text-xs text-muted-foreground">
+                            PO account: {line.poGLAccountNumber} —{' '}
+                            {line.poGLAccountName}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         {line.ordered} {line.unit}
@@ -606,35 +710,30 @@ function Tradogram() {
                       <TableCell>{amount(line.unitPrice)}</TableCell>
                       <TableCell>{amount(line.amount)}</TableCell>
                       <TableCell>
-                        <select
-                          aria-label={`Debit account for ${line.name}`}
-                          className="rounded-md border p-2 text-sm"
+                        <TradogramGLAccountSelect
+                          label={`Debit account for ${line.name}`}
+                          accounts={accounts}
                           disabled={
-                            !writable || busy || !!detail.draft?.intacctBillKey
+                            !writable ||
+                            busy ||
+                            accountsLoading ||
+                            !!accountsError ||
+                            !!detail.draft?.intacctBillKey
                           }
-                          value={choices[line.id] || ''}
-                          onChange={(e) => {
-                            setChoices({
-                              ...choices,
-                              [line.id]: e.target.value as
-                                | ''
-                                | 'loan'
-                                | 'inventory',
-                            })
+                          value={accountCodes[line.id] || ''}
+                          onValueChange={(code) => {
+                            setAccountCodes((previous) => ({
+                              ...previous,
+                              [line.id]: code,
+                            }))
                             setDirty(true)
                           }}
-                        >
-                          <option value="">Choose account</option>
-                          <option value="loan">Loan</option>
-                          <option value="inventory">Inventory</option>
-                        </select>
+                        />
                       </TableCell>
                       <TableCell>
-                        {(choices[line.id] === 'loan'
-                          ? config?.loanAccountId
-                          : choices[line.id] === 'inventory'
-                            ? config?.inventoryAccountId
-                            : '') || 'Not selected / configured'}
+                        {accounts.find(
+                          (account) => account.code === accountCodes[line.id],
+                        )?.number || 'Not selected / unavailable'}
                       </TableCell>
                     </TableRow>
                   ))}
