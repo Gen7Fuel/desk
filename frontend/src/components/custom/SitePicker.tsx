@@ -16,6 +16,8 @@ interface Location {
 }
 
 interface SitePickerProps {
+  id?: string
+  additionalSites?: Array<string>
   value?: string
   onValueChange: (value: string) => void
   placeholder?: string
@@ -24,6 +26,8 @@ interface SitePickerProps {
 }
 
 export function SitePicker({
+  id,
+  additionalSites = [],
   value,
   onValueChange,
   placeholder = 'Select a site',
@@ -53,7 +57,7 @@ export function SitePicker({
   if (loading) {
     return (
       <Select disabled>
-        <SelectTrigger className={className}>
+        <SelectTrigger id={id} className={className}>
           <SelectValue placeholder="Loading locations..." />
         </SelectTrigger>
       </Select>
@@ -63,16 +67,25 @@ export function SitePicker({
   if (error) {
     return (
       <Select disabled>
-        <SelectTrigger className={className}>
+        <SelectTrigger id={id} className={className}>
           <SelectValue placeholder={error} />
         </SelectTrigger>
       </Select>
     )
   }
 
+  const siteNames = [
+    ...new Set(
+      [
+        ...locations.map((location) => location.site || location.stationName),
+        ...additionalSites,
+      ].filter(Boolean),
+    ),
+  ]
+
   return (
     <Select value={value} onValueChange={onValueChange}>
-      <SelectTrigger className={className}>
+      <SelectTrigger id={id} className={className}>
         {/* Radix doesn't resolve the displayed label for a value that was
             set programmatically (e.g. pre-filling an edit form) until the
             matching SelectItem has actually rendered once — pass the label
@@ -84,13 +97,10 @@ export function SitePicker({
       <SelectContent>
         <SelectGroup>
           <SelectLabel>{label}</SelectLabel>
-          {locations.length > 0 ? (
-            locations.map((location) => (
-              <SelectItem
-                key={location._id}
-                value={location.site ?? location.stationName}
-              >
-                {location.site ?? location.stationName}
+          {siteNames.length > 0 ? (
+            siteNames.map((site) => (
+              <SelectItem key={site} value={site}>
+                {site}
               </SelectItem>
             ))
           ) : (
