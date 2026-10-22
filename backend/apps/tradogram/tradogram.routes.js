@@ -3,6 +3,7 @@ const { authenticate, requirePermission } = require('../../middleware/auth')
 const { SiteAccount, DeliveryDraft } = require('./tradogram.model')
 const service = require('./tradogram.service')
 const vendorService = require('./tradogram.vendor')
+const { getSettings } = require('./tradogram.settings')
 const router = express.Router()
 router.use(authenticate, requirePermission('hub.intacct', 'read'))
 const write = requirePermission('hub.intacct', 'update')
@@ -12,6 +13,8 @@ const handle = (fn) => async (req, res) => {
     res.status(err.code === 11000 ? 409 : err.status || 500).json({ message: err.code === 11000 ? 'This delivery was saved by another user. Reload before saving.' : err.status ? err.message : 'Unable to complete the Tradogram request.' })
   }
 }
+
+router.get('/settings', handle(async (_req, res) => { res.json(getSettings()) }))
 
 router.get('/sites', handle(async (_req, res) => {
   res.json(await SiteAccount.find().sort({ site: 1 }).lean())
@@ -24,7 +27,7 @@ router.get('/gl-accounts', handle(async (_req, res) => {
 router.put('/sites', write, handle(async (req, res) => {
   const site = text(req.body.site)
   if (!site) throw service.error('Site is required.')
-  const values = Object.fromEntries(['tradogramLocation', 'sageLocationId', 'loanAccountId', 'inventoryAccountId'].map((key) => [key, text(req.body[key])]))
+  const values = Object.fromEntries(['tradogramLocation', 'loanAccountId', 'inventoryAccountId'].map((key) => [key, text(req.body[key])]))
   if (values.loanAccountId || values.inventoryAccountId) service.validateSiteAccounts(values, await service.listGLAccounts())
   const saved = await SiteAccount.findOneAndUpdate({ site }, { $set: { ...values, updatedBy: req.user.email } }, { upsert: true, returnDocument: 'after', runValidators: true })
   res.json(saved)
@@ -51,9 +54,7 @@ router.get('/drafts', handle(async (_req, res) => {
 
 router.get('/deliveries/:code/vendor', handle(async (req, res) => {
   const source = await service.loadDelivery(req.params.code)
-  const site = text(req.query.site)
-  const config = site ? await SiteAccount.findOne({ site }).lean() : null
-  res.json({ ...await vendorService.resolveVendor(source, config), sourceHash: source.sourceHash })
+  res.json({ ...await vendorService.resolveVendor(source), sourceHash: source.sourceHash })
 }))
 
 router.get('/deliveries/:code', handle(async (req, res) => {
@@ -73,7 +74,7 @@ router.put('/deliveries/:code/draft', write, handle(async (req, res) => {
   const source = await service.loadDelivery(req.params.code)
   if (req.body.sourceHash !== source.sourceHash) throw service.error('Tradogram changed while you were reviewing. Reload the delivery before saving.', 409)
   const config = input.site ? await SiteAccount.findOne({ site: input.site }).lean() : null
-  const reference = await vendorService.resolveVendor(source, config)
+  const reference = await vendorService.resolveVendor(source)
   input.vendorId = source.supplierAccountNumber || ''
   const preview = service.prepare(source, input, config, await service.listGLAccounts())
   if (reference.issue) preview.issues.push(reference.issue)
@@ -82,7 +83,7 @@ router.put('/deliveries/:code/draft', write, handle(async (req, res) => {
     const resolved = preview.lines.find((l) => l.id === line.id)
     return { ...line, accountType: resolved?.accountType || '', glAccountCode: resolved?.glAccountCode || line.glAccountCode }
   }), vendorReference: reference.vendor, status: req.body.status, sourceHash: source.sourceHash, configHash: preview.configHash,
-    snapshot: { ...source, ...preview, vendorReference: reference.vendor, sageLocationId: config?.sageLocationId || '' }, updatedBy: req.user.email }
+    snapshot: { ...source, ...preview, vendorReference: reference.vendor, sageEntityId: getSettings().entityId }, updatedBy: req.user.email }
   let saved
   if (req.body.revision == null) saved = await DeliveryDraft.create({ ...values, deliveryCode: req.params.code })
   else {

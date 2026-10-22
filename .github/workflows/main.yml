@@ -134,6 +134,7 @@ jobs:
             echo "SAGE_CLIENT_ID=${{ secrets.SAGE_CLIENT_ID }}" >> backend/.env
             echo "SAGE_CLIENT_SECRET=${{ secrets.SAGE_CLIENT_SECRET }}" >> backend/.env
             echo "SAGE_CALLBACK_URL=${{ secrets.SAGE_CALLBACK_URL }}" >> backend/.env
+            echo "TRADOGRAM_SAGE_ENTITY_ID=${{ vars.TRADOGRAM_SAGE_ENTITY_ID || 'T010' }}" >> backend/.env
             echo "TRADOGRAM_API_KEY=${{ secrets.TRADOGRAM_API_KEY }}" >> backend/.env
             echo "AZURE_STORAGE_CONNECTION_STRING=${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" >> backend/.env
             echo "AZURE_CONTAINER=${{ secrets.AZURE_CONTAINER }}" >> backend/.env
