@@ -1,4 +1,5 @@
 const express = require('express')
+const { createApiServer } = require('./lib/http-server')
 const rateLimit = require('express-rate-limit')
 const { BlobServiceClient } = require('@azure/storage-blob')
 const { connectToMongo } = require('./config/db')
@@ -113,7 +114,7 @@ async function configureAzureCors() {
 
 connectToMongo().then(() => {
   configureAzureCors()
-  app.listen(port, () => {
+  createApiServer(app).listen(port, () => {
     console.log(`API listening on port ${port}`)
   })
 })
