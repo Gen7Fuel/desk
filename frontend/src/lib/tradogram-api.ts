@@ -126,6 +126,10 @@ export async function tradogramRequest<T>(
   init?: RequestInit,
 ): Promise<T> {
   const response = await apiFetch(`/api/tradogram${path}`, init)
+  if (response.status === 431)
+    throw new Error(
+      'The server rejected this request because its headers are too large. Sign out and sign in again. If this continues, contact an administrator.',
+    )
   const body = await response.json().catch(() => null)
   if (!response.ok)
     throw new Error(body?.message || `Request failed (${response.status})`)

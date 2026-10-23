@@ -1,3 +1,9 @@
+{
+    servers {
+        max_header_size 64KiB
+    }
+}
+
 http://desk.gen7fuel.com {
     # API — forward to Express (prefix kept; Express routes are mounted under /api)
     handle /api* {
