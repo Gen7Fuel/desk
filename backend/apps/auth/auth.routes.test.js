@@ -30,6 +30,14 @@ describe('POST /api/auth/login', () => {
 
     const res = await request(makeApp()).post('/api/auth/login').send({ email: 'x@x.com', password: 'bad' })
 
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(
+      'https://app.gen7fuel.com/login-auth/login',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'x@x.com', password: 'bad' }),
+      },
+    )
     expect(res.status).toBe(401)
   })
 
