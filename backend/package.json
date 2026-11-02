@@ -17,11 +17,13 @@
   "overrides": {
     "postcss": "^8.5.18",
     "brace-expansion@5": "^5.0.12",
-    "ip-address": ">=10.4.0",
+    "ip-address": "^10.7.4",
     "nanoid@3": "^3.3.18",
     "proxy-addr@2": "^2.0.8",
     "source-map-js@1": "^1.2.2",
-    "vite@8": "~8.1.6"
+    "vite@8": "~8.1.6",
+    "body-parser@2": "^2.4.0",
+    "@azure/identity": "^4.14.1"
   },
   "dependencies": {
     "@azure/storage-blob": "^12.32.0",
@@ -29,15 +31,15 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.7.1",
+    "mongoose": "^9.7.2",
     "mssql": "^12.5.0",
-    "multer": "^2.3.0",
+    "multer": "^2.5.0",
     "tar-stream": "^3.2.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "nodemon": "^3.1.14",
     "supertest": "^7.2.2",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.12"
   }
 }

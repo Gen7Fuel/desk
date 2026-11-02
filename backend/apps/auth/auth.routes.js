@@ -11,7 +11,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'desk-dev-secret'
 router.post('/auth/login', async (req, res) => {
   try {
     // Forward credentials to the external auth provider
-    const response = await fetch('https://app.gen7fuel.com/api/auth/login', {
+    const response = await fetch('https://app.gen7fuel.com/login-auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(req.body),
