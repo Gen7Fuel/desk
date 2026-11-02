@@ -93,6 +93,18 @@ After any dependency change run `npm run lock` (Docker, Linux `node:22`) — nev
 commit a lockfile generated on Windows, it drifts on platform-specific optional
 deps.
 
+### Dependency update checklist
+
+Before committing dependency changes:
+
+1. Check the advisory's patched range and the parent dependency. Prefer a compatible parent update over forcing a transitive dependency across major versions.
+2. Use bounded minimum patched versions in dependency requirements/overrides. A lockfile refresh alone does not stop a later install from selecting an older vulnerable release.
+3. Run `npm run lock` in each changed workspace (Linux Docker), then run `node scripts/audit-ci.mjs` from the repository root to check both workspaces.
+4. Verify with clean Linux `npm ci --ignore-scripts`, backend tests, and the frontend production build. CI must use `npm ci` so it checks the reviewed lockfiles rather than silently resolving another tree.
+5. Include manifest and lockfile changes together. Do not add allowlist entries for vulnerabilities with compatible published fixes. Recheck existing overrides when Dependabot updates their parents.
+
+The November 2026 fixes raise Azure Identity to 4.14.1 (which brings patched MSAL Node 7.1+), body-parser 2.x to 2.4.0, Multer to 2.5.0, systeminformation to 5.33.19, and Undici 7.x to 7.30.1. Updating shadcn to 4.23.0 removes its vulnerable Zod 3 dependency in favor of Zod 4. Additional current patch floors cover ip-address, fast-uri, seroval, Mongoose, and Vitest. New advisories can appear after a successful audit; run the gate again before merging dependency updates.
+
 ### Do not "fix" audits with unbounded overrides
 
 `npm audit fix --force` and open-ended override targets are how this repo gets
