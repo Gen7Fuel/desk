@@ -6,3 +6,4 @@ frontend/.tanstack
 frontend/.vscode
 frontend/node_modules
 /PROJECT_CONTEXT.md
+/pos/

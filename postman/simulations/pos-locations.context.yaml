@@ -1,0 +1,37 @@
+purpose:
+  stands_in_for: Hub public GET /api/locations
+  unblocks: Desk POS site timezone reads without a direct Hub MongoDB connection
+assumptions:
+  - id: public-read-array
+    status: supported
+    claim: The checked Hub route accepts GET /api/locations without credentials and returns an array of store locations.
+    reason: Hub mounts the router before auth and its root GET uses Location.find with type store, returning the array directly.
+    verification: Read ../thehub/backend/app.js and ../thehub/backend/routes/location.js on 2026-11-04. Live endpoint verification was unavailable in this environment.
+    source: ../thehub/backend/app.js; ../thehub/backend/routes/location.js; postman/contracts/hub-locations.openapi.yaml
+    updated_at: '2026-11-04'
+  - id: consumer-read-and-failure-handling
+    status: supported
+    claim: In local HTTP fixture scenarios, Desk resolves the remote timezone, rejects HTTP 503 and timed-out reads, and keeps Burlington independent of Hub.
+    reason: The real locations HTTP client and site resolver ran against a local HTTP server. Only the Desk site model read was replaced.
+    verification: node scripts/verify-pos-locations.cjs --local-fixture passed. The fixture observed all four dependency requests and every request was GET. This verifies the caller, not the real Hub deployment.
+    source: scripts/verify-pos-locations.cjs; backend/apps/pos-reports/pos-reports.locations.js; backend/apps/pos-reports/pos-reports.service.js
+    updated_at: '2026-11-04'
+  - id: cache-and-response-validation
+    status: supported
+    claim: The client shares concurrent reads, caches valid responses for one minute, and does not use expired data after failure in the checked unit tests.
+    reason: Unit checks also cover invalid JSON, invalid IDs, duplicate IDs, field projection and retry after a failed request.
+    verification: backend/apps/pos-reports/pos-reports.locations.test.js passed using controlled fetch responses and clock advancement.
+    source: backend/apps/pos-reports/pos-reports.locations.test.js
+    updated_at: '2026-11-04'
+  - id: postman-runner-and-live-provider
+    status: unknown
+    claim: The Postman simulation runner and live Hub endpoint work in the deployment environment.
+    reason: Local Postman startup failed on permissions for its local dataset directory; the live HTTP request failed to connect. Neither was bypassed or claimed to pass.
+    verification: postman simulation run postman/simulations/pos-locations.sim.yaml --port 4187 --output ndjson --no-history failed before listening. No simulation request log exists. Local HTTP fixture verification was used instead. No owner mock was fetched because the CLI session was not signed in; the local mock was generated from the consumer contract based on Hub source.
+    source: postman/simulations/pos-locations.sim.yaml; postman/mocks/hub-locations; scripts/verify-pos-locations.cjs
+    updated_at: '2026-11-04'
+fingerprints:
+  - id: local-2026-11-04
+    date: '2026-11-04'
+    commit: 3e44d04cb2e0ce01b722cfc1916dc204fc2913a5 (dirty working tree)
+    cli: Postman 1.75.0

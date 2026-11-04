@@ -73,6 +73,11 @@ const sidebarLinks: Record<
       permission: 'hub.shifts',
     },
     {
+      label: 'POS Daily Reports',
+      path: '/hub/pos-reports',
+      permission: 'hub.shifts',
+    },
+    {
       label: 'Intacct',
       path: '/hub/intacct',
       permission: 'hub.intacct',

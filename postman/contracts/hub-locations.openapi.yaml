@@ -1,0 +1,39 @@
+openapi: 3.0.3
+info:
+  title: Hub locations read contract used by Desk
+  version: 1.0.0
+  description: >-
+    Consumer subset of the public read route in ../thehub/backend/routes/location.js.
+    Additional provider fields are allowed; Desk retains only identity, names and timezone.
+    Synthetic examples are used; no production location records are included.
+servers:
+  - url: https://app.gen7fuel.com
+paths:
+  /api/locations:
+    get:
+      operationId: readHubLocations
+      responses:
+        '200':
+          description: Store location array (no stationName query filter)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [_id]
+                  properties:
+                    _id: { type: string }
+                    stationName: { type: string }
+                    site: { type: string }
+                    timezone: { type: string, description: IANA timezone required for a site mapping }
+              example:
+                - _id: '000000000000000000000001'
+                  stationName: Example Station
+                  site: Example
+                  timezone: America/Winnipeg
+        '500':
+          description: Locations could not be read
+          content:
+            application/json:
+              example: { message: Failed to fetch locations. }

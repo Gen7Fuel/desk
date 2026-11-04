@@ -26,6 +26,12 @@ services:
     image: ${BACKEND_IMAGE}
     restart: unless-stopped
     env_file: ./backend/.env
+    environment:
+      POS_DATA_DIR: /pos/data
+      POS_ARCHIVE_DIR: /pos/archive
+    volumes:
+      - ${POS_FTP_DATA_DIR:-./pos/data}:/pos/data
+      - ${POS_FTP_ARCHIVE_DIR:-./pos/archive}:/pos/archive
     dns:
       - 8.8.8.8
       - 8.8.4.4

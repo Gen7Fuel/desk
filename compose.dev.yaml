@@ -28,6 +28,12 @@ services:
       dockerfile: Dockerfile.dev
     env_file:
       - ./backend/.env
+    environment:
+      POS_DATA_DIR: /pos/data
+      POS_ARCHIVE_DIR: /pos/archive
+    volumes:
+      - ${POS_FTP_DATA_DIR:-./pos/data}:/pos/data
+      - ${POS_FTP_ARCHIVE_DIR:-./pos/archive}:/pos/archive
     ports:
       - "5000:5000"
     command: npm run dev

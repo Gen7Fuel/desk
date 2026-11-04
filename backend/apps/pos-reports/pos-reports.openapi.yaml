@@ -1,0 +1,97 @@
+openapi: 3.0.3
+info:
+  title: Desk POS Daily Reports
+  version: 1.0.0
+  description: >-
+    Authenticated daily POS reports. Money fields are integer cents. Days use
+    EventEndDate/EventEndTime in each site's timezone, never BusinessDate.
+    XML without offsets is local wall time. Transaction tax summaries are authoritative.
+    hub.shifts.read allows viewing; hub.shifts.update allows scan, settings, acceptance.
+    Accept requires the exact reviewed sourceHash and revision; stale reviews return 409.
+    Accepted snapshots persist before files are archived. Archive failures remain retryable.
+    Late imports mark a report needs-review and require a new acceptance revision.
+    Location choices and timezones are read from Hub's public GET /api/locations,
+    with a 10-second timeout and one-minute cache. No direct Hub database access.
+servers:
+  - url: /api/pos-reports
+security:
+  - bearerAuth: []
+paths:
+  /sites:
+    get:
+      operationId: listPosSites
+      responses:
+        '200': { description: 'Configured sites, resolved timezones, and location choices' }
+    put:
+      operationId: savePosSite
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, name, folder, storeLocationIds]
+              properties:
+                id: { type: string, pattern: '^[a-z0-9-]+$' }
+                name: { type: string }
+                folder: { type: string, description: Single directory name beneath POS_DATA_DIR }
+                locationId: { type: string, description: Required for sites other than Burlington }
+                storeLocationIds: { type: array, minItems: 1, items: { type: string } }
+      responses:
+        '200': { description: Site saved }
+        '400': { description: Invalid mapping or missing location timezone }
+        '409': { description: Mapping conflicts or identity already imported }
+  /scan:
+    get:
+      operationId: getPosScanStatus
+      responses:
+        '200': { description: 'Last completed scan time, counts, and file issues' }
+    post:
+      operationId: scanPosFiles
+      description: Imports stable XML files recursively; invalid or unmapped files remain in place and are reported.
+      responses:
+        '200': { description: 'Import counts and file issues; per-file failures do not discard valid files' }
+        '409': { description: Another import or acceptance is in progress }
+        '503': { description: Storage or locations unavailable }
+  /reports:
+    get:
+      operationId: listPosDailyReports
+      parameters:
+        - { name: site, in: query, schema: { type: string } }
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+      responses:
+        '200': { description: 'Latest 200 report summaries, date descending; no filesystem mutation' }
+        '400': { description: Invalid filters }
+  /reports/{site}/{date}:
+    parameters:
+      - { name: site, in: path, required: true, schema: { type: string } }
+      - { name: date, in: path, required: true, schema: { type: string, format: date } }
+    get:
+      operationId: getPosDailyReport
+      responses:
+        '200': { description: 'Current totals, sourceHash, revision, events, issues, source manifest, and acceptance history' }
+        '404': { description: Report not found }
+  /reports/{site}/{date}/accept:
+    parameters:
+      - { name: site, in: path, required: true, schema: { type: string } }
+      - { name: date, in: path, required: true, schema: { type: string, format: date } }
+    post:
+      operationId: acceptPosDailyReport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sourceHash, revision]
+              properties:
+                sourceHash: { type: string, pattern: '^[a-f0-9]{64}$' }
+                revision: { type: integer, minimum: 0 }
+      responses:
+        '200': { description: 'Accepted report, archive counts; partial archive failures are visible and retryable with the new revision' }
+        '409': { description: 'Files changed, source conflicts, stale review, or another operation is active' }
+        '503': { description: Storage unavailable; no acceptance is performed }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }

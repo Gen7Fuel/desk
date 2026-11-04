@@ -59,6 +59,7 @@ apiRouter.use('/roles', roleRoutes)
 apiRouter.use('/users', userRoutes)
 apiRouter.use('/sage', sageRoutes)
 apiRouter.use('/tradogram', require('./apps/tradogram/tradogram.routes'))
+apiRouter.use('/pos-reports', require('./apps/pos-reports/pos-reports.routes'))
 apiRouter.use(cdnRoutes)
 apiRouter.use(logRoutes)
 apiRouter.use(issueRoutes)
@@ -113,6 +114,7 @@ async function configureAzureCors() {
 }
 
 connectToMongo().then(() => {
+  require('./apps/pos-reports/pos-reports.service').startImporter()
   configureAzureCors()
   createApiServer(app).listen(port, () => {
     console.log(`API listening on port ${port}`)

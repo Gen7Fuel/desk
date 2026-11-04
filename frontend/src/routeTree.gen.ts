@@ -32,6 +32,7 @@ import { Route as AppbarSidebarSettingsRolesRouteImport } from './routes/_appbar
 import { Route as AppbarSidebarSettingsLogsRouteImport } from './routes/_appbar/_sidebar/settings/logs'
 import { Route as AppbarSidebarReportsNarrativeRouteImport } from './routes/_appbar/_sidebar/reports/narrative'
 import { Route as AppbarSidebarProjectsIdRouteImport } from './routes/_appbar/_sidebar/projects/$id'
+import { Route as AppbarSidebarHubPosReportsRouteImport } from './routes/_appbar/_sidebar/hub/pos-reports'
 import { Route as AppbarSidebarHubShiftsRouteImport } from './routes/_appbar/_sidebar/hub/shifts'
 import { Route as AppbarSidebarHubReceivablesRouteImport } from './routes/_appbar/_sidebar/hub/receivables'
 import { Route as AppbarSidebarHubPayablesRouteImport } from './routes/_appbar/_sidebar/hub/payables'
@@ -190,6 +191,11 @@ const AppbarSidebarProjectsIdRoute = AppbarSidebarProjectsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => AppbarSidebarProjectsRoute,
+} as any)
+const AppbarSidebarHubPosReportsRoute = AppbarSidebarHubPosReportsRouteImport.update({
+  id: '/pos-reports',
+  path: '/pos-reports',
+  getParentRoute: () => AppbarSidebarHubRoute,
 } as any)
 const AppbarSidebarHubShiftsRoute = AppbarSidebarHubShiftsRouteImport.update({
   id: '/shifts',
@@ -480,6 +486,7 @@ export interface FileRoutesByFullPath {
   '/hub/intacct': typeof AppbarSidebarHubIntacctRouteWithChildren
   '/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
+  '/hub/pos-reports': typeof AppbarSidebarHubPosReportsRoute
   '/hub/shifts': typeof AppbarSidebarHubShiftsRoute
   '/projects/$id': typeof AppbarSidebarProjectsIdRoute
   '/reports/narrative': typeof AppbarSidebarReportsNarrativeRoute
@@ -537,6 +544,7 @@ export interface FileRoutesByTo {
   '/hub/fleet-customers': typeof AppbarSidebarHubFleetCustomersRoute
   '/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
+  '/hub/pos-reports': typeof AppbarSidebarHubPosReportsRoute
   '/hub/shifts': typeof AppbarSidebarHubShiftsRoute
   '/projects/$id': typeof AppbarSidebarProjectsIdRoute
   '/reports/narrative': typeof AppbarSidebarReportsNarrativeRoute
@@ -606,6 +614,7 @@ export interface FileRoutesById {
   '/_appbar/_sidebar/hub/intacct': typeof AppbarSidebarHubIntacctRouteWithChildren
   '/_appbar/_sidebar/hub/payables': typeof AppbarSidebarHubPayablesRoute
   '/_appbar/_sidebar/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
+  '/_appbar/_sidebar/hub/pos-reports': typeof AppbarSidebarHubPosReportsRoute
   '/_appbar/_sidebar/hub/shifts': typeof AppbarSidebarHubShiftsRoute
   '/_appbar/_sidebar/projects/$id': typeof AppbarSidebarProjectsIdRoute
   '/_appbar/_sidebar/reports/narrative': typeof AppbarSidebarReportsNarrativeRoute
@@ -670,6 +679,7 @@ export interface FileRouteTypes {
     | '/hub/intacct'
     | '/hub/payables'
     | '/hub/receivables'
+    | '/hub/pos-reports'
     | '/hub/shifts'
     | '/projects/$id'
     | '/reports/narrative'
@@ -727,6 +737,7 @@ export interface FileRouteTypes {
     | '/hub/fleet-customers'
     | '/hub/payables'
     | '/hub/receivables'
+    | '/hub/pos-reports'
     | '/hub/shifts'
     | '/projects/$id'
     | '/reports/narrative'
@@ -795,6 +806,7 @@ export interface FileRouteTypes {
     | '/_appbar/_sidebar/hub/intacct'
     | '/_appbar/_sidebar/hub/payables'
     | '/_appbar/_sidebar/hub/receivables'
+    | '/_appbar/_sidebar/hub/pos-reports'
     | '/_appbar/_sidebar/hub/shifts'
     | '/_appbar/_sidebar/projects/$id'
     | '/_appbar/_sidebar/reports/narrative'
@@ -990,6 +1002,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/projects/$id'
       preLoaderRoute: typeof AppbarSidebarProjectsIdRouteImport
       parentRoute: typeof AppbarSidebarProjectsRoute
+    }
+    '/_appbar/_sidebar/hub/pos-reports': {
+      id: '/_appbar/_sidebar/hub/pos-reports'
+      path: '/pos-reports'
+      fullPath: '/hub/pos-reports'
+      preLoaderRoute: typeof AppbarSidebarHubPosReportsRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
     }
     '/_appbar/_sidebar/hub/shifts': {
       id: '/_appbar/_sidebar/hub/shifts'
@@ -1504,6 +1523,7 @@ interface AppbarSidebarHubRouteChildren {
   AppbarSidebarHubIntacctRoute: typeof AppbarSidebarHubIntacctRouteWithChildren
   AppbarSidebarHubPayablesRoute: typeof AppbarSidebarHubPayablesRoute
   AppbarSidebarHubReceivablesRoute: typeof AppbarSidebarHubReceivablesRoute
+  AppbarSidebarHubPosReportsRoute: typeof AppbarSidebarHubPosReportsRoute
   AppbarSidebarHubShiftsRoute: typeof AppbarSidebarHubShiftsRoute
 }
 
@@ -1520,6 +1540,7 @@ const AppbarSidebarHubRouteChildren: AppbarSidebarHubRouteChildren = {
   AppbarSidebarHubIntacctRoute: AppbarSidebarHubIntacctRouteWithChildren,
   AppbarSidebarHubPayablesRoute: AppbarSidebarHubPayablesRoute,
   AppbarSidebarHubReceivablesRoute: AppbarSidebarHubReceivablesRoute,
+  AppbarSidebarHubPosReportsRoute: AppbarSidebarHubPosReportsRoute,
   AppbarSidebarHubShiftsRoute: AppbarSidebarHubShiftsRoute,
 }
 
