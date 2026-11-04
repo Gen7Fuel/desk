@@ -338,17 +338,22 @@ it("reads other site timezones from locations and keeps their reports separate f
   );
   await fs.mkdir(path.join(data, "Oakville"));
   const filename = path.join(data, "Oakville", "a.xml");
+  // Historical winter date: 05:30 UTC is the previous day in Winnipeg on
+  // both older tzdb versions and 2026e+ (Manitoba changed to permanent -05
+  // in October 2026). Do not assume the old November offset in this test.
   await fs.writeFile(
     filename,
-    journal(eventXml("1", "2026-11-03", "05:30:00Z")).replace(
-      storeId,
-      "OTHERSTORE",
-    ),
+    journal(eventXml("1", "2026-01-03", "05:30:00Z"))
+      .replace(storeId, "OTHERSTORE")
+      .replace(
+        "<BusinessDate>2026-11-02</BusinessDate>",
+        "<BusinessDate>2026-01-02</BusinessDate>",
+      ),
   );
   await fs.utimes(filename, new Date(0), new Date(0));
   await upload("a.xml", journal(eventXml("1")));
   expect((await service.scan()).imported).toBe(2);
-  expect((await service.detail("oakville", "2026-11-02")).timezone).toBe(
+  expect((await service.detail("oakville", "2026-01-02")).timezone).toBe(
     "America/Winnipeg",
   );
   expect((await service.detail("burlington", "2026-11-03")).totals.sales).toBe(
