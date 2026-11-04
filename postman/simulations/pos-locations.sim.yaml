@@ -1,0 +1,21 @@
+simulation: pos-locations
+routing: path
+mocks:
+  - name: hub-locations
+    routeKey: hub
+    origin: [app.gen7fuel.com]
+    path: postman/mocks/hub-locations/config.yaml
+  - name: hub-unavailable
+    routeKey: unavailable
+    path: postman/mocks/hub-locations/config.yaml
+    scenarios:
+      - overrides:
+          conditions:
+            error: { status_code: 503 }
+  - name: hub-slow
+    routeKey: slow
+    path: postman/mocks/hub-locations/config.yaml
+    scenarios:
+      - overrides:
+          conditions:
+            latency: { delay_ms: 250 }

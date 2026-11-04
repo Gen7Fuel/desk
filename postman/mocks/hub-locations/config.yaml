@@ -1,0 +1,12 @@
+version: 1
+id: 86e5366c-e2b8-4dd5-9221-ddd546c42aaf
+name: Hub locations read contract used by Desk
+slug: hub-locations-read-contract-used
+protocol: http
+origin: app.gen7fuel.com
+interceptRequests: true
+port: 4500
+scenarios:
+  - name: default
+    path: ./default.js
+    default: true
