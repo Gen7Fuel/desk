@@ -1,0 +1,6 @@
+simulation: cdn-backup
+routing: path
+mocks:
+  - name: cdn-backup-storage-outage
+    routeKey: azure
+    path: postman/mocks/cdn-backup-storage-outage/config.yaml

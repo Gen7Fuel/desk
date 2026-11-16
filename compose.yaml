@@ -46,6 +46,15 @@ services:
     depends_on:
       - db
 
+  cdn-backup:
+    container_name: desk-cdn-backup
+    image: ${BACKEND_IMAGE}
+    restart: unless-stopped
+    env_file: ./backend/.env
+    command: ["node", "apps/cdn/cdn.backup-worker.js"]
+    networks:
+      - desk
+
   db:
     image: mongo:8
     restart: unless-stopped

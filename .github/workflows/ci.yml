@@ -52,6 +52,10 @@ jobs:
         working-directory: backend
         run: npm test
 
+      - name: CDN backup integrity and scheduling
+        working-directory: backend
+        run: npm run test:cdn-backup
+
       # Fails on any high/critical advisory that is not allowlisted with a
       # written reason in scripts/audit-ci.mjs. See CLAUDE.md ("Dependency audits").
       - name: Audit

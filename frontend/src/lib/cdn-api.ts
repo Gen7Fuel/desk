@@ -18,15 +18,20 @@ export async function getCdnFiles(page = 1): Promise<CdnFileList> {
   const res = await apiFetch(`/api/cdn/files?page=${page}`)
   const data = await res.json()
   if (!res.ok)
-    throw new Error(data?.message ?? `Failed to fetch CDN files (${res.status})`)
+    throw new Error(
+      data?.message ?? `Failed to fetch CDN files (${res.status})`,
+    )
   return data
 }
 
 export async function deleteCdnFile(filename: string): Promise<void> {
   const { apiFetch } = await import('@/lib/api')
-  const res = await apiFetch(`/api/cdn/delete/${encodeURIComponent(filename)}`, {
-    method: 'DELETE',
-  })
+  const res = await apiFetch(
+    `/api/cdn/delete/${encodeURIComponent(filename)}`,
+    {
+      method: 'DELETE',
+    },
+  )
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
     throw new Error(data?.message ?? `Failed to delete file (${res.status})`)
@@ -87,4 +92,27 @@ export async function backupCdnMonth(month: string): Promise<string> {
   const data = await res.json()
   if (!res.ok) throw new Error(data?.message ?? `Backup failed (${res.status})`)
   return data.message
+}
+
+export interface CdnBackupStatus {
+  schedule: string
+  retentionDays: number
+  workerLastSeenAt?: string
+  current?: {
+    phase: 'running' | 'succeeded' | 'failed'
+    month?: string
+    completedFiles?: number
+    totalFiles?: number
+    message?: string
+  }
+  lastSuccess?: {
+    completedAt: string
+    results: Array<{ month: string; fileCount: number; verifiedAt?: string }>
+  }
+}
+export async function getCdnBackupStatus(): Promise<CdnBackupStatus> {
+  const { apiFetch } = await import('@/lib/api')
+  const res = await apiFetch('/api/cdn/backup/status')
+  if (!res.ok) throw new Error('Backup status unavailable')
+  return res.json()
 }

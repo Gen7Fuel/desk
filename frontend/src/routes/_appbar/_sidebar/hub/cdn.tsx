@@ -27,6 +27,7 @@ import {
   backupCdnMonth,
   deleteCdnFile,
   deleteCdnMonth,
+  getCdnBackupStatus,
   getCdnDownloadUrl,
   getCdnExportMonths,
   getCdnFiles,
@@ -62,6 +63,11 @@ const IMAGE_EXTS = new Set([
 
 function RouteComponent() {
   const queryClient = useQueryClient()
+  const backupStatus = useQuery({
+    queryKey: ['cdn-backup-status'],
+    queryFn: getCdnBackupStatus,
+    refetchInterval: 15000,
+  })
   const [pendingDelete, setPendingDelete] = useState<CdnFile | null>(null)
   const [page, setPage] = useState(1)
   const [exportOpen, setExportOpen] = useState(false)
@@ -118,6 +124,7 @@ function RouteComponent() {
     try {
       const message = await backupCdnMonth(month)
       alert(message)
+      void queryClient.invalidateQueries({ queryKey: ['cdn-backup-status'] })
     } catch (err) {
       console.error('Backup failed:', err)
       alert(
@@ -190,6 +197,53 @@ function RouteComponent() {
             Backup
           </Button>
         </div>
+      </div>
+
+      <div className="mb-4 rounded border p-3 text-sm" role="status">
+        <p>
+          Automatic backup: daily at 2 AM Toronto time. Daily copies are kept
+          for 30 days; monthly archives are retained.
+        </p>
+        {backupStatus.isError && (
+          <p className="text-red-600">
+            Backup status unavailable. Check the backup worker.
+          </p>
+        )}
+        {backupStatus.data && (
+          <>
+            <p>
+              Last verified backup:{' '}
+              {backupStatus.data.lastSuccess
+                ? new Date(
+                    backupStatus.data.lastSuccess.completedAt,
+                  ).toLocaleString()
+                : 'No verified automated backup yet.'}
+            </p>
+            {backupStatus.data.current?.phase === 'running' && (
+              <p>Backup in progress for {backupStatus.data.current.month}: {backupStatus.data.current.completedFiles ?? 0} of {backupStatus.data.current.totalFiles ?? '?'} files.</p>
+            )}
+            {backupStatus.data.current?.phase === 'failed' && (
+              <p className="text-red-600">
+                {backupStatus.data.current.message}
+              </p>
+            )}
+            {(!backupStatus.data.workerLastSeenAt ||
+              Date.now() - Date.parse(backupStatus.data.workerLastSeenAt) >
+                26 * 3600000) && (
+              <p className="text-red-600">
+                Backup worker has not checked in recently. Check the server.
+              </p>
+            )}
+            {backupStatus.data.lastSuccess &&
+              Date.now() -
+                Date.parse(backupStatus.data.lastSuccess.completedAt) >
+                26 * 3600000 && (
+                <p className="text-red-600">
+                  The last verified backup is over 26 hours old.
+                </p>
+              )}
+          </>
+        )}
       </div>
 
       <div className="mb-4 relative">
@@ -367,7 +421,8 @@ function RouteComponent() {
               Backup by Month
             </DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
-              Back up CDN files to Azure Storage as a .tar archive per month.
+              Queue a verified monthly archive in Azure Storage. The backup
+              continues after you close Desk.
             </DialogDescription>
             {loadingMonths && (
               <p className="text-sm text-muted-foreground">Loading months…</p>

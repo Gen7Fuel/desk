@@ -173,6 +173,10 @@ jobs:
                 exit 1
             fi
 
+            # The backup worker uses the same tested backend image and Azure credentials,
+            # but starts no API, database connection, or unrelated importer.
+            docker compose up -d --no-deps cdn-backup
+
             # ---- Deploy Frontend/Caddy (only if changed) ----
             if [ "$FRONTEND_CHANGED" = "true" ]; then
                 echo "Deploying caddy (new image: $FRONTEND_IMAGE)..."

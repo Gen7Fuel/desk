@@ -1,0 +1,23 @@
+purpose:
+  stands_in_for: Azure Blob Storage REST during a service outage
+  unblocks: Verification that Desk backup does not claim success when storage is unavailable
+assumptions:
+  - id: unavailable-storage
+    status: supported
+    claim: The real backup tick and Azure SDK reject HTTP 503 from the lock creation operation before publishing any successful recovery point in the tested scenario.
+    reason: The Postman mock returned Azure-shaped ServerBusy XML. The real caller received statusCode 503 and the outage verification script passed.
+    verification: Ran Postman 1.75.0 on port 4198 and scripts/verify-cdn-backup-outage.cjs on 2026-11-16. Request log observed PUT to the status/lock blob. No successful storage behavior is modeled here.
+    source: postman/mocks/cdn-backup-storage-outage/default.js; scripts/verify-cdn-backup-outage.cjs; backend/apps/cdn/cdn.backup.js
+    updated_at: '2026-11-16'
+  - id: successful-provider-semantics
+    status: supported
+    claim: Successful archive uploads, leases, conditional reads, and restore checks worked in a three-file isolated smoke check against the production Azure account.
+    reason: The actual backup archive and lease code ran in the existing Desk image against three live source files, writing only a unique cdn_restore_tests subtree. The outage mock models no successful provider behavior and was adapted from Hub's fixture; no owner mock was fetched.
+    verification: Passed scripts/verify-cdn-backup-azure.cjs on 2026-11-16; restored three files with byte/checksum/date checks, verified 1155584 archive bytes, and removed all isolated test objects. Full first-run coverage remains pending.
+    source: backend/apps/cdn/cdn.backup.checks.cjs; docs/cdn-backups.md
+    updated_at: '2026-11-16'
+fingerprints:
+  - id: backup-2026-11-16
+    date: '2026-11-16'
+    commit: feat/cdn-daily-backup working tree
+    cli: Postman 1.75.0

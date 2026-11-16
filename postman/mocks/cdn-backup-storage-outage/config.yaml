@@ -1,0 +1,10 @@
+version: 1
+name: cdn-backup-storage-outage
+slug: cdn-backup-storage-outage
+protocol: http
+description: Azure Blob REST 503 for backup SDK failure verification
+interceptRequests: true
+scenarios:
+  - name: default
+    default: true
+    path: ./default.js

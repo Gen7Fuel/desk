@@ -3,7 +3,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const { pipeline } = require('node:stream/promises')
 const tar = require('tar-stream')
-const { BlobServiceClient } = require('@azure/storage-blob')
+const backup = require('./cdn.backup')
 const { authenticate, requirePermission } = require('../../middleware/auth')
 
 const router = express.Router()
@@ -196,59 +196,19 @@ router.get('/cdn/export', authenticate, requirePermission('hub.cdn', 'read'), as
   }
 })
 
-/** POST /cdn/backup?month=YYYY-MM — create tar and upload to Azure Blob Storage */
+/** POST /cdn/backup: durable request; the separate worker performs and verifies it. */
 router.post('/cdn/backup', authenticate, requirePermission('hub.cdn', 'read'), async (req, res) => {
-  const CDN_BASE = process.env.CDN_BASE
-  const CDN_TOKEN = process.env.CDN_ADMIN_TOKEN
-  const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING
-  const containerName = process.env.AZURE_CONTAINER
-  const { month } = req.query
-
-  if (!CDN_BASE || !CDN_TOKEN) {
-    return res.status(500).json({ message: 'CDN not configured on server.' })
-  }
-  if (!connectionString || !containerName) {
-    return res.status(500).json({ message: 'Azure storage not configured.' })
-  }
-  if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(req.query.month || '')) {
     return res.status(400).json({ message: 'month query param required (YYYY-MM)' })
   }
-
-  let filepath
   try {
-    const allFiles = await fetchAllCdnFiles(CDN_BASE, CDN_TOKEN)
-    const monthFiles = allFiles.filter((f) => f.lastModified.startsWith(month))
-
-    if (monthFiles.length === 0) {
-      return res.status(404).json({ message: `No files found for ${month}` })
-    }
-
-    console.log(`[cdn/backup] Archiving ${monthFiles.length} files for ${month}…`)
-    filepath = await buildMonthTar(month, monthFiles, CDN_BASE, CDN_TOKEN)
-
-    const stat = fs.statSync(filepath)
-    console.log(`[cdn/backup] Tar ready (${(stat.size / 1_000_000).toFixed(1)} MB), uploading to Azure…`)
-
-    const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString)
-    const containerClient = blobServiceClient.getContainerClient(containerName)
-    const blobName = `cdn_backup/cdn-${month}.tar`
-    const blockBlobClient = containerClient.getBlockBlobClient(blobName)
-
-    await blockBlobClient.uploadFile(filepath, {
-      blobHTTPHeaders: { blobContentType: 'application/x-tar' },
-      overwrite: true,
-    })
-
-    console.log(`[cdn/backup] Uploaded ${blobName} (${(stat.size / 1_000_000).toFixed(1)} MB)`)
-    res.json({ message: `Backed up ${month} (${monthFiles.length} files, ${(stat.size / 1_000_000).toFixed(1)} MB)` })
-  } catch (err) {
-    console.error('[cdn/backup] error:', err)
-    if (!res.headersSent) {
-      res.status(500).json({ message: 'Backup failed', error: err.message })
-    }
-  } finally {
-    if (filepath) fs.unlink(filepath, () => {})
-  }
+    const id = await backup.enqueue(req.query.month)
+    res.status(202).json({ id, message: 'Backup queued. You can close this window; progress and the verified result appear in the CDN Panel.' })
+  } catch (_) { res.status(503).json({ message: 'Could not queue backup. Check Azure storage configuration.' }) }
+})
+router.get('/cdn/backup/status', authenticate, requirePermission('hub.cdn', 'read'), async (_, res) => {
+  try { res.json(await backup.status()) }
+  catch (_) { res.status(503).json({ message: 'Backup status unavailable' }) }
 })
 
 /** DELETE /cdn/delete-month?month=YYYY-MM — delete all CDN files for a month */
