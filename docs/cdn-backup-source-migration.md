@@ -3,6 +3,27 @@
 Prepared 17 November 2026. Local code only; no deployment, credential change,
 source switch, backup interruption or production media writes performed.
 
+Live reader follow-up on 17 November passed with the existing VPS principal:
+client `8dec8f37-a249-4fd6-98e6-9643c7f87f5a`, tenant
+`21634e14-74fa-410a-8886-4c3f808b58cb`. It already has Blob Data Contributor on
+the new hub container for rollback; this is broader than a dedicated Reader
+role. Reusing it couples backup access to that identity's credential rotation.
+No new role, principal or credential was created. For the future five source
+secrets, use these IDs and the existing Hub backend service principal secret
+through the normal secure GitHub settings path; never paste it into chat.
+Do not set those secrets until explicitly instructed during coordinated cutover.
+
+The actual prepared reader/archiver ran inside the existing Linux Desk backup
+image with credentials inherited only by the probe child process. New source
+inventory listed 10,402 files / 34,253,603,616 bytes. A bounded real object read
+passed its inventory ETag, size and copied SHA-256 checks. Archive construction,
+source dates/provenance and readback passed against an in-memory destination.
+Original backup status remained readable and succeeded. All production container
+IDs/start times/environments stayed unchanged. Zero Azure writes occurred.
+This verifies live source access and runtime compatibility, not an actual
+cross-account archive upload or a full new-source recovery point. Full backup
+coverage still requires the coordinated frozen delta and verified archive.
+
 The backup worker can read live `cdn/` objects from a separate Entra-authenticated
 account. Archives, completion markers, requests, renewable lease/status and
 retention remain in the original `AZURE_STORAGE_CONNECTION_STRING` /
@@ -31,8 +52,8 @@ The reader requires `Storage Blob Data Reader` at the **new hub container** (or
 an explicitly reviewed existing identity with sufficient access). Provision or
 select the identity, store its secret using the normal secure deployment path,
 and verify list/read access before switching. No new reader principal, role,
-secret or live authentication has been provisioned or verified by this code
-preparation. Existing destination permissions remain necessary for archive
+secret was provisioned by this code preparation. The follow-up above verified
+the existing rollback identity's live read access. Existing destination permissions remain necessary for archive
 upload/readback, status leases, request handling and retention deletion.
 
 Coordinate enablement with Hub's final frozen delta and public routing. Confirm
@@ -83,6 +104,7 @@ node scripts/verify-cdn-backup-source-outage.cjs
 
 The installed CLI does not support `postman status`; owner mock discovery was
 not available through that command. Reused the existing local outage mock.
-These checks establish caller behavior under simulated failure, not successful
-cross-account Azure access or a new full production recovery point. Complete
-that validation before treating the new source as backed up.
+The outage checks establish caller behavior under simulated failure; the live
+follow-up above separately verifies successful source access. Neither creates
+a full new-source production recovery point. Complete the frozen backup and
+readback before treating the new source as backed up.

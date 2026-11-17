@@ -5,13 +5,20 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      service:
+        description: Service to rebuild and deploy
+        type: choice
+        required: true
+        default: backend
+        options: [backend, frontend, all]
 
 jobs:
   check-changes:
     runs-on: ubuntu-latest
     outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.changes.outputs.backend }}
+      frontend: ${{ steps.changes.outputs.frontend }}
       backend-image: ${{ steps.images.outputs.backend-image }}
       frontend-image: ${{ steps.images.outputs.frontend-image }}
       owner: ${{ steps.images.outputs.owner }}
@@ -20,6 +27,7 @@ jobs:
 
       - uses: dorny/paths-filter@v4
         id: filter
+        if: github.event_name != 'workflow_dispatch'
         with:
           filters: |
             backend:
@@ -27,16 +35,32 @@ jobs:
             frontend:
               - 'frontend/**'
 
+      - id: changes
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SELECTED_SERVICE: ${{ inputs.service }}
+          BACKEND_CHANGED: ${{ steps.filter.outputs.backend }}
+          FRONTEND_CHANGED: ${{ steps.filter.outputs.frontend }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            BACKEND_CHANGED=false
+            FRONTEND_CHANGED=false
+            if [ "$SELECTED_SERVICE" = "backend" ] || [ "$SELECTED_SERVICE" = "all" ]; then BACKEND_CHANGED=true; fi
+            if [ "$SELECTED_SERVICE" = "frontend" ] || [ "$SELECTED_SERVICE" = "all" ]; then FRONTEND_CHANGED=true; fi
+          fi
+          echo "backend=$BACKEND_CHANGED" >> "$GITHUB_OUTPUT"
+          echo "frontend=$FRONTEND_CHANGED" >> "$GITHUB_OUTPUT"
+
       - id: images
         run: |
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "owner=${OWNER}" >> $GITHUB_OUTPUT
-          if [ "${{ steps.filter.outputs.backend }}" = "true" ]; then
+          if [ "${{ steps.changes.outputs.backend }}" = "true" ]; then
             echo "backend-image=ghcr.io/${OWNER}/desk-api:${{ github.sha }}" >> $GITHUB_OUTPUT
           else
             echo "backend-image=ghcr.io/${OWNER}/desk-api:latest" >> $GITHUB_OUTPUT
           fi
-          if [ "${{ steps.filter.outputs.frontend }}" = "true" ]; then
+          if [ "${{ steps.changes.outputs.frontend }}" = "true" ]; then
             echo "frontend-image=ghcr.io/${OWNER}/desk-frontend:${{ github.sha }}" >> $GITHUB_OUTPUT
           else
             echo "frontend-image=ghcr.io/${OWNER}/desk-frontend:latest" >> $GITHUB_OUTPUT
