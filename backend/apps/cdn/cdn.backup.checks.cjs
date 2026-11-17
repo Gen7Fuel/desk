@@ -34,7 +34,13 @@ function storage() {
           return { etag }
         },
         async uploadFile(file, options) { return this.uploadData(await fs.readFile(file), options) },
-        async downloadToBuffer() { if (!blobs.has(name)) throw error(404); return blobs.get(name).body },
+        async downloadToBuffer(offset = 0, count, options) {
+          if (!blobs.has(name)) throw error(404)
+          if (options?.conditions?.ifMatch && blobs.get(name).etag !== options.conditions.ifMatch) throw error(412)
+          if (c.abortReadback && name.endsWith('.tar')) throw Object.assign(new Error('interrupted'), { name: 'AbortError' })
+          const body = c.corrupt && name.endsWith('.tar') ? Buffer.alloc(blobs.get(name).body.length, 0) : blobs.get(name).body
+          return body.subarray(offset, count === undefined ? undefined : offset + count)
+        },
         async download(_, __, options) {
           if (!blobs.has(name)) throw error(404)
           check(options)
@@ -244,4 +250,18 @@ test('source configuration is explicit, fail-closed and separate from archive st
   } finally {
     names.forEach((name, i) => { if (old[i] === undefined) delete process.env[name]; else process.env[name] = old[i] })
   }
+})
+
+test('exhausted readback retries retain last success and request without publishing a monthly receipt', async () => {
+  const c = storage(); await c.seed('cdn/a.txt')
+  await tick(c, new Date('2026-11-16T07:00:00Z'))
+  const last = (await status(c)).lastSuccess
+  await enqueue('2026-11', c); c.abortReadback = true
+  await assert.rejects(tick(c, new Date('2026-11-16T08:00:00Z')), { name: 'AbortError' })
+  const state = await status(c)
+  assert.deepEqual(state.lastSuccess, last)
+  assert.equal(state.current.stage, 'archive-readback')
+  assert.equal(state.current.phase, 'failed')
+  assert.ok([...c.blobs.keys()].some(n => n.startsWith(ROOT + 'requests/')))
+  assert.equal([...c.blobs.keys()].filter(n => n.startsWith(ROOT + 'monthly/') && n.endsWith('.json')).length, 0)
 })
