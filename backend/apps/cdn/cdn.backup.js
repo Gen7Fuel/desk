@@ -8,6 +8,7 @@ const tar = require('tar-stream')
 const { BlobServiceClient } = require('@azure/storage-blob')
 
 const { sourceContainer, sourceId } = require('./cdn.backup-source')
+const { verifyArchive } = require('./cdn.backup-readback')
 
 const ROOT = 'cdn_backup/automated/'
 const STATE = `${ROOT}status.json`
@@ -100,6 +101,7 @@ async function archive(c, month, files, check, kind = 'daily', now = new Date(),
   // Attach immediately; disk/stream failures must not become unhandled rejections.
   output.catch(() => {})
   const manifest = { version: 1, source: sourceId(source), month, startedAt: now.toISOString(), files: [] }
+  let stage = 'source-read'
   try {
     for (const file of selected) {
       check()
@@ -127,22 +129,21 @@ async function archive(c, month, files, check, kind = 'daily', now = new Date(),
     const sha256 = archiveHash.digest('hex')
     const size = (await fs.promises.stat(filepath)).size
     const target = c.getBlockBlobClient(`${base}.tar`)
+    stage = 'archive-upload'
     const uploaded = await target.uploadFile(filepath, { conditions: { ifNoneMatch: '*' },
       metadata: { sha256 }, blobHTTPHeaders: { blobContentType: 'application/x-tar' } })
     // Read the entire uploaded archive back under the returned ETag before publishing success.
-    const download = await target.download(0, undefined, { conditions: { ifMatch: uploaded.etag } })
-    const remoteHash = crypto.createHash('sha256')
-    let remoteSize = 0
-    for await (const chunk of download.readableStreamBody) { check(); remoteHash.update(chunk); remoteSize += chunk.length }
-    if (remoteSize !== size || remoteHash.digest('hex') !== sha256) throw new Error('Uploaded backup verification failed')
+    stage = 'archive-readback'
+    await verifyArchive(target, { size, etag: uploaded.etag, sha256, check })
     check()
     const result = { month, source: sourceId(source), blobName: `${base}.tar`, manifestName: `${base}.json`, kind,
       fileCount: selected.length, sourceBytes: selected.reduce((n, f) => n + f.size, 0), size, sha256,
       verifiedAt: new Date().toISOString(), etag: uploaded.etag }
     // Sidecar is the completion marker; a tar without this marker is never a successful recovery point.
+    stage = 'completion-receipt'
     await writeJson(c.getBlockBlobClient(`${base}.json`), { ...manifest, ...result }, { conditions: { ifNoneMatch: '*' } })
     return result
-  } catch (err) { pack.destroy(err); await output.catch(() => {}); throw err }
+  } catch (err) { err.backupStage = stage; pack.destroy(err); await output.catch(() => {}); throw err }
   finally {
     const resolved = path.resolve(dir)
     if (path.dirname(resolved) !== path.resolve(os.tmpdir()) || !path.basename(resolved).startsWith('cdn-backup-')) {
@@ -234,7 +235,7 @@ async function tick(c = container(), now = new Date(), source = sourceContainer(
     } catch (err) {
       state.consecutiveFailures = (state.consecutiveFailures || 0) + 1
       state.current = { phase: 'failed', source: sourceKey, startedAt, failedAt: new Date().toISOString(),
-        month: request?.month || cal.month, message: 'Backup failed; see worker logs. Last successful backup is retained.' }
+        month: request?.month || cal.month, stage: err.backupStage || 'control', message: 'Backup failed; see worker logs. Last successful backup is retained.' }
       state.retryAfter = new Date(now.getTime() + 15 * 60000).toISOString()
       await save()
       if (request) await writeJson(c.getBlockBlobClient(request.name), {

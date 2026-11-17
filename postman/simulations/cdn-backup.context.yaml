@@ -23,7 +23,25 @@ assumptions:
     verification: On 2026-11-17 scripts/verify-cdn-backup-source-outage.cjs passed; simulation logged GET /testaccount/files with prefix cdn/ and status 503. Existing lock outage script also passed with PUT 503. Live cross-account authentication and full new-source backup remain unverified.
     source: scripts/verify-cdn-backup-source-outage.cjs; backend/apps/cdn/cdn.backup.js; docs/cdn-backup-source-migration.md
     updated_at: '2026-11-17'
+  - id: bounded-archive-readback
+    status: supported
+    claim: The range readback helper recovers from an interrupted HTTP response without hashing partial bytes twice, while retaining the uploaded ETag on every request in the tested scenario.
+    reason: The real Azure SDK requested bounded ranges from a local HTTP fixture that destroyed one response after sending a partial body; the same range was retried and the complete archive SHA-256 matched.
+    verification: On 2026-11-17 the 18 backup checks passed, including the real SDK HTTP interruption, persistent abort, changed ETag, corruption and lease loss cases. Postman 1.75.0 outage checks also passed with observed PUT lock and GET source-list HTTP 503 requests. The existing outage mock does not model streaming success or disconnects; that case uses the local HTTP fixture.
+    source: backend/apps/cdn/cdn.backup-readback.checks.cjs; backend/apps/cdn/cdn.backup.checks.cjs; scripts/verify-cdn-backup-outage.cjs; scripts/verify-cdn-backup-source-outage.cjs
+    updated_at: '2026-11-17'
+  - id: production-readback-recovery
+    status: unknown
+    claim: The new bounded-range verifier completes full production monthly archives despite the previously observed interrupted attempts.
+    reason: Production attempts ended without a completion receipt after archive upload. The deployed worker does not expose the failure stage, so a download interruption is a working diagnosis rather than a proved root cause. The new helper and stage diagnostics are prepared on a feature branch and have not been deployed.
+    verification: Local synthetic checks passed on 2026-11-17. A real production monthly archive completed with the reviewed new worker is still required before claiming recovery.
+    source: backend/apps/cdn/cdn.backup-readback.js; backend/apps/cdn/cdn.backup-worker.js; docs/cdn-backups.md
+    updated_at: '2026-11-17'
 fingerprints:
+  - id: range-readback-2026-11-17
+    date: '2026-11-17'
+    commit: codex/cdn-backup-range-readback working tree
+    cli: Postman 1.75.0
   - id: split-source-outage-2026-11-17
     date: '2026-11-17'
     commit: codex/cdn-backup-source working tree

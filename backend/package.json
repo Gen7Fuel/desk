@@ -13,7 +13,7 @@
     "test:watch": "vitest",
     "lock": "node ../scripts/relock.mjs backend",
     "audit": "node ../scripts/audit-ci.mjs backend",
-    "test:cdn-backup": "node --test apps/cdn/cdn.backup.checks.cjs"
+    "test:cdn-backup": "node --test apps/cdn/cdn.backup.checks.cjs apps/cdn/cdn.backup-readback.checks.cjs"
   },
   "overrides": {
     "postcss": "^8.5.18",

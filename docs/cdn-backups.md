@@ -20,3 +20,18 @@ Validation: npm run test:cdn-backup in backend checks restored bytes and dates, 
 See [CDN backup source migration](cdn-backup-source-migration.md) for the optional
 Entra reader and unchanged archive/control destination. This is prepared code;
 the running worker remains on its original source until coordinated cutover.
+
+
+## Interrupted archive readback
+
+The worker verifies uploaded archives with sequential ranges of at most 8 MiB,
+each pinned to the upload ETag. A transient abort, reset, timeout, 408, 429 or 5xx
+retries only the unfinished range, up to four attempts. A partially downloaded
+range is discarded before hashing. All bytes must still produce the original
+SHA-256 before a completion receipt is published. Changed ETags, access denial,
+corruption and lease loss fail without claiming success.
+
+Failures expose only a fixed backup stage (source-read, archive-upload,
+archive-readback, completion-receipt, or control), exception type and code.
+Provider URLs and private file inventories are not logged. Existing durable
+requests and previous successful archives remain in place after failure.

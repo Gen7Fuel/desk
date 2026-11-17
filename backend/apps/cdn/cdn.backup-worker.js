@@ -9,7 +9,7 @@ async function main() {
       if (!result.idle && !result.busy) console.log('[cdn-backup] Verified backup completed', JSON.stringify(result))
     } catch (err) {
       // Avoid logging Azure URLs, credentials or provider request objects.
-      console.error('[cdn-backup] Backup failed', err.name, err.code || '', 'Will retry; inspect Desk CDN Panel for status')
+      console.error('[cdn-backup] Backup failed', err.name, err.code || '', err.backupStage || 'control', 'Will retry; inspect Desk CDN Panel for status')
       if (process.argv.includes('--once')) process.exitCode = 1
     }
     if (process.argv.includes('--once')) break
