@@ -16,7 +16,18 @@ assumptions:
     verification: Passed scripts/verify-cdn-backup-azure.cjs on 2026-11-16; restored three files with byte/checksum/date checks, verified 1155584 archive bytes, and removed all isolated test objects. Full first-run coverage remains pending.
     source: backend/apps/cdn/cdn.backup.checks.cjs; docs/cdn-backups.md
     updated_at: '2026-11-16'
+  - id: migrated-source-outage
+    status: supported
+    claim: A source-list HTTP 503 rejects the real backup tick without publishing an archive or replacing the previous success.
+    reason: Actual Azure SDK inventory requested the Postman outage member while destination control writes used an in-memory fixture. The source was not retried against legacy media.
+    verification: On 2026-11-17 scripts/verify-cdn-backup-source-outage.cjs passed; simulation logged GET /testaccount/files with prefix cdn/ and status 503. Existing lock outage script also passed with PUT 503. Live cross-account authentication and full new-source backup remain unverified.
+    source: scripts/verify-cdn-backup-source-outage.cjs; backend/apps/cdn/cdn.backup.js; docs/cdn-backup-source-migration.md
+    updated_at: '2026-11-17'
 fingerprints:
+  - id: split-source-outage-2026-11-17
+    date: '2026-11-17'
+    commit: codex/cdn-backup-source working tree
+    cli: Postman 1.75.0
   - id: backup-2026-11-16
     date: '2026-11-16'
     commit: feat/cdn-daily-backup working tree

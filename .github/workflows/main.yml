@@ -138,6 +138,11 @@ jobs:
             echo "TRADOGRAM_API_KEY=${{ secrets.TRADOGRAM_API_KEY }}" >> backend/.env
             echo "AZURE_STORAGE_CONNECTION_STRING=${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" >> backend/.env
             echo "AZURE_CONTAINER=${{ secrets.AZURE_CONTAINER }}" >> backend/.env
+            echo "CDN_BACKUP_SOURCE_ACCOUNT=${{ secrets.CDN_BACKUP_SOURCE_ACCOUNT }}" >> backend/.env
+            echo "CDN_BACKUP_SOURCE_CONTAINER=${{ secrets.CDN_BACKUP_SOURCE_CONTAINER }}" >> backend/.env
+            echo "CDN_BACKUP_SOURCE_TENANT_ID=${{ secrets.CDN_BACKUP_SOURCE_TENANT_ID }}" >> backend/.env
+            echo "CDN_BACKUP_SOURCE_CLIENT_ID=${{ secrets.CDN_BACKUP_SOURCE_CLIENT_ID }}" >> backend/.env
+            echo "CDN_BACKUP_SOURCE_CLIENT_SECRET=${{ secrets.CDN_BACKUP_SOURCE_CLIENT_SECRET }}" >> backend/.env
             echo "CDN_BASE=${{ secrets.CDN_BASE }}" >> backend/.env
             echo "CDN_ADMIN_TOKEN=${{ secrets.CDN_ADMIN_TOKEN }}" >> backend/.env
             echo "ACADEMY_BASE=${{ secrets.ACADEMY_BASE }}" >> backend/.env

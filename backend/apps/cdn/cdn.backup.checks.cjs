@@ -171,3 +171,77 @@ test('manual API contract returns 202 and status, validates month and keeps auth
     assert.equal((await request(app).get('/api/cdn/backup/status').set('Authorization', 'Bearer test')).status, 200)
   } finally { Module._load = originalLoad; backup.enqueue = oldEnqueue; backup.status = oldStatus }
 })
+
+
+test('split source reads migrated bytes while archives, leases and requests stay in original storage', async () => {
+  const destination = storage(), source = storage()
+  destination.url = 'https://original.blob.core.windows.net/hub'
+  source.url = 'https://migrated.blob.core.windows.net/hub'
+  await destination.seed('cdn/a.txt', 'stale')
+  await source.seed('cdn/a.txt', 'migrated')
+  const originalSource = [...source.blobs.entries()].map(([key, value]) => [key, value.body.toString()])
+  await enqueue('2026-11', destination)
+  const result = await tick(destination, new Date('2026-11-16T07:00:00Z'), source)
+  assert.equal(result.source, source.url)
+  assert.equal(result.results[0].sourceBytes, 8)
+  const receipt = JSON.parse(destination.blobs.get(result.results[0].manifestName).body)
+  assert.equal(receipt.files[0].sha256, crypto.createHash('sha256').update('migrated').digest('hex'))
+  assert.equal(receipt.files[0].lastModified, '2026-11-10T12:34:56.000Z')
+  assert.equal(destination.blobs.get('cdn/a.txt').body.toString(), 'stale')
+  assert.deepEqual([...source.blobs.entries()].map(([key, value]) => [key, value.body.toString()]), originalSource)
+  assert.equal([...destination.blobs.keys()].some(key => key.startsWith(ROOT + 'requests/')), false)
+})
+
+test('source change forces same-day backup and re-finalizes previous month without deleting old successes', async () => {
+  const destination = storage(), source = storage()
+  destination.url = 'https://original.blob.core.windows.net/hub'
+  source.url = 'https://migrated.blob.core.windows.net/hub'
+  for (const c of [destination, source]) { await c.seed('cdn/nov.txt'); await c.seed('cdn/oct.txt', 'oct', '2026-10-31T23:59:59Z') }
+  const now = new Date('2026-11-16T07:00:00Z')
+  const old = await tick(destination, now)
+  const migrated = await tick(destination, now, source)
+  assert.equal(migrated.results.length, 2)
+  assert.equal(migrated.source, source.url)
+  assert.ok(destination.blobs.has(old.results[1].manifestName))
+  assert.equal((await status(destination)).lastScheduledSource, source.url)
+  assert.equal((await tick(destination, now, source)).idle, true)
+})
+
+test('failed migrated source retains old success and never falls back to old media', async () => {
+  const destination = storage(), source = storage()
+  destination.url = 'https://original.blob.core.windows.net/hub'
+  source.url = 'https://migrated.blob.core.windows.net/hub'
+  await destination.seed('cdn/a.txt'); await source.seed('cdn/a.txt')
+  const now = new Date('2026-11-16T07:00:00Z')
+  const old = await tick(destination, now)
+  source.failSource = true
+  await assert.rejects(tick(destination, now, source), error => error.statusCode === 503)
+  const state = await status(destination)
+  assert.deepEqual(state.lastSuccess, old)
+  assert.equal(state.current.source, source.url)
+  assert.equal(state.current.phase, 'failed')
+  assert.equal(state.lastScheduledSource, destination.url)
+  source.failSource = false
+  const retried = await tick(destination, new Date('2026-11-16T07:16:00Z'), source)
+  assert.equal(retried.source, source.url)
+})
+
+test('source configuration is explicit, fail-closed and separate from archive storage', () => {
+  const { sourceContainer, sourceId } = require('./cdn.backup-source')
+  const names = ['ACCOUNT', 'CONTAINER', 'TENANT_ID', 'CLIENT_ID', 'CLIENT_SECRET'].map(suffix => 'CDN_BACKUP_SOURCE_' + suffix)
+  const old = names.map(name => process.env[name])
+  try {
+    for (const name of names) delete process.env[name]
+    const legacy = { url: 'https://original.blob.core.windows.net/hub' }
+    assert.equal(sourceContainer(legacy), legacy)
+    process.env.CDN_BACKUP_SOURCE_ACCOUNT = 'migrated'
+    assert.throws(() => sourceContainer(legacy), /all five/)
+    Object.assign(process.env, { CDN_BACKUP_SOURCE_CONTAINER: 'hub', CDN_BACKUP_SOURCE_TENANT_ID: '11111111-1111-4111-8111-111111111111', CDN_BACKUP_SOURCE_CLIENT_ID: '22222222-2222-4222-8222-222222222222', CDN_BACKUP_SOURCE_CLIENT_SECRET: 'synthetic-secret' })
+    assert.equal(sourceContainer(legacy).url, 'https://migrated.blob.core.windows.net/hub')
+    process.env.CDN_BACKUP_SOURCE_ACCOUNT = 'invalid.example/secret'
+    assert.throws(() => sourceContainer(legacy), error => !error.message.includes('synthetic-secret') && /Invalid/.test(error.message))
+    assert.equal(sourceId({ url: 'https://example.blob.core.windows.net/hub?sig=secret' }), 'https://example.blob.core.windows.net/hub')
+  } finally {
+    names.forEach((name, i) => { if (old[i] === undefined) delete process.env[name]; else process.env[name] = old[i] })
+  }
+})

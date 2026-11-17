@@ -7,6 +7,8 @@ const { pipeline } = require('node:stream/promises')
 const tar = require('tar-stream')
 const { BlobServiceClient } = require('@azure/storage-blob')
 
+const { sourceContainer, sourceId } = require('./cdn.backup-source')
+
 const ROOT = 'cdn_backup/automated/'
 const STATE = `${ROOT}status.json`
 const LOCK = STATE
@@ -82,7 +84,7 @@ async function inventory(c) {
   }
   return files.sort((a, b) => a.name.localeCompare(b.name))
 }
-async function archive(c, month, files, check, kind = 'daily', now = new Date(), progress = async () => {}) {
+async function archive(c, month, files, check, kind = 'daily', now = new Date(), progress = async () => {}, source = c) {
   const selected = files.filter(f => f.lastModified.startsWith(month))
   if (!selected.length) return { month, fileCount: 0, empty: true }
   await progress(month, 0, selected.length)
@@ -97,11 +99,11 @@ async function archive(c, month, files, check, kind = 'daily', now = new Date(),
   } }), fs.createWriteStream(filepath))
   // Attach immediately; disk/stream failures must not become unhandled rejections.
   output.catch(() => {})
-  const manifest = { version: 1, month, startedAt: now.toISOString(), files: [] }
+  const manifest = { version: 1, source: sourceId(source), month, startedAt: now.toISOString(), files: [] }
   try {
     for (const file of selected) {
       check()
-      const response = await c.getBlobClient(file.source).download(0, undefined, { conditions: { ifMatch: file.etag } })
+      const response = await source.getBlobClient(file.source).download(0, undefined, { conditions: { ifMatch: file.etag } })
       if (!response.readableStreamBody) throw new Error('Missing source stream')
       const hash = crypto.createHash('sha256')
       let bytes = 0
@@ -134,7 +136,7 @@ async function archive(c, month, files, check, kind = 'daily', now = new Date(),
     for await (const chunk of download.readableStreamBody) { check(); remoteHash.update(chunk); remoteSize += chunk.length }
     if (remoteSize !== size || remoteHash.digest('hex') !== sha256) throw new Error('Uploaded backup verification failed')
     check()
-    const result = { month, blobName: `${base}.tar`, manifestName: `${base}.json`, kind,
+    const result = { month, source: sourceId(source), blobName: `${base}.tar`, manifestName: `${base}.json`, kind,
       fileCount: selected.length, sourceBytes: selected.reduce((n, f) => n + f.size, 0), size, sha256,
       verifiedAt: new Date().toISOString(), etag: uploaded.etag }
     // Sidecar is the completion marker; a tar without this marker is never a successful recovery point.
@@ -167,7 +169,9 @@ async function prune(c, check, now = new Date()) {
     await c.getBlockBlobClient(name).deleteIfExists()
   }
 }
-async function tick(c = container(), now = new Date()) {
+async function tick(c = container(), now = new Date(), source = sourceContainer(c)) {
+  const sourceKey = sourceId(source)
+  const legacySourceKey = sourceId(c)
   return withLock(c, async (check, leaseId) => {
     const state = await status(c)
     const cal = calendar(now)
@@ -183,8 +187,9 @@ async function tick(c = container(), now = new Date()) {
         request = { name, ...value }; break
       }
     }
-    const due = cal.hour >= 2 && state.lastScheduledDate !== cal.date &&
+    const due = cal.hour >= 2 && (state.lastScheduledDate !== cal.date || (state.lastScheduledSource || legacySourceKey) !== sourceKey) &&
       (!state.retryAfter || Date.parse(state.retryAfter) <= now.getTime())
+    state.configuredSource = sourceKey
     state.workerLastSeenAt = now.toISOString()
     if (!request && !due) {
       check(); await writeJson(c.getBlockBlobClient(STATE), state, { conditions: { leaseId } })
@@ -192,10 +197,10 @@ async function tick(c = container(), now = new Date()) {
     }
     const startedAt = now.toISOString()
     const save = async () => { check(); await writeJson(c.getBlockBlobClient(STATE), state, { conditions: { leaseId } }) }
-    state.current = { phase: 'running', startedAt, month: request?.month || cal.month, trigger: request ? 'manual' : 'scheduled' }
+    state.current = { phase: 'running', source: sourceKey, startedAt, month: request?.month || cal.month, trigger: request ? 'manual' : 'scheduled' }
     await save()
     try {
-      const files = await inventory(c)
+      const files = await inventory(source)
       if (!files.length) throw new Error('CDN inventory is empty; refusing to claim a successful backup')
       if (request && !files.some(f => f.lastModified.startsWith(request.month))) throw new Error('No files in requested month')
       const progress = async (month, completedFiles, totalFiles) => {
@@ -204,18 +209,19 @@ async function tick(c = container(), now = new Date()) {
         await save()
       }
       const results = []
-      if (!request && state.lastFinalizedMonth !== cal.previous) {
-        results.push(await archive(c, cal.previous, files, check, 'monthly', now, progress))
+      if (!request && (state.lastFinalizedMonth !== cal.previous || (state.lastFinalizedSource || legacySourceKey) !== sourceKey)) {
+        results.push(await archive(c, cal.previous, files, check, 'monthly', now, progress, source))
         state.lastFinalizedMonth = cal.previous
+        state.lastFinalizedSource = sourceKey
         await save()
       }
-      results.push(await archive(c, request?.month || cal.month, files, check, request ? 'monthly' : 'daily', now, progress))
-      const success = { startedAt, completedAt: new Date().toISOString(), trigger: request ? 'manual' : 'scheduled', results }
+      results.push(await archive(c, request?.month || cal.month, files, check, request ? 'monthly' : 'daily', now, progress, source))
+      const success = { source: sourceKey, startedAt, completedAt: new Date().toISOString(), trigger: request ? 'manual' : 'scheduled', results }
       state.lastSuccess = success
       state.current = { phase: 'succeeded', ...success }
       state.consecutiveFailures = 0
       delete state.retryAfter
-      if (!request) state.lastScheduledDate = cal.date
+      if (!request) { state.lastScheduledDate = cal.date; state.lastScheduledSource = sourceKey }
       await save()
       if (request) await c.getBlockBlobClient(request.name).deleteIfExists()
       // Retention only follows a verified successful scheduled run.
@@ -227,7 +233,7 @@ async function tick(c = container(), now = new Date()) {
       return success
     } catch (err) {
       state.consecutiveFailures = (state.consecutiveFailures || 0) + 1
-      state.current = { phase: 'failed', startedAt, failedAt: new Date().toISOString(),
+      state.current = { phase: 'failed', source: sourceKey, startedAt, failedAt: new Date().toISOString(),
         month: request?.month || cal.month, message: 'Backup failed; see worker logs. Last successful backup is retained.' }
       state.retryAfter = new Date(now.getTime() + 15 * 60000).toISOString()
       await save()
