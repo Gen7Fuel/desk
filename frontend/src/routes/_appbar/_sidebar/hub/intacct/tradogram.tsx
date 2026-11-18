@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { TradogramGLAccountSelect } from '@/components/custom/TradogramGLAccountSelect'
+import { TradogramDraftBill } from '@/components/custom/TradogramDraftBill'
 import {
   Table,
   TableBody,
@@ -50,6 +51,8 @@ const statusLabel = (status?: string) =>
     draft: 'Draft',
     ready: 'Ready for Intacct',
     'needs-review': 'Needs review',
+    'intacct-draft': 'Intacct draft created',
+    'check-intacct': 'Check Intacct',
   })[status || 'new'] || status
 
 function Tradogram() {
@@ -268,6 +271,11 @@ function Tradogram() {
   }
 
   const config = sites.find((s) => s.site === form.site)
+  const creationLocked =
+    !!detail?.draft?.intacctBillKey ||
+    ['creating', 'created', 'uncertain'].includes(
+      detail?.draft?.intacctCreationState || '',
+    )
   const deliveryCode = detail?.source.deliveryCode || ''
   const reviewHash = detail?.source.sourceHash || ''
   const supplierAccountNumber = detail?.source.supplierAccountNumber || ''
@@ -597,13 +605,19 @@ function Tradogram() {
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
               >
-                {['all', 'new', 'draft', 'ready', 'needs-review'].map(
-                  (value) => (
-                    <option key={value} value={value}>
-                      {value === 'all' ? 'All statuses' : statusLabel(value)}
-                    </option>
-                  ),
-                )}
+                {[
+                  'all',
+                  'new',
+                  'draft',
+                  'ready',
+                  'needs-review',
+                  'intacct-draft',
+                  'check-intacct',
+                ].map((value) => (
+                  <option key={value} value={value}>
+                    {value === 'all' ? 'All statuses' : statusLabel(value)}
+                  </option>
+                ))}
               </select>
               <Button
                 variant="outline"
@@ -708,7 +722,13 @@ function Tradogram() {
                     {detail.source.receivedDate || 'Not recorded'} ·{' '}
                     {dirty
                       ? 'Unsaved changes'
-                      : statusLabel(detail.draft?.status)}
+                      : statusLabel(
+                          detail.draft?.intacctBillKey
+                            ? 'intacct-draft'
+                            : creationLocked
+                              ? 'check-intacct'
+                              : detail.draft?.status,
+                        )}
                   </p>
                 </div>
                 <Button
@@ -729,7 +749,7 @@ function Tradogram() {
                 </p>
               )}
               <fieldset
-                disabled={!writable || busy || !!detail.draft?.intacctBillKey}
+                disabled={!writable || busy || creationLocked}
                 className="grid gap-4 sm:grid-cols-2"
               >
                 <div className="space-y-2">
@@ -858,7 +878,7 @@ function Tradogram() {
                             busy ||
                             accountsLoading ||
                             !!accountsError ||
-                            !!detail.draft?.intacctBillKey
+                            creationLocked
                           }
                           value={accountCodes[line.id] || ''}
                           onValueChange={(code) => {
@@ -893,7 +913,7 @@ function Tradogram() {
                 <p className="mt-2 text-muted-foreground">
                   This subtotal uses only this delivery’s received quantities at
                   PO prices. Taxes, discounts, fees and final invoice totals
-                  must be confirmed when Intacct posting is added.
+                  must be reviewed in Intacct before posting the draft bill.
                 </p>
               </div>
               {!!issues.length && (
@@ -909,33 +929,59 @@ function Tradogram() {
               <div className="flex flex-wrap gap-3">
                 <Button
                   variant="outline"
-                  disabled={!writable || busy || !!detail.draft?.intacctBillKey}
+                  disabled={!writable || busy || creationLocked}
                   onClick={() => save('draft')}
                 >
                   Save draft
                 </Button>
                 <Button
                   disabled={
-                    !writable ||
-                    busy ||
-                    !!issues.length ||
-                    !!detail.draft?.intacctBillKey
+                    !writable || busy || !!issues.length || creationLocked
                   }
                   onClick={() => save('ready')}
                 >
                   Mark ready for Intacct
                 </Button>
-                <Button
-                  disabled
-                  title="Intacct AP bill posting will be added after the bill fields and tax rules are confirmed."
-                >
-                  Create Intacct AP bill — coming next
-                </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Ready means prepared in Desk. No Intacct bill or payment has
-                been created, and Tradogram records are unchanged.
+                Marking ready only saves preparation in Desk. Use the separate
+                draft action below to create an unposted bill in Intacct.
               </p>
+              {writable && (
+                <TradogramDraftBill
+                  key={`${detail.source.deliveryCode}:${detail.draft?.revision}:${detail.source.sourceHash}`}
+                  detail={detail}
+                  disabled={dirty || busy}
+                  onBusy={setBusy}
+                  onReload={() => review(detail.source.deliveryCode)}
+                  onCreated={(result) => {
+                    setDetail((current) =>
+                      current?.draft
+                        ? {
+                            ...current,
+                            draft: {
+                              ...current.draft,
+                              intacctBillKey: result.billKey,
+                              intacctBillNumber: result.billNumber,
+                              intacctEntityId: result.entityId,
+                              intacctCreationState: 'created',
+                            },
+                          }
+                        : current,
+                    )
+                    setNotice(
+                      `Intacct draft ${result.billKey} ${result.alreadyCreated ? 'already exists' : 'created'} in ${result.entityId}. It has not been posted.`,
+                    )
+                    setRefresh((value) => value + 1)
+                  }}
+                />
+              )}
+              {!writable && detail.draft?.intacctBillKey && (
+                <p className="text-sm">
+                  Intacct draft reference: {detail.draft.intacctBillKey} ·
+                  Entity {detail.draft.intacctEntityId}
+                </p>
+              )}
             </section>
           )}
         </>

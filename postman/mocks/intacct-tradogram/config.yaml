@@ -1,0 +1,11 @@
+version: 1
+name: Intacct Tradogram draft fixture
+slug: intacct-tradogram-drafts
+protocol: http
+origin: api.intacct.com
+interceptRequests: true
+port: 4504
+scenarios:
+  - name: default
+    path: ./default.js
+    default: true

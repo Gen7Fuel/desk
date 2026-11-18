@@ -20,9 +20,16 @@ const draftSchema = new Schema({
   sourceHash: String, configHash: String,
   snapshot: Schema.Types.Mixed,
   revision: { type: Number, default: 1 }, updatedBy: String,
-  // Reserved for the future posting implementation; never writable through draft routes.
+  // Written only by the Intacct draft creation workflow.
   intacctBillKey: { type: String, default: '' },
+  intacctEntityId: String, intacctVendorId: String, intacctBillNumber: String, intacctBillNumberKey: String,
+  intacctCreationState: { type: String, enum: ['', 'creating', 'created', 'failed', 'uncertain'], default: '' },
+  intacctPreviewHash: String, intacctCreatedBy: String,
 }, { timestamps: true })
+// Reserve vendor/bill numbers across deliveries, including concurrent requests.
+draftSchema.index({ intacctEntityId: 1, intacctVendorId: 1, intacctBillNumberKey: 1 }, {
+  unique: true, partialFilterExpression: { intacctBillNumberKey: { $type: 'string' } },
+})
 
 module.exports = {
   SiteAccount: mongoose.model('TradogramSiteAccount', siteSchema),

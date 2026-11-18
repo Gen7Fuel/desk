@@ -8,7 +8,7 @@ const auth = authHeader({ permissions: { hub: { intacct: { read: true, update: t
 const app = () => express().use(express.json()).use('/tradogram', require('./tradogram.routes'))
 const source = { sourceHash: 'current', supplierAccountNumber: 'V001', issues: [], subtotal: 5, lines: [{ id: 'line', name: 'Pump' }] }
 const config = { site: 'New construction', sageLocationId: 'A210' }
-const vendor = { id: 'V001', key: '55', name: 'Intacct Supplier', status: 'active', entityId: 'T010' }
+const vendor = { id: 'V001', key: '55', name: 'Intacct Supplier', status: 'active', entityId: 'A210' }
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs() })
 
 function mockSage(result, meta = {}) {
@@ -26,7 +26,7 @@ describe('Intacct vendor reference', () => {
     const result = await vendorService.resolveVendor(source, config)
     expect(result).toEqual({ vendor, issue: '' })
     const options = mock.mock.calls[1][1]
-    expect(options.headers['X-IA-API-Param-Entity']).toBe('T010')
+    expect(options.headers['X-IA-API-Param-Entity']).toBe('A210')
     expect(JSON.parse(options.body)).toMatchObject({ object: 'accounts-payable/vendor', filters: [{ $eq: { id: 'V001' } }], size: 2 })
   })
   it('does not query when the supplier account is missing', async () => {

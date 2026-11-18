@@ -6,9 +6,9 @@ const service = require('./tradogram.service')
 const { SiteAccount } = require('./tradogram.model')
 const { authHeader } = require('../../tests/helpers/auth')
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs() })
-it('defaults to test and rejects invalid company settings', () => {
+it('defaults to Gen7 LP and rejects invalid company settings', () => {
   vi.stubEnv('TRADOGRAM_SAGE_ENTITY_ID', '')
-  expect(getSettings()).toMatchObject({ entityId: 'T010', environment: 'test' })
+  expect(getSettings()).toMatchObject({ entityId: 'A210', company: 'Gen7 LP', environment: 'production' })
   vi.stubEnv('TRADOGRAM_SAGE_ENTITY_ID', 'INVALID')
   expect(() => getSettings()).toThrow('must be T010')
 })
