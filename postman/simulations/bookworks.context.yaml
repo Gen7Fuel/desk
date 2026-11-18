@@ -1,0 +1,28 @@
+purpose: Verify Desk invoice searches and draft AP creation against synthetic Bookworks and Intacct dependencies.
+contract_sources:
+  - https://bookworks.keyinfotech.com/api/openapi/v1.json
+  - https://documenter.getpostman.com/view/7461782/2sAYJAdxLW
+verified_live:
+  - GET vendor/invoices accepts an invoiceNumbers array in a JSON request body.
+  - GET vendors accepts a codes array in a JSON request body.
+  - AES-256-CBC uses UTF-8 private-key bytes truncated or zero-padded to 32 bytes, with the first 16 as IV and PKCS7 padding.
+  - No-match responses can be HTTP 200 with JSON null.
+assumptions:
+  - Invoice-number lookup is exact; different vendors may share an invoice number.
+  - A full 25-row page may have another page; users can encounter an empty final page.
+coverage:
+  - Backend route tests use this same handler on a real local HTTP server.
+  - The Postman runner was exercised on port 4188 through Desk routes for invoice search, vendor enrichment, GL distributions, and no matches.
+  - A live invoice lookup through the new Desk route returned a matching AP invoice and vendor name.
+  - Tests verify permission denial, GET bodies, encryption, duplicates across vendors, pagination, null results, timeouts, and sanitized failures.
+limitations:
+  - This fixture cannot prove production account permissions or Bookworks uptime.
+  - The installed Postman CLI reports unknown command for status; owner mock discovery was skipped.
+
+draft_coverage:
+  - Active vendor mapping and saved selections scoped to source server and A210.
+  - Posted-only, cent-balanced CAD drafts; Fuel 50200 or Freight 51050, HST 22000, automatic AP credit.
+  - Source and mapping are revalidated against a preview hash before sending.
+  - HTTP simulations cover duplicate bills, concurrent creation, stale previews, validation rejections, timeout ambiguity, and reference persistence failure.
+  - Financial writes only reach the synthetic Intacct handler; no live AP bill is created by tests.
+  - MongoDB unique-index behavior is implemented but not exercised against a live database by these tests.

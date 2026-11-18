@@ -1,0 +1,180 @@
+openapi: 3.0.3
+info:
+  title: Desk Bookworks invoice lookup
+  version: 1.1.0
+  description: Bookworks AP lookup and Intacct draft creation. Read requires hub.intacct.read; writes additionally require hub.intacct.update. Credentials stay on the backend.
+security:
+  - bearerAuth: []
+paths:
+  /api/bookworks/invoices:
+    get:
+      operationId: searchBookworksInvoices
+      summary: Find vendor invoices by exact invoice number
+      description: Different vendors may share a number. A full page indicates another page may exist; its results can be empty. No records are mutated.
+      parameters:
+        - in: query
+          name: invoiceNumber
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 100 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, maximum: 100000, default: 0 }
+      responses:
+        '200':
+          description: Matching invoices, with vendor-name lookup warnings if applicable
+          headers:
+            Cache-Control:
+              schema: { type: string, enum: [no-store] }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [invoiceNumber, offset, pageSize, hasMore, invoices, warnings]
+                properties:
+                  invoiceNumber: { type: string }
+                  offset: { type: integer }
+                  pageSize: { type: integer, enum: [25] }
+                  hasMore: { type: boolean }
+                  warnings: { type: array, items: { type: string } }
+                  invoices:
+                    type: array
+                    maxItems: 25
+                    items: { $ref: '#/components/schemas/Invoice' }
+        '400': { description: Missing or invalid invoice number or offset }
+        '401': { description: Missing, invalid, or expired Desk token }
+        '403': { description: Missing hub.intacct.read permission }
+        '502': { description: Bookworks rejected credentials, failed, or returned unexpected data; upstream details are not exposed }
+        '503': { description: Backend connection settings missing/invalid, or Bookworks rate limit reached }
+        '504': { description: Bookworks request exceeded its timeout }
+  /api/bookworks/intacct/vendors:
+    get:
+      operationId: searchBookworksIntacctVendors
+      summary: Find active Intacct vendors by name in A210
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string, minLength: 2, maxLength: 100 }
+      responses:
+        '200': { description: 'Object with vendors array (id, key, name) and hasMore boolean' }
+        '400': { description: Invalid search }
+        '401': { description: Invalid Desk authentication }
+        '403': { description: Missing read permission }
+        '502': { description: Sanitized upstream error }
+        '503': { description: Connection not configured }
+  /api/bookworks/invoices/{invoiceId}/intacct-context:
+    parameters:
+      - $ref: '#/components/parameters/InvoiceId'
+    get:
+      operationId: getBookworksIntacctContext
+      summary: Read saved vendor mapping and existing creation status
+      responses:
+        '200': { description: 'Entity A210, company Gen7 LP, nullable mapping (vendorId, vendorName), nullable entry (status, billKey, entityId)' }
+        '400': { description: Invalid ID }
+        '401': { description: Invalid Desk authentication }
+        '403': { description: Missing read permission }
+        '404': { description: Source invoice not found }
+        '502': { description: Sanitized upstream error }
+  /api/bookworks/invoices/{invoiceId}/vendor-mapping:
+    parameters:
+      - $ref: '#/components/parameters/InvoiceId'
+    put:
+      operationId: saveBookworksVendorMapping
+      summary: Save verified active Intacct vendor for this Bookworks vendor and A210
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vendorId]
+              properties:
+                vendorId: { type: string, minLength: 1, maxLength: 100 }
+      responses:
+        '200': { description: 'Saved mapping with vendorId and vendorName' }
+        '400': { description: Invalid ID or inactive/nonunique vendor }
+        '401': { description: Invalid Desk authentication }
+        '403': { description: Missing read/update permission }
+        '404': { description: Source invoice not found }
+        '502': { description: Sanitized upstream error }
+  /api/bookworks/invoices/{invoiceId}/draft-preview:
+    parameters:
+      - $ref: '#/components/parameters/InvoiceId'
+    post:
+      operationId: previewBookworksIntacctDraft
+      summary: Validate posted source invoice and preview balanced CAD draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cogsType]
+              properties:
+                cogsType: { type: string, enum: [fuel, freight] }
+      responses:
+        '200': { description: 'Preview with SHA256 hash, source identifiers, vendor, A210, CAD, dates, cogsType/account and integer costCents/hstCents/totalCents. HST 22000; automatic vendor-default AP offset.' }
+        '400': { description: Unposted invoice, missing mapping, invalid source amounts/dates or inactive vendor }
+        '401': { description: Invalid Desk authentication }
+        '403': { description: Missing read/update permission }
+        '404': { description: Source invoice not found }
+        '502': { description: Sanitized upstream error }
+  /api/bookworks/invoices/{invoiceId}/intacct-draft:
+    parameters:
+      - $ref: '#/components/parameters/InvoiceId'
+    post:
+      operationId: createBookworksIntacctDraft
+      summary: Create an unposted AP bill using a fresh validated preview
+      description: Server enforces A210, CAD and draft state. Source is reloaded. Local unique invoice reservation and vendor/bill-number lookup prevent repeat writes. Ambiguous outcomes block retry for manual reconciliation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cogsType, previewHash]
+              properties:
+                cogsType: { type: string, enum: [fuel, freight] }
+                previewHash: { type: string, pattern: '^[a-f0-9]{64}$' }
+      responses:
+        '200': { description: 'billKey, alreadyCreated boolean, entityId A210 and state draft' }
+        '400': { description: Invalid preview or ineligible invoice }
+        '401': { description: Invalid Desk authentication }
+        '403': { description: Missing read/update permission }
+        '404': { description: Source invoice not found }
+        '409': { description: Stale preview, existing bill or reserved/uncertain creation }
+        '502': { description: 'Rejected or ambiguous upstream result. Ambiguous creation requires checking Intacct before retrying.' }
+components:
+  parameters:
+    InvoiceId:
+      in: path
+      name: invoiceId
+      required: true
+      schema: { type: integer, minimum: 1 }
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    Invoice:
+      type: object
+      required: [id, invoiceNumber, vendorCode, vendorName, invoiceDate, dueDate, discountDate, description, totalAmount, posted, distributions]
+      properties:
+        id: { type: integer }
+        invoiceNumber: { type: string }
+        vendorCode: { type: string, nullable: true }
+        vendorName: { type: string, nullable: true }
+        invoiceDate: { type: string, nullable: true }
+        dueDate: { type: string, nullable: true }
+        discountDate: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        totalAmount: { type: number, nullable: true, description: Source amount; this API object does not identify its currency }
+        posted: { type: boolean, nullable: true }
+        distributions:
+          type: array
+          items:
+            type: object
+            properties:
+              glAccountCode: { type: string, nullable: true }
+              costCenterCode: { type: string, nullable: true }
+              debitOrCredit: { type: string, nullable: true }
+              description: { type: string, nullable: true }
+              amount: { type: number, nullable: true }

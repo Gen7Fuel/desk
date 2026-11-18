@@ -10,75 +10,81 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppbarRouteImport } from './routes/_appbar'
-import { Route as AppbarIndexRouteImport } from './routes/_appbar/index'
-import { Route as AppbarIssuesRouteImport } from './routes/_appbar/issues'
-import { Route as AppbarHubRouteImport } from './routes/_appbar/hub'
-import { Route as AppbarSidebarRouteImport } from './routes/_appbar/_sidebar'
-import { Route as AppbarFuelRouteImport } from './routes/_appbar/_fuel'
-import { Route as AppbarAdminRouteImport } from './routes/_appbar/_admin'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
-import { Route as AppbarSidebarSettingsRouteImport } from './routes/_appbar/_sidebar/settings'
-import { Route as AppbarSidebarReportsRouteImport } from './routes/_appbar/_sidebar/reports'
-import { Route as AppbarSidebarProjectsRouteImport } from './routes/_appbar/_sidebar/projects'
-import { Route as AppbarSidebarHubRouteImport } from './routes/_appbar/_sidebar/hub'
-import { Route as AppbarSidebarCipherRouteImport } from './routes/_appbar/_sidebar/cipher'
-import { Route as AppbarFuelKardpollRouteImport } from './routes/_appbar/_fuel/kardpoll'
-import { Route as AppbarFuelFuelRecRouteImport } from './routes/_appbar/_fuel/fuel-rec'
-import { Route as AppbarFuelFuelInvoicingRouteImport } from './routes/_appbar/_fuel/fuel-invoicing'
+import { Route as AppbarIndexRouteImport } from './routes/_appbar/index'
+import { Route as AppbarAdminRouteImport } from './routes/_appbar/_admin'
+import { Route as AppbarFuelRouteImport } from './routes/_appbar/_fuel'
+import { Route as AppbarSidebarRouteImport } from './routes/_appbar/_sidebar'
+import { Route as AppbarHubRouteImport } from './routes/_appbar/hub'
+import { Route as AppbarIssuesRouteImport } from './routes/_appbar/issues'
 import { Route as AppbarAdminSidebarRouteImport } from './routes/_appbar/_admin/_sidebar'
-import { Route as AppbarSidebarProjectsIndexRouteImport } from './routes/_appbar/_sidebar/projects/index'
-import { Route as AppbarSidebarSettingsUsersRouteImport } from './routes/_appbar/_sidebar/settings/users'
-import { Route as AppbarSidebarSettingsRolesRouteImport } from './routes/_appbar/_sidebar/settings/roles'
-import { Route as AppbarSidebarSettingsLogsRouteImport } from './routes/_appbar/_sidebar/settings/logs'
-import { Route as AppbarSidebarReportsNarrativeRouteImport } from './routes/_appbar/_sidebar/reports/narrative'
-import { Route as AppbarSidebarProjectsIdRouteImport } from './routes/_appbar/_sidebar/projects/$id'
-import { Route as AppbarSidebarHubPosReportsRouteImport } from './routes/_appbar/_sidebar/hub/pos-reports'
-import { Route as AppbarSidebarHubShiftsRouteImport } from './routes/_appbar/_sidebar/hub/shifts'
-import { Route as AppbarSidebarHubReceivablesRouteImport } from './routes/_appbar/_sidebar/hub/receivables'
-import { Route as AppbarSidebarHubPayablesRouteImport } from './routes/_appbar/_sidebar/hub/payables'
-import { Route as AppbarSidebarHubIntacctRouteImport } from './routes/_appbar/_sidebar/hub/intacct'
-import { Route as AppbarSidebarHubFleetCustomersRouteImport } from './routes/_appbar/_sidebar/hub/fleet-customers'
-import { Route as AppbarSidebarHubFleetCardsRouteImport } from './routes/_appbar/_sidebar/hub/fleet-cards'
-import { Route as AppbarSidebarHubFleetCardComplianceRouteImport } from './routes/_appbar/_sidebar/hub/fleet-card-compliance'
-import { Route as AppbarSidebarHubCdnRouteImport } from './routes/_appbar/_sidebar/hub/cdn'
-import { Route as AppbarSidebarHubCashRecRouteImport } from './routes/_appbar/_sidebar/hub/cash-rec'
-import { Route as AppbarSidebarHubCashManagementRouteImport } from './routes/_appbar/_sidebar/hub/cash-management'
-import { Route as AppbarSidebarHubArPaidReportRouteImport } from './routes/_appbar/_sidebar/hub/ar-paid-report'
-import { Route as AppbarSidebarHubArCustomersRouteImport } from './routes/_appbar/_sidebar/hub/ar-customers'
-import { Route as AppbarSidebarCipherUnlockRouteImport } from './routes/_appbar/_sidebar/cipher/unlock'
-import { Route as AppbarSidebarCipherLockRouteImport } from './routes/_appbar/_sidebar/cipher/lock'
-import { Route as AppbarSidebarAcademyMediaRouteImport } from './routes/_appbar/_sidebar/academy/media'
-import { Route as AppbarSidebarAcademyEmployeesRouteImport } from './routes/_appbar/_sidebar/academy/employees'
-import { Route as AppbarSidebarAcademyCoursesRouteImport } from './routes/_appbar/_sidebar/academy/courses'
-import { Route as AppbarSidebarAcademyCompletionsRouteImport } from './routes/_appbar/_sidebar/academy/completions'
-import { Route as AppbarAdminSidebarSubscriptionsRouteImport } from './routes/_appbar/_admin/_sidebar/subscriptions'
-import { Route as AppbarAdminSidebarSiteAssetsRouteImport } from './routes/_appbar/_admin/_sidebar/site-assets'
-import { Route as AppbarAdminSidebarPersonnelRouteImport } from './routes/_appbar/_admin/_sidebar/personnel'
-import { Route as AppbarAdminSidebarCredentialsRouteImport } from './routes/_appbar/_admin/_sidebar/credentials'
-import { Route as AppbarAdminSidebarAssetsRouteImport } from './routes/_appbar/_admin/_sidebar/assets'
+import { Route as AppbarFuelFuelInvoicingRouteImport } from './routes/_appbar/_fuel/fuel-invoicing'
+import { Route as AppbarFuelFuelRecRouteImport } from './routes/_appbar/_fuel/fuel-rec'
+import { Route as AppbarFuelKardpollRouteImport } from './routes/_appbar/_fuel/kardpoll'
+import { Route as AppbarSidebarCipherRouteImport } from './routes/_appbar/_sidebar/cipher'
+import { Route as AppbarSidebarHubRouteImport } from './routes/_appbar/_sidebar/hub'
+import { Route as AppbarSidebarProjectsRouteImport } from './routes/_appbar/_sidebar/projects'
+import { Route as AppbarSidebarReportsRouteImport } from './routes/_appbar/_sidebar/reports'
+import { Route as AppbarSidebarSettingsRouteImport } from './routes/_appbar/_sidebar/settings'
 import { Route as AppbarAdminSidebarAccessRouteImport } from './routes/_appbar/_admin/_sidebar/access'
-import { Route as AppbarSidebarHubIntacctIndexRouteImport } from './routes/_appbar/_sidebar/hub/intacct/index'
-import { Route as AppbarSidebarAcademyCoursesIndexRouteImport } from './routes/_appbar/_sidebar/academy/courses/index'
-import { Route as AppbarAdminSidebarSiteAssetsIndexRouteImport } from './routes/_appbar/_admin/_sidebar/site-assets/index'
-import { Route as AppbarAdminSidebarPersonnelIndexRouteImport } from './routes/_appbar/_admin/_sidebar/personnel/index'
-import { Route as AppbarSidebarHubIntacctTradogramRouteImport } from './routes/_appbar/_sidebar/hub/intacct/tradogram'
-import { Route as AppbarSidebarHubIntacctPayrollRouteImport } from './routes/_appbar/_sidebar/hub/intacct/payroll'
-import { Route as AppbarSidebarHubIntacctArEntriesRouteImport } from './routes/_appbar/_sidebar/hub/intacct/ar-entries'
-import { Route as AppbarSidebarAcademyCoursesCourseIdRouteImport } from './routes/_appbar/_sidebar/academy/courses/$courseId'
-import { Route as AppbarAdminSidebarSubscriptionsListRouteImport } from './routes/_appbar/_admin/_sidebar/subscriptions/list'
-import { Route as AppbarAdminSidebarSubscriptionsCategoriesRouteImport } from './routes/_appbar/_admin/_sidebar/subscriptions/categories'
-import { Route as AppbarAdminSidebarSiteAssetsListRouteImport } from './routes/_appbar/_admin/_sidebar/site-assets/list'
-import { Route as AppbarAdminSidebarSiteAssetsAddRouteImport } from './routes/_appbar/_admin/_sidebar/site-assets/add'
-import { Route as AppbarAdminSidebarCredentialsListRouteImport } from './routes/_appbar/_admin/_sidebar/credentials/list'
-import { Route as AppbarAdminSidebarCredentialsCategoriesRouteImport } from './routes/_appbar/_admin/_sidebar/credentials/categories'
-import { Route as AppbarAdminSidebarAssetsPersonnelRouteImport } from './routes/_appbar/_admin/_sidebar/assets/personnel'
-import { Route as AppbarAdminSidebarAssetsLocationRouteImport } from './routes/_appbar/_admin/_sidebar/assets/location'
-import { Route as AppbarAdminSidebarAssetsDevicesRouteImport } from './routes/_appbar/_admin/_sidebar/assets/devices'
-import { Route as AppbarAdminSidebarAccessResourcesRouteImport } from './routes/_appbar/_admin/_sidebar/access/resources'
+import { Route as AppbarAdminSidebarAssetsRouteImport } from './routes/_appbar/_admin/_sidebar/assets'
+import { Route as AppbarAdminSidebarCredentialsRouteImport } from './routes/_appbar/_admin/_sidebar/credentials'
+import { Route as AppbarAdminSidebarPersonnelRouteImport } from './routes/_appbar/_admin/_sidebar/personnel'
+import { Route as AppbarAdminSidebarSiteAssetsRouteImport } from './routes/_appbar/_admin/_sidebar/site-assets'
+import { Route as AppbarAdminSidebarSubscriptionsRouteImport } from './routes/_appbar/_admin/_sidebar/subscriptions'
+import { Route as AppbarSidebarAcademyCompletionsRouteImport } from './routes/_appbar/_sidebar/academy/completions'
+import { Route as AppbarSidebarAcademyCoursesRouteImport } from './routes/_appbar/_sidebar/academy/courses'
+import { Route as AppbarSidebarAcademyEmployeesRouteImport } from './routes/_appbar/_sidebar/academy/employees'
+import { Route as AppbarSidebarAcademyMediaRouteImport } from './routes/_appbar/_sidebar/academy/media'
+import { Route as AppbarSidebarCipherLockRouteImport } from './routes/_appbar/_sidebar/cipher/lock'
+import { Route as AppbarSidebarCipherUnlockRouteImport } from './routes/_appbar/_sidebar/cipher/unlock'
+import { Route as AppbarSidebarHubArCustomersRouteImport } from './routes/_appbar/_sidebar/hub/ar-customers'
+import { Route as AppbarSidebarHubArPaidReportRouteImport } from './routes/_appbar/_sidebar/hub/ar-paid-report'
+import { Route as AppbarSidebarHubCashManagementRouteImport } from './routes/_appbar/_sidebar/hub/cash-management'
+import { Route as AppbarSidebarHubCashRecRouteImport } from './routes/_appbar/_sidebar/hub/cash-rec'
+import { Route as AppbarSidebarHubCdnRouteImport } from './routes/_appbar/_sidebar/hub/cdn'
+import { Route as AppbarSidebarHubFleetCardComplianceRouteImport } from './routes/_appbar/_sidebar/hub/fleet-card-compliance'
+import { Route as AppbarSidebarHubFleetCardsRouteImport } from './routes/_appbar/_sidebar/hub/fleet-cards'
+import { Route as AppbarSidebarHubFleetCustomersRouteImport } from './routes/_appbar/_sidebar/hub/fleet-customers'
+import { Route as AppbarSidebarHubIntacctRouteImport } from './routes/_appbar/_sidebar/hub/intacct'
+import { Route as AppbarSidebarHubPayablesRouteImport } from './routes/_appbar/_sidebar/hub/payables'
+import { Route as AppbarSidebarHubPosReportsRouteImport } from './routes/_appbar/_sidebar/hub/pos-reports'
+import { Route as AppbarSidebarHubReceivablesRouteImport } from './routes/_appbar/_sidebar/hub/receivables'
+import { Route as AppbarSidebarHubShiftsRouteImport } from './routes/_appbar/_sidebar/hub/shifts'
+import { Route as AppbarSidebarProjectsIndexRouteImport } from './routes/_appbar/_sidebar/projects/index'
+import { Route as AppbarSidebarProjectsIdRouteImport } from './routes/_appbar/_sidebar/projects/$id'
+import { Route as AppbarSidebarReportsNarrativeRouteImport } from './routes/_appbar/_sidebar/reports/narrative'
+import { Route as AppbarSidebarSettingsLogsRouteImport } from './routes/_appbar/_sidebar/settings/logs'
+import { Route as AppbarSidebarSettingsRolesRouteImport } from './routes/_appbar/_sidebar/settings/roles'
+import { Route as AppbarSidebarSettingsUsersRouteImport } from './routes/_appbar/_sidebar/settings/users'
 import { Route as AppbarAdminSidebarAccessPersonnelRouteImport } from './routes/_appbar/_admin/_sidebar/access/personnel'
+import { Route as AppbarAdminSidebarAccessResourcesRouteImport } from './routes/_appbar/_admin/_sidebar/access/resources'
+import { Route as AppbarAdminSidebarAssetsDevicesRouteImport } from './routes/_appbar/_admin/_sidebar/assets/devices'
+import { Route as AppbarAdminSidebarAssetsLocationRouteImport } from './routes/_appbar/_admin/_sidebar/assets/location'
+import { Route as AppbarAdminSidebarAssetsPersonnelRouteImport } from './routes/_appbar/_admin/_sidebar/assets/personnel'
+import { Route as AppbarAdminSidebarCredentialsCategoriesRouteImport } from './routes/_appbar/_admin/_sidebar/credentials/categories'
+import { Route as AppbarAdminSidebarCredentialsListRouteImport } from './routes/_appbar/_admin/_sidebar/credentials/list'
+import { Route as AppbarAdminSidebarPersonnelIndexRouteImport } from './routes/_appbar/_admin/_sidebar/personnel/index'
+import { Route as AppbarAdminSidebarSiteAssetsIndexRouteImport } from './routes/_appbar/_admin/_sidebar/site-assets/index'
+import { Route as AppbarAdminSidebarSiteAssetsAddRouteImport } from './routes/_appbar/_admin/_sidebar/site-assets/add'
+import { Route as AppbarAdminSidebarSiteAssetsListRouteImport } from './routes/_appbar/_admin/_sidebar/site-assets/list'
+import { Route as AppbarAdminSidebarSubscriptionsCategoriesRouteImport } from './routes/_appbar/_admin/_sidebar/subscriptions/categories'
+import { Route as AppbarAdminSidebarSubscriptionsListRouteImport } from './routes/_appbar/_admin/_sidebar/subscriptions/list'
+import { Route as AppbarSidebarAcademyCoursesIndexRouteImport } from './routes/_appbar/_sidebar/academy/courses/index'
+import { Route as AppbarSidebarAcademyCoursesCourseIdRouteImport } from './routes/_appbar/_sidebar/academy/courses/$courseId'
+import { Route as AppbarSidebarHubIntacctIndexRouteImport } from './routes/_appbar/_sidebar/hub/intacct/index'
+import { Route as AppbarSidebarHubIntacctArEntriesRouteImport } from './routes/_appbar/_sidebar/hub/intacct/ar-entries'
+import { Route as AppbarSidebarHubIntacctBookworksRouteImport } from './routes/_appbar/_sidebar/hub/intacct/bookworks'
+import { Route as AppbarSidebarHubIntacctPayrollRouteImport } from './routes/_appbar/_sidebar/hub/intacct/payroll'
+import { Route as AppbarSidebarHubIntacctTradogramRouteImport } from './routes/_appbar/_sidebar/hub/intacct/tradogram'
 
 const AppbarRoute = AppbarRouteImport.update({
   id: '/_appbar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const authLoginRoute = authLoginRouteImport.update({
+  id: '/(auth)/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppbarIndexRoute = AppbarIndexRouteImport.update({
@@ -86,9 +92,16 @@ const AppbarIndexRoute = AppbarIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppbarRoute,
 } as any)
-const AppbarIssuesRoute = AppbarIssuesRouteImport.update({
-  id: '/issues',
-  path: '/issues',
+const AppbarAdminRoute = AppbarAdminRouteImport.update({
+  id: '/_admin',
+  getParentRoute: () => AppbarRoute,
+} as any)
+const AppbarFuelRoute = AppbarFuelRouteImport.update({
+  id: '/_fuel',
+  getParentRoute: () => AppbarRoute,
+} as any)
+const AppbarSidebarRoute = AppbarSidebarRouteImport.update({
+  id: '/_sidebar',
   getParentRoute: () => AppbarRoute,
 } as any)
 const AppbarHubRoute = AppbarHubRouteImport.update({
@@ -96,51 +109,18 @@ const AppbarHubRoute = AppbarHubRouteImport.update({
   path: '/hub',
   getParentRoute: () => AppbarRoute,
 } as any)
-const AppbarSidebarRoute = AppbarSidebarRouteImport.update({
+const AppbarIssuesRoute = AppbarIssuesRouteImport.update({
+  id: '/issues',
+  path: '/issues',
+  getParentRoute: () => AppbarRoute,
+} as any)
+const AppbarAdminSidebarRoute = AppbarAdminSidebarRouteImport.update({
   id: '/_sidebar',
-  getParentRoute: () => AppbarRoute,
+  getParentRoute: () => AppbarAdminRoute,
 } as any)
-const AppbarFuelRoute = AppbarFuelRouteImport.update({
-  id: '/_fuel',
-  getParentRoute: () => AppbarRoute,
-} as any)
-const AppbarAdminRoute = AppbarAdminRouteImport.update({
-  id: '/_admin',
-  getParentRoute: () => AppbarRoute,
-} as any)
-const authLoginRoute = authLoginRouteImport.update({
-  id: '/(auth)/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppbarSidebarSettingsRoute = AppbarSidebarSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AppbarSidebarRoute,
-} as any)
-const AppbarSidebarReportsRoute = AppbarSidebarReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => AppbarSidebarRoute,
-} as any)
-const AppbarSidebarProjectsRoute = AppbarSidebarProjectsRouteImport.update({
-  id: '/projects',
-  path: '/projects',
-  getParentRoute: () => AppbarSidebarRoute,
-} as any)
-const AppbarSidebarHubRoute = AppbarSidebarHubRouteImport.update({
-  id: '/hub',
-  path: '/hub',
-  getParentRoute: () => AppbarSidebarRoute,
-} as any)
-const AppbarSidebarCipherRoute = AppbarSidebarCipherRouteImport.update({
-  id: '/cipher',
-  path: '/cipher',
-  getParentRoute: () => AppbarSidebarRoute,
-} as any)
-const AppbarFuelKardpollRoute = AppbarFuelKardpollRouteImport.update({
-  id: '/kardpoll',
-  path: '/kardpoll',
+const AppbarFuelFuelInvoicingRoute = AppbarFuelFuelInvoicingRouteImport.update({
+  id: '/fuel-invoicing',
+  path: '/fuel-invoicing',
   getParentRoute: () => AppbarFuelRoute,
 } as any)
 const AppbarFuelFuelRecRoute = AppbarFuelFuelRecRouteImport.update({
@@ -148,180 +128,40 @@ const AppbarFuelFuelRecRoute = AppbarFuelFuelRecRouteImport.update({
   path: '/fuel-rec',
   getParentRoute: () => AppbarFuelRoute,
 } as any)
-const AppbarFuelFuelInvoicingRoute = AppbarFuelFuelInvoicingRouteImport.update({
-  id: '/fuel-invoicing',
-  path: '/fuel-invoicing',
+const AppbarFuelKardpollRoute = AppbarFuelKardpollRouteImport.update({
+  id: '/kardpoll',
+  path: '/kardpoll',
   getParentRoute: () => AppbarFuelRoute,
 } as any)
-const AppbarAdminSidebarRoute = AppbarAdminSidebarRouteImport.update({
-  id: '/_sidebar',
-  getParentRoute: () => AppbarAdminRoute,
+const AppbarSidebarCipherRoute = AppbarSidebarCipherRouteImport.update({
+  id: '/cipher',
+  path: '/cipher',
+  getParentRoute: () => AppbarSidebarRoute,
 } as any)
-const AppbarSidebarProjectsIndexRoute =
-  AppbarSidebarProjectsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AppbarSidebarProjectsRoute,
-  } as any)
-const AppbarSidebarSettingsUsersRoute =
-  AppbarSidebarSettingsUsersRouteImport.update({
-    id: '/users',
-    path: '/users',
-    getParentRoute: () => AppbarSidebarSettingsRoute,
-  } as any)
-const AppbarSidebarSettingsRolesRoute =
-  AppbarSidebarSettingsRolesRouteImport.update({
-    id: '/roles',
-    path: '/roles',
-    getParentRoute: () => AppbarSidebarSettingsRoute,
-  } as any)
-const AppbarSidebarSettingsLogsRoute =
-  AppbarSidebarSettingsLogsRouteImport.update({
-    id: '/logs',
-    path: '/logs',
-    getParentRoute: () => AppbarSidebarSettingsRoute,
-  } as any)
-const AppbarSidebarReportsNarrativeRoute =
-  AppbarSidebarReportsNarrativeRouteImport.update({
-    id: '/narrative',
-    path: '/narrative',
-    getParentRoute: () => AppbarSidebarReportsRoute,
-  } as any)
-const AppbarSidebarProjectsIdRoute = AppbarSidebarProjectsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AppbarSidebarProjectsRoute,
+const AppbarSidebarHubRoute = AppbarSidebarHubRouteImport.update({
+  id: '/hub',
+  path: '/hub',
+  getParentRoute: () => AppbarSidebarRoute,
 } as any)
-const AppbarSidebarHubPosReportsRoute = AppbarSidebarHubPosReportsRouteImport.update({
-  id: '/pos-reports',
-  path: '/pos-reports',
-  getParentRoute: () => AppbarSidebarHubRoute,
+const AppbarSidebarProjectsRoute = AppbarSidebarProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => AppbarSidebarRoute,
 } as any)
-const AppbarSidebarHubShiftsRoute = AppbarSidebarHubShiftsRouteImport.update({
-  id: '/shifts',
-  path: '/shifts',
-  getParentRoute: () => AppbarSidebarHubRoute,
+const AppbarSidebarReportsRoute = AppbarSidebarReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AppbarSidebarRoute,
 } as any)
-const AppbarSidebarHubReceivablesRoute =
-  AppbarSidebarHubReceivablesRouteImport.update({
-    id: '/receivables',
-    path: '/receivables',
-    getParentRoute: () => AppbarSidebarHubRoute,
-  } as any)
-const AppbarSidebarHubPayablesRoute =
-  AppbarSidebarHubPayablesRouteImport.update({
-    id: '/payables',
-    path: '/payables',
-    getParentRoute: () => AppbarSidebarHubRoute,
-  } as any)
-const AppbarSidebarHubIntacctRoute = AppbarSidebarHubIntacctRouteImport.update({
-  id: '/intacct',
-  path: '/intacct',
-  getParentRoute: () => AppbarSidebarHubRoute,
+const AppbarSidebarSettingsRoute = AppbarSidebarSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppbarSidebarRoute,
 } as any)
-const AppbarSidebarHubFleetCustomersRoute =
-  AppbarSidebarHubFleetCustomersRouteImport.update({
-    id: '/fleet-customers',
-    path: '/fleet-customers',
-    getParentRoute: () => AppbarSidebarHubRoute,
-  } as any)
-const AppbarSidebarHubFleetCardsRoute =
-  AppbarSidebarHubFleetCardsRouteImport.update({
-    id: '/fleet-cards',
-    path: '/fleet-cards',
-    getParentRoute: () => AppbarSidebarHubRoute,
-  } as any)
-const AppbarSidebarHubFleetCardComplianceRoute =
-  AppbarSidebarHubFleetCardComplianceRouteImport.update({
-    id: '/fleet-card-compliance',
-    path: '/fleet-card-compliance',
-    getParentRoute: () => AppbarSidebarHubRoute,
-  } as any)
-const AppbarSidebarHubCdnRoute = AppbarSidebarHubCdnRouteImport.update({
-  id: '/cdn',
-  path: '/cdn',
-  getParentRoute: () => AppbarSidebarHubRoute,
-} as any)
-const AppbarSidebarHubCashRecRoute = AppbarSidebarHubCashRecRouteImport.update({
-  id: '/cash-rec',
-  path: '/cash-rec',
-  getParentRoute: () => AppbarSidebarHubRoute,
-} as any)
-const AppbarSidebarHubCashManagementRoute =
-  AppbarSidebarHubCashManagementRouteImport.update({
-    id: '/cash-management',
-    path: '/cash-management',
-    getParentRoute: () => AppbarSidebarHubRoute,
-  } as any)
-const AppbarSidebarHubArPaidReportRoute =
-  AppbarSidebarHubArPaidReportRouteImport.update({
-    id: '/ar-paid-report',
-    path: '/ar-paid-report',
-    getParentRoute: () => AppbarSidebarHubRoute,
-  } as any)
-const AppbarSidebarHubArCustomersRoute =
-  AppbarSidebarHubArCustomersRouteImport.update({
-    id: '/ar-customers',
-    path: '/ar-customers',
-    getParentRoute: () => AppbarSidebarHubRoute,
-  } as any)
-const AppbarSidebarCipherUnlockRoute =
-  AppbarSidebarCipherUnlockRouteImport.update({
-    id: '/unlock',
-    path: '/unlock',
-    getParentRoute: () => AppbarSidebarCipherRoute,
-  } as any)
-const AppbarSidebarCipherLockRoute = AppbarSidebarCipherLockRouteImport.update({
-  id: '/lock',
-  path: '/lock',
-  getParentRoute: () => AppbarSidebarCipherRoute,
-} as any)
-const AppbarSidebarAcademyMediaRoute =
-  AppbarSidebarAcademyMediaRouteImport.update({
-    id: '/academy/media',
-    path: '/academy/media',
-    getParentRoute: () => AppbarSidebarRoute,
-  } as any)
-const AppbarSidebarAcademyEmployeesRoute =
-  AppbarSidebarAcademyEmployeesRouteImport.update({
-    id: '/academy/employees',
-    path: '/academy/employees',
-    getParentRoute: () => AppbarSidebarRoute,
-  } as any)
-const AppbarSidebarAcademyCoursesRoute =
-  AppbarSidebarAcademyCoursesRouteImport.update({
-    id: '/academy/courses',
-    path: '/academy/courses',
-    getParentRoute: () => AppbarSidebarRoute,
-  } as any)
-const AppbarSidebarAcademyCompletionsRoute =
-  AppbarSidebarAcademyCompletionsRouteImport.update({
-    id: '/academy/completions',
-    path: '/academy/completions',
-    getParentRoute: () => AppbarSidebarRoute,
-  } as any)
-const AppbarAdminSidebarSubscriptionsRoute =
-  AppbarAdminSidebarSubscriptionsRouteImport.update({
-    id: '/subscriptions',
-    path: '/subscriptions',
-    getParentRoute: () => AppbarAdminSidebarRoute,
-  } as any)
-const AppbarAdminSidebarSiteAssetsRoute =
-  AppbarAdminSidebarSiteAssetsRouteImport.update({
-    id: '/site-assets',
-    path: '/site-assets',
-    getParentRoute: () => AppbarAdminSidebarRoute,
-  } as any)
-const AppbarAdminSidebarPersonnelRoute =
-  AppbarAdminSidebarPersonnelRouteImport.update({
-    id: '/personnel',
-    path: '/personnel',
-    getParentRoute: () => AppbarAdminSidebarRoute,
-  } as any)
-const AppbarAdminSidebarCredentialsRoute =
-  AppbarAdminSidebarCredentialsRouteImport.update({
-    id: '/credentials',
-    path: '/credentials',
+const AppbarAdminSidebarAccessRoute =
+  AppbarAdminSidebarAccessRouteImport.update({
+    id: '/access',
+    path: '/access',
     getParentRoute: () => AppbarAdminSidebarRoute,
   } as any)
 const AppbarAdminSidebarAssetsRoute =
@@ -330,100 +170,190 @@ const AppbarAdminSidebarAssetsRoute =
     path: '/assets',
     getParentRoute: () => AppbarAdminSidebarRoute,
   } as any)
-const AppbarAdminSidebarAccessRoute =
-  AppbarAdminSidebarAccessRouteImport.update({
-    id: '/access',
-    path: '/access',
+const AppbarAdminSidebarCredentialsRoute =
+  AppbarAdminSidebarCredentialsRouteImport.update({
+    id: '/credentials',
+    path: '/credentials',
     getParentRoute: () => AppbarAdminSidebarRoute,
   } as any)
-const AppbarSidebarHubIntacctIndexRoute =
-  AppbarSidebarHubIntacctIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AppbarSidebarHubIntacctRoute,
-  } as any)
-const AppbarSidebarAcademyCoursesIndexRoute =
-  AppbarSidebarAcademyCoursesIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AppbarSidebarAcademyCoursesRoute,
-  } as any)
-const AppbarAdminSidebarSiteAssetsIndexRoute =
-  AppbarAdminSidebarSiteAssetsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AppbarAdminSidebarSiteAssetsRoute,
-  } as any)
-const AppbarAdminSidebarPersonnelIndexRoute =
-  AppbarAdminSidebarPersonnelIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AppbarAdminSidebarPersonnelRoute,
-  } as any)
-const AppbarSidebarHubIntacctTradogramRoute =
-  AppbarSidebarHubIntacctTradogramRouteImport.update({
-    id: '/tradogram',
-    path: '/tradogram',
-    getParentRoute: () => AppbarSidebarHubIntacctRoute,
-  } as any)
-const AppbarSidebarHubIntacctPayrollRoute =
-  AppbarSidebarHubIntacctPayrollRouteImport.update({
-    id: '/payroll',
-    path: '/payroll',
-    getParentRoute: () => AppbarSidebarHubIntacctRoute,
-  } as any)
-const AppbarSidebarHubIntacctArEntriesRoute =
-  AppbarSidebarHubIntacctArEntriesRouteImport.update({
-    id: '/ar-entries',
-    path: '/ar-entries',
-    getParentRoute: () => AppbarSidebarHubIntacctRoute,
-  } as any)
-const AppbarSidebarAcademyCoursesCourseIdRoute =
-  AppbarSidebarAcademyCoursesCourseIdRouteImport.update({
-    id: '/$courseId',
-    path: '/$courseId',
-    getParentRoute: () => AppbarSidebarAcademyCoursesRoute,
-  } as any)
-const AppbarAdminSidebarSubscriptionsListRoute =
-  AppbarAdminSidebarSubscriptionsListRouteImport.update({
-    id: '/list',
-    path: '/list',
-    getParentRoute: () => AppbarAdminSidebarSubscriptionsRoute,
-  } as any)
-const AppbarAdminSidebarSubscriptionsCategoriesRoute =
-  AppbarAdminSidebarSubscriptionsCategoriesRouteImport.update({
-    id: '/categories',
-    path: '/categories',
-    getParentRoute: () => AppbarAdminSidebarSubscriptionsRoute,
-  } as any)
-const AppbarAdminSidebarSiteAssetsListRoute =
-  AppbarAdminSidebarSiteAssetsListRouteImport.update({
-    id: '/list',
-    path: '/list',
-    getParentRoute: () => AppbarAdminSidebarSiteAssetsRoute,
-  } as any)
-const AppbarAdminSidebarSiteAssetsAddRoute =
-  AppbarAdminSidebarSiteAssetsAddRouteImport.update({
-    id: '/add',
-    path: '/add',
-    getParentRoute: () => AppbarAdminSidebarSiteAssetsRoute,
-  } as any)
-const AppbarAdminSidebarCredentialsListRoute =
-  AppbarAdminSidebarCredentialsListRouteImport.update({
-    id: '/list',
-    path: '/list',
-    getParentRoute: () => AppbarAdminSidebarCredentialsRoute,
-  } as any)
-const AppbarAdminSidebarCredentialsCategoriesRoute =
-  AppbarAdminSidebarCredentialsCategoriesRouteImport.update({
-    id: '/categories',
-    path: '/categories',
-    getParentRoute: () => AppbarAdminSidebarCredentialsRoute,
-  } as any)
-const AppbarAdminSidebarAssetsPersonnelRoute =
-  AppbarAdminSidebarAssetsPersonnelRouteImport.update({
+const AppbarAdminSidebarPersonnelRoute =
+  AppbarAdminSidebarPersonnelRouteImport.update({
     id: '/personnel',
     path: '/personnel',
+    getParentRoute: () => AppbarAdminSidebarRoute,
+  } as any)
+const AppbarAdminSidebarSiteAssetsRoute =
+  AppbarAdminSidebarSiteAssetsRouteImport.update({
+    id: '/site-assets',
+    path: '/site-assets',
+    getParentRoute: () => AppbarAdminSidebarRoute,
+  } as any)
+const AppbarAdminSidebarSubscriptionsRoute =
+  AppbarAdminSidebarSubscriptionsRouteImport.update({
+    id: '/subscriptions',
+    path: '/subscriptions',
+    getParentRoute: () => AppbarAdminSidebarRoute,
+  } as any)
+const AppbarSidebarAcademyCompletionsRoute =
+  AppbarSidebarAcademyCompletionsRouteImport.update({
+    id: '/academy/completions',
+    path: '/academy/completions',
+    getParentRoute: () => AppbarSidebarRoute,
+  } as any)
+const AppbarSidebarAcademyCoursesRoute =
+  AppbarSidebarAcademyCoursesRouteImport.update({
+    id: '/academy/courses',
+    path: '/academy/courses',
+    getParentRoute: () => AppbarSidebarRoute,
+  } as any)
+const AppbarSidebarAcademyEmployeesRoute =
+  AppbarSidebarAcademyEmployeesRouteImport.update({
+    id: '/academy/employees',
+    path: '/academy/employees',
+    getParentRoute: () => AppbarSidebarRoute,
+  } as any)
+const AppbarSidebarAcademyMediaRoute =
+  AppbarSidebarAcademyMediaRouteImport.update({
+    id: '/academy/media',
+    path: '/academy/media',
+    getParentRoute: () => AppbarSidebarRoute,
+  } as any)
+const AppbarSidebarCipherLockRoute = AppbarSidebarCipherLockRouteImport.update({
+  id: '/lock',
+  path: '/lock',
+  getParentRoute: () => AppbarSidebarCipherRoute,
+} as any)
+const AppbarSidebarCipherUnlockRoute =
+  AppbarSidebarCipherUnlockRouteImport.update({
+    id: '/unlock',
+    path: '/unlock',
+    getParentRoute: () => AppbarSidebarCipherRoute,
+  } as any)
+const AppbarSidebarHubArCustomersRoute =
+  AppbarSidebarHubArCustomersRouteImport.update({
+    id: '/ar-customers',
+    path: '/ar-customers',
+    getParentRoute: () => AppbarSidebarHubRoute,
+  } as any)
+const AppbarSidebarHubArPaidReportRoute =
+  AppbarSidebarHubArPaidReportRouteImport.update({
+    id: '/ar-paid-report',
+    path: '/ar-paid-report',
+    getParentRoute: () => AppbarSidebarHubRoute,
+  } as any)
+const AppbarSidebarHubCashManagementRoute =
+  AppbarSidebarHubCashManagementRouteImport.update({
+    id: '/cash-management',
+    path: '/cash-management',
+    getParentRoute: () => AppbarSidebarHubRoute,
+  } as any)
+const AppbarSidebarHubCashRecRoute = AppbarSidebarHubCashRecRouteImport.update({
+  id: '/cash-rec',
+  path: '/cash-rec',
+  getParentRoute: () => AppbarSidebarHubRoute,
+} as any)
+const AppbarSidebarHubCdnRoute = AppbarSidebarHubCdnRouteImport.update({
+  id: '/cdn',
+  path: '/cdn',
+  getParentRoute: () => AppbarSidebarHubRoute,
+} as any)
+const AppbarSidebarHubFleetCardComplianceRoute =
+  AppbarSidebarHubFleetCardComplianceRouteImport.update({
+    id: '/fleet-card-compliance',
+    path: '/fleet-card-compliance',
+    getParentRoute: () => AppbarSidebarHubRoute,
+  } as any)
+const AppbarSidebarHubFleetCardsRoute =
+  AppbarSidebarHubFleetCardsRouteImport.update({
+    id: '/fleet-cards',
+    path: '/fleet-cards',
+    getParentRoute: () => AppbarSidebarHubRoute,
+  } as any)
+const AppbarSidebarHubFleetCustomersRoute =
+  AppbarSidebarHubFleetCustomersRouteImport.update({
+    id: '/fleet-customers',
+    path: '/fleet-customers',
+    getParentRoute: () => AppbarSidebarHubRoute,
+  } as any)
+const AppbarSidebarHubIntacctRoute = AppbarSidebarHubIntacctRouteImport.update({
+  id: '/intacct',
+  path: '/intacct',
+  getParentRoute: () => AppbarSidebarHubRoute,
+} as any)
+const AppbarSidebarHubPayablesRoute =
+  AppbarSidebarHubPayablesRouteImport.update({
+    id: '/payables',
+    path: '/payables',
+    getParentRoute: () => AppbarSidebarHubRoute,
+  } as any)
+const AppbarSidebarHubPosReportsRoute =
+  AppbarSidebarHubPosReportsRouteImport.update({
+    id: '/pos-reports',
+    path: '/pos-reports',
+    getParentRoute: () => AppbarSidebarHubRoute,
+  } as any)
+const AppbarSidebarHubReceivablesRoute =
+  AppbarSidebarHubReceivablesRouteImport.update({
+    id: '/receivables',
+    path: '/receivables',
+    getParentRoute: () => AppbarSidebarHubRoute,
+  } as any)
+const AppbarSidebarHubShiftsRoute = AppbarSidebarHubShiftsRouteImport.update({
+  id: '/shifts',
+  path: '/shifts',
+  getParentRoute: () => AppbarSidebarHubRoute,
+} as any)
+const AppbarSidebarProjectsIndexRoute =
+  AppbarSidebarProjectsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AppbarSidebarProjectsRoute,
+  } as any)
+const AppbarSidebarProjectsIdRoute = AppbarSidebarProjectsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppbarSidebarProjectsRoute,
+} as any)
+const AppbarSidebarReportsNarrativeRoute =
+  AppbarSidebarReportsNarrativeRouteImport.update({
+    id: '/narrative',
+    path: '/narrative',
+    getParentRoute: () => AppbarSidebarReportsRoute,
+  } as any)
+const AppbarSidebarSettingsLogsRoute =
+  AppbarSidebarSettingsLogsRouteImport.update({
+    id: '/logs',
+    path: '/logs',
+    getParentRoute: () => AppbarSidebarSettingsRoute,
+  } as any)
+const AppbarSidebarSettingsRolesRoute =
+  AppbarSidebarSettingsRolesRouteImport.update({
+    id: '/roles',
+    path: '/roles',
+    getParentRoute: () => AppbarSidebarSettingsRoute,
+  } as any)
+const AppbarSidebarSettingsUsersRoute =
+  AppbarSidebarSettingsUsersRouteImport.update({
+    id: '/users',
+    path: '/users',
+    getParentRoute: () => AppbarSidebarSettingsRoute,
+  } as any)
+const AppbarAdminSidebarAccessPersonnelRoute =
+  AppbarAdminSidebarAccessPersonnelRouteImport.update({
+    id: '/personnel',
+    path: '/personnel',
+    getParentRoute: () => AppbarAdminSidebarAccessRoute,
+  } as any)
+const AppbarAdminSidebarAccessResourcesRoute =
+  AppbarAdminSidebarAccessResourcesRouteImport.update({
+    id: '/resources',
+    path: '/resources',
+    getParentRoute: () => AppbarAdminSidebarAccessRoute,
+  } as any)
+const AppbarAdminSidebarAssetsDevicesRoute =
+  AppbarAdminSidebarAssetsDevicesRouteImport.update({
+    id: '/devices',
+    path: '/devices',
     getParentRoute: () => AppbarAdminSidebarAssetsRoute,
   } as any)
 const AppbarAdminSidebarAssetsLocationRoute =
@@ -432,23 +362,101 @@ const AppbarAdminSidebarAssetsLocationRoute =
     path: '/location',
     getParentRoute: () => AppbarAdminSidebarAssetsRoute,
   } as any)
-const AppbarAdminSidebarAssetsDevicesRoute =
-  AppbarAdminSidebarAssetsDevicesRouteImport.update({
-    id: '/devices',
-    path: '/devices',
-    getParentRoute: () => AppbarAdminSidebarAssetsRoute,
-  } as any)
-const AppbarAdminSidebarAccessResourcesRoute =
-  AppbarAdminSidebarAccessResourcesRouteImport.update({
-    id: '/resources',
-    path: '/resources',
-    getParentRoute: () => AppbarAdminSidebarAccessRoute,
-  } as any)
-const AppbarAdminSidebarAccessPersonnelRoute =
-  AppbarAdminSidebarAccessPersonnelRouteImport.update({
+const AppbarAdminSidebarAssetsPersonnelRoute =
+  AppbarAdminSidebarAssetsPersonnelRouteImport.update({
     id: '/personnel',
     path: '/personnel',
-    getParentRoute: () => AppbarAdminSidebarAccessRoute,
+    getParentRoute: () => AppbarAdminSidebarAssetsRoute,
+  } as any)
+const AppbarAdminSidebarCredentialsCategoriesRoute =
+  AppbarAdminSidebarCredentialsCategoriesRouteImport.update({
+    id: '/categories',
+    path: '/categories',
+    getParentRoute: () => AppbarAdminSidebarCredentialsRoute,
+  } as any)
+const AppbarAdminSidebarCredentialsListRoute =
+  AppbarAdminSidebarCredentialsListRouteImport.update({
+    id: '/list',
+    path: '/list',
+    getParentRoute: () => AppbarAdminSidebarCredentialsRoute,
+  } as any)
+const AppbarAdminSidebarPersonnelIndexRoute =
+  AppbarAdminSidebarPersonnelIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AppbarAdminSidebarPersonnelRoute,
+  } as any)
+const AppbarAdminSidebarSiteAssetsIndexRoute =
+  AppbarAdminSidebarSiteAssetsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AppbarAdminSidebarSiteAssetsRoute,
+  } as any)
+const AppbarAdminSidebarSiteAssetsAddRoute =
+  AppbarAdminSidebarSiteAssetsAddRouteImport.update({
+    id: '/add',
+    path: '/add',
+    getParentRoute: () => AppbarAdminSidebarSiteAssetsRoute,
+  } as any)
+const AppbarAdminSidebarSiteAssetsListRoute =
+  AppbarAdminSidebarSiteAssetsListRouteImport.update({
+    id: '/list',
+    path: '/list',
+    getParentRoute: () => AppbarAdminSidebarSiteAssetsRoute,
+  } as any)
+const AppbarAdminSidebarSubscriptionsCategoriesRoute =
+  AppbarAdminSidebarSubscriptionsCategoriesRouteImport.update({
+    id: '/categories',
+    path: '/categories',
+    getParentRoute: () => AppbarAdminSidebarSubscriptionsRoute,
+  } as any)
+const AppbarAdminSidebarSubscriptionsListRoute =
+  AppbarAdminSidebarSubscriptionsListRouteImport.update({
+    id: '/list',
+    path: '/list',
+    getParentRoute: () => AppbarAdminSidebarSubscriptionsRoute,
+  } as any)
+const AppbarSidebarAcademyCoursesIndexRoute =
+  AppbarSidebarAcademyCoursesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AppbarSidebarAcademyCoursesRoute,
+  } as any)
+const AppbarSidebarAcademyCoursesCourseIdRoute =
+  AppbarSidebarAcademyCoursesCourseIdRouteImport.update({
+    id: '/$courseId',
+    path: '/$courseId',
+    getParentRoute: () => AppbarSidebarAcademyCoursesRoute,
+  } as any)
+const AppbarSidebarHubIntacctIndexRoute =
+  AppbarSidebarHubIntacctIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AppbarSidebarHubIntacctRoute,
+  } as any)
+const AppbarSidebarHubIntacctArEntriesRoute =
+  AppbarSidebarHubIntacctArEntriesRouteImport.update({
+    id: '/ar-entries',
+    path: '/ar-entries',
+    getParentRoute: () => AppbarSidebarHubIntacctRoute,
+  } as any)
+const AppbarSidebarHubIntacctBookworksRoute =
+  AppbarSidebarHubIntacctBookworksRouteImport.update({
+    id: '/bookworks',
+    path: '/bookworks',
+    getParentRoute: () => AppbarSidebarHubIntacctRoute,
+  } as any)
+const AppbarSidebarHubIntacctPayrollRoute =
+  AppbarSidebarHubIntacctPayrollRouteImport.update({
+    id: '/payroll',
+    path: '/payroll',
+    getParentRoute: () => AppbarSidebarHubIntacctRoute,
+  } as any)
+const AppbarSidebarHubIntacctTradogramRoute =
+  AppbarSidebarHubIntacctTradogramRouteImport.update({
+    id: '/tradogram',
+    path: '/tradogram',
+    getParentRoute: () => AppbarSidebarHubIntacctRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -485,8 +493,8 @@ export interface FileRoutesByFullPath {
   '/hub/fleet-customers': typeof AppbarSidebarHubFleetCustomersRoute
   '/hub/intacct': typeof AppbarSidebarHubIntacctRouteWithChildren
   '/hub/payables': typeof AppbarSidebarHubPayablesRoute
-  '/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
   '/hub/pos-reports': typeof AppbarSidebarHubPosReportsRoute
+  '/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
   '/hub/shifts': typeof AppbarSidebarHubShiftsRoute
   '/projects/$id': typeof AppbarSidebarProjectsIdRoute
   '/reports/narrative': typeof AppbarSidebarReportsNarrativeRoute
@@ -507,6 +515,7 @@ export interface FileRoutesByFullPath {
   '/subscriptions/list': typeof AppbarAdminSidebarSubscriptionsListRoute
   '/academy/courses/$courseId': typeof AppbarSidebarAcademyCoursesCourseIdRoute
   '/hub/intacct/ar-entries': typeof AppbarSidebarHubIntacctArEntriesRoute
+  '/hub/intacct/bookworks': typeof AppbarSidebarHubIntacctBookworksRoute
   '/hub/intacct/payroll': typeof AppbarSidebarHubIntacctPayrollRoute
   '/hub/intacct/tradogram': typeof AppbarSidebarHubIntacctTradogramRoute
   '/personnel/': typeof AppbarAdminSidebarPersonnelIndexRoute
@@ -543,8 +552,8 @@ export interface FileRoutesByTo {
   '/hub/fleet-cards': typeof AppbarSidebarHubFleetCardsRoute
   '/hub/fleet-customers': typeof AppbarSidebarHubFleetCustomersRoute
   '/hub/payables': typeof AppbarSidebarHubPayablesRoute
-  '/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
   '/hub/pos-reports': typeof AppbarSidebarHubPosReportsRoute
+  '/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
   '/hub/shifts': typeof AppbarSidebarHubShiftsRoute
   '/projects/$id': typeof AppbarSidebarProjectsIdRoute
   '/reports/narrative': typeof AppbarSidebarReportsNarrativeRoute
@@ -565,6 +574,7 @@ export interface FileRoutesByTo {
   '/subscriptions/list': typeof AppbarAdminSidebarSubscriptionsListRoute
   '/academy/courses/$courseId': typeof AppbarSidebarAcademyCoursesCourseIdRoute
   '/hub/intacct/ar-entries': typeof AppbarSidebarHubIntacctArEntriesRoute
+  '/hub/intacct/bookworks': typeof AppbarSidebarHubIntacctBookworksRoute
   '/hub/intacct/payroll': typeof AppbarSidebarHubIntacctPayrollRoute
   '/hub/intacct/tradogram': typeof AppbarSidebarHubIntacctTradogramRoute
   '/personnel': typeof AppbarAdminSidebarPersonnelIndexRoute
@@ -613,8 +623,8 @@ export interface FileRoutesById {
   '/_appbar/_sidebar/hub/fleet-customers': typeof AppbarSidebarHubFleetCustomersRoute
   '/_appbar/_sidebar/hub/intacct': typeof AppbarSidebarHubIntacctRouteWithChildren
   '/_appbar/_sidebar/hub/payables': typeof AppbarSidebarHubPayablesRoute
-  '/_appbar/_sidebar/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
   '/_appbar/_sidebar/hub/pos-reports': typeof AppbarSidebarHubPosReportsRoute
+  '/_appbar/_sidebar/hub/receivables': typeof AppbarSidebarHubReceivablesRoute
   '/_appbar/_sidebar/hub/shifts': typeof AppbarSidebarHubShiftsRoute
   '/_appbar/_sidebar/projects/$id': typeof AppbarSidebarProjectsIdRoute
   '/_appbar/_sidebar/reports/narrative': typeof AppbarSidebarReportsNarrativeRoute
@@ -635,6 +645,7 @@ export interface FileRoutesById {
   '/_appbar/_admin/_sidebar/subscriptions/list': typeof AppbarAdminSidebarSubscriptionsListRoute
   '/_appbar/_sidebar/academy/courses/$courseId': typeof AppbarSidebarAcademyCoursesCourseIdRoute
   '/_appbar/_sidebar/hub/intacct/ar-entries': typeof AppbarSidebarHubIntacctArEntriesRoute
+  '/_appbar/_sidebar/hub/intacct/bookworks': typeof AppbarSidebarHubIntacctBookworksRoute
   '/_appbar/_sidebar/hub/intacct/payroll': typeof AppbarSidebarHubIntacctPayrollRoute
   '/_appbar/_sidebar/hub/intacct/tradogram': typeof AppbarSidebarHubIntacctTradogramRoute
   '/_appbar/_admin/_sidebar/personnel/': typeof AppbarAdminSidebarPersonnelIndexRoute
@@ -678,8 +689,8 @@ export interface FileRouteTypes {
     | '/hub/fleet-customers'
     | '/hub/intacct'
     | '/hub/payables'
-    | '/hub/receivables'
     | '/hub/pos-reports'
+    | '/hub/receivables'
     | '/hub/shifts'
     | '/projects/$id'
     | '/reports/narrative'
@@ -700,6 +711,7 @@ export interface FileRouteTypes {
     | '/subscriptions/list'
     | '/academy/courses/$courseId'
     | '/hub/intacct/ar-entries'
+    | '/hub/intacct/bookworks'
     | '/hub/intacct/payroll'
     | '/hub/intacct/tradogram'
     | '/personnel/'
@@ -736,8 +748,8 @@ export interface FileRouteTypes {
     | '/hub/fleet-cards'
     | '/hub/fleet-customers'
     | '/hub/payables'
-    | '/hub/receivables'
     | '/hub/pos-reports'
+    | '/hub/receivables'
     | '/hub/shifts'
     | '/projects/$id'
     | '/reports/narrative'
@@ -758,6 +770,7 @@ export interface FileRouteTypes {
     | '/subscriptions/list'
     | '/academy/courses/$courseId'
     | '/hub/intacct/ar-entries'
+    | '/hub/intacct/bookworks'
     | '/hub/intacct/payroll'
     | '/hub/intacct/tradogram'
     | '/personnel'
@@ -805,8 +818,8 @@ export interface FileRouteTypes {
     | '/_appbar/_sidebar/hub/fleet-customers'
     | '/_appbar/_sidebar/hub/intacct'
     | '/_appbar/_sidebar/hub/payables'
-    | '/_appbar/_sidebar/hub/receivables'
     | '/_appbar/_sidebar/hub/pos-reports'
+    | '/_appbar/_sidebar/hub/receivables'
     | '/_appbar/_sidebar/hub/shifts'
     | '/_appbar/_sidebar/projects/$id'
     | '/_appbar/_sidebar/reports/narrative'
@@ -827,6 +840,7 @@ export interface FileRouteTypes {
     | '/_appbar/_admin/_sidebar/subscriptions/list'
     | '/_appbar/_sidebar/academy/courses/$courseId'
     | '/_appbar/_sidebar/hub/intacct/ar-entries'
+    | '/_appbar/_sidebar/hub/intacct/bookworks'
     | '/_appbar/_sidebar/hub/intacct/payroll'
     | '/_appbar/_sidebar/hub/intacct/tradogram'
     | '/_appbar/_admin/_sidebar/personnel/'
@@ -849,39 +863,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppbarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(auth)/login': {
+      id: '/(auth)/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof authLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_appbar/': {
       id: '/_appbar/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AppbarIndexRouteImport
-      parentRoute: typeof AppbarRoute
-    }
-    '/_appbar/issues': {
-      id: '/_appbar/issues'
-      path: '/issues'
-      fullPath: '/issues'
-      preLoaderRoute: typeof AppbarIssuesRouteImport
-      parentRoute: typeof AppbarRoute
-    }
-    '/_appbar/hub': {
-      id: '/_appbar/hub'
-      path: '/hub'
-      fullPath: '/hub'
-      preLoaderRoute: typeof AppbarHubRouteImport
-      parentRoute: typeof AppbarRoute
-    }
-    '/_appbar/_sidebar': {
-      id: '/_appbar/_sidebar'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AppbarSidebarRouteImport
-      parentRoute: typeof AppbarRoute
-    }
-    '/_appbar/_fuel': {
-      id: '/_appbar/_fuel'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AppbarFuelRouteImport
       parentRoute: typeof AppbarRoute
     }
     '/_appbar/_admin': {
@@ -891,53 +884,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppbarAdminRouteImport
       parentRoute: typeof AppbarRoute
     }
-    '/(auth)/login': {
-      id: '/(auth)/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof authLoginRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_appbar/_fuel': {
+      id: '/_appbar/_fuel'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppbarFuelRouteImport
+      parentRoute: typeof AppbarRoute
     }
-    '/_appbar/_sidebar/settings': {
-      id: '/_appbar/_sidebar/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AppbarSidebarSettingsRouteImport
-      parentRoute: typeof AppbarSidebarRoute
+    '/_appbar/_sidebar': {
+      id: '/_appbar/_sidebar'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppbarSidebarRouteImport
+      parentRoute: typeof AppbarRoute
     }
-    '/_appbar/_sidebar/reports': {
-      id: '/_appbar/_sidebar/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof AppbarSidebarReportsRouteImport
-      parentRoute: typeof AppbarSidebarRoute
-    }
-    '/_appbar/_sidebar/projects': {
-      id: '/_appbar/_sidebar/projects'
-      path: '/projects'
-      fullPath: '/projects'
-      preLoaderRoute: typeof AppbarSidebarProjectsRouteImport
-      parentRoute: typeof AppbarSidebarRoute
-    }
-    '/_appbar/_sidebar/hub': {
-      id: '/_appbar/_sidebar/hub'
+    '/_appbar/hub': {
+      id: '/_appbar/hub'
       path: '/hub'
       fullPath: '/hub'
-      preLoaderRoute: typeof AppbarSidebarHubRouteImport
-      parentRoute: typeof AppbarSidebarRoute
+      preLoaderRoute: typeof AppbarHubRouteImport
+      parentRoute: typeof AppbarRoute
     }
-    '/_appbar/_sidebar/cipher': {
-      id: '/_appbar/_sidebar/cipher'
-      path: '/cipher'
-      fullPath: '/cipher'
-      preLoaderRoute: typeof AppbarSidebarCipherRouteImport
-      parentRoute: typeof AppbarSidebarRoute
+    '/_appbar/issues': {
+      id: '/_appbar/issues'
+      path: '/issues'
+      fullPath: '/issues'
+      preLoaderRoute: typeof AppbarIssuesRouteImport
+      parentRoute: typeof AppbarRoute
     }
-    '/_appbar/_fuel/kardpoll': {
-      id: '/_appbar/_fuel/kardpoll'
-      path: '/kardpoll'
-      fullPath: '/kardpoll'
-      preLoaderRoute: typeof AppbarFuelKardpollRouteImport
+    '/_appbar/_admin/_sidebar': {
+      id: '/_appbar/_admin/_sidebar'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppbarAdminSidebarRouteImport
+      parentRoute: typeof AppbarAdminRoute
+    }
+    '/_appbar/_fuel/fuel-invoicing': {
+      id: '/_appbar/_fuel/fuel-invoicing'
+      path: '/fuel-invoicing'
+      fullPath: '/fuel-invoicing'
+      preLoaderRoute: typeof AppbarFuelFuelInvoicingRouteImport
       parentRoute: typeof AppbarFuelRoute
     }
     '/_appbar/_fuel/fuel-rec': {
@@ -947,221 +933,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppbarFuelFuelRecRouteImport
       parentRoute: typeof AppbarFuelRoute
     }
-    '/_appbar/_fuel/fuel-invoicing': {
-      id: '/_appbar/_fuel/fuel-invoicing'
-      path: '/fuel-invoicing'
-      fullPath: '/fuel-invoicing'
-      preLoaderRoute: typeof AppbarFuelFuelInvoicingRouteImport
+    '/_appbar/_fuel/kardpoll': {
+      id: '/_appbar/_fuel/kardpoll'
+      path: '/kardpoll'
+      fullPath: '/kardpoll'
+      preLoaderRoute: typeof AppbarFuelKardpollRouteImport
       parentRoute: typeof AppbarFuelRoute
     }
-    '/_appbar/_admin/_sidebar': {
-      id: '/_appbar/_admin/_sidebar'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AppbarAdminSidebarRouteImport
-      parentRoute: typeof AppbarAdminRoute
-    }
-    '/_appbar/_sidebar/projects/': {
-      id: '/_appbar/_sidebar/projects/'
-      path: '/'
-      fullPath: '/projects/'
-      preLoaderRoute: typeof AppbarSidebarProjectsIndexRouteImport
-      parentRoute: typeof AppbarSidebarProjectsRoute
-    }
-    '/_appbar/_sidebar/settings/users': {
-      id: '/_appbar/_sidebar/settings/users'
-      path: '/users'
-      fullPath: '/settings/users'
-      preLoaderRoute: typeof AppbarSidebarSettingsUsersRouteImport
-      parentRoute: typeof AppbarSidebarSettingsRoute
-    }
-    '/_appbar/_sidebar/settings/roles': {
-      id: '/_appbar/_sidebar/settings/roles'
-      path: '/roles'
-      fullPath: '/settings/roles'
-      preLoaderRoute: typeof AppbarSidebarSettingsRolesRouteImport
-      parentRoute: typeof AppbarSidebarSettingsRoute
-    }
-    '/_appbar/_sidebar/settings/logs': {
-      id: '/_appbar/_sidebar/settings/logs'
-      path: '/logs'
-      fullPath: '/settings/logs'
-      preLoaderRoute: typeof AppbarSidebarSettingsLogsRouteImport
-      parentRoute: typeof AppbarSidebarSettingsRoute
-    }
-    '/_appbar/_sidebar/reports/narrative': {
-      id: '/_appbar/_sidebar/reports/narrative'
-      path: '/narrative'
-      fullPath: '/reports/narrative'
-      preLoaderRoute: typeof AppbarSidebarReportsNarrativeRouteImport
-      parentRoute: typeof AppbarSidebarReportsRoute
-    }
-    '/_appbar/_sidebar/projects/$id': {
-      id: '/_appbar/_sidebar/projects/$id'
-      path: '/$id'
-      fullPath: '/projects/$id'
-      preLoaderRoute: typeof AppbarSidebarProjectsIdRouteImport
-      parentRoute: typeof AppbarSidebarProjectsRoute
-    }
-    '/_appbar/_sidebar/hub/pos-reports': {
-      id: '/_appbar/_sidebar/hub/pos-reports'
-      path: '/pos-reports'
-      fullPath: '/hub/pos-reports'
-      preLoaderRoute: typeof AppbarSidebarHubPosReportsRouteImport
-      parentRoute: typeof AppbarSidebarHubRoute
-    }
-    '/_appbar/_sidebar/hub/shifts': {
-      id: '/_appbar/_sidebar/hub/shifts'
-      path: '/shifts'
-      fullPath: '/hub/shifts'
-      preLoaderRoute: typeof AppbarSidebarHubShiftsRouteImport
-      parentRoute: typeof AppbarSidebarHubRoute
-    }
-    '/_appbar/_sidebar/hub/receivables': {
-      id: '/_appbar/_sidebar/hub/receivables'
-      path: '/receivables'
-      fullPath: '/hub/receivables'
-      preLoaderRoute: typeof AppbarSidebarHubReceivablesRouteImport
-      parentRoute: typeof AppbarSidebarHubRoute
-    }
-    '/_appbar/_sidebar/hub/payables': {
-      id: '/_appbar/_sidebar/hub/payables'
-      path: '/payables'
-      fullPath: '/hub/payables'
-      preLoaderRoute: typeof AppbarSidebarHubPayablesRouteImport
-      parentRoute: typeof AppbarSidebarHubRoute
-    }
-    '/_appbar/_sidebar/hub/intacct': {
-      id: '/_appbar/_sidebar/hub/intacct'
-      path: '/intacct'
-      fullPath: '/hub/intacct'
-      preLoaderRoute: typeof AppbarSidebarHubIntacctRouteImport
-      parentRoute: typeof AppbarSidebarHubRoute
-    }
-    '/_appbar/_sidebar/hub/fleet-customers': {
-      id: '/_appbar/_sidebar/hub/fleet-customers'
-      path: '/fleet-customers'
-      fullPath: '/hub/fleet-customers'
-      preLoaderRoute: typeof AppbarSidebarHubFleetCustomersRouteImport
-      parentRoute: typeof AppbarSidebarHubRoute
-    }
-    '/_appbar/_sidebar/hub/fleet-cards': {
-      id: '/_appbar/_sidebar/hub/fleet-cards'
-      path: '/fleet-cards'
-      fullPath: '/hub/fleet-cards'
-      preLoaderRoute: typeof AppbarSidebarHubFleetCardsRouteImport
-      parentRoute: typeof AppbarSidebarHubRoute
-    }
-    '/_appbar/_sidebar/hub/fleet-card-compliance': {
-      id: '/_appbar/_sidebar/hub/fleet-card-compliance'
-      path: '/fleet-card-compliance'
-      fullPath: '/hub/fleet-card-compliance'
-      preLoaderRoute: typeof AppbarSidebarHubFleetCardComplianceRouteImport
-      parentRoute: typeof AppbarSidebarHubRoute
-    }
-    '/_appbar/_sidebar/hub/cdn': {
-      id: '/_appbar/_sidebar/hub/cdn'
-      path: '/cdn'
-      fullPath: '/hub/cdn'
-      preLoaderRoute: typeof AppbarSidebarHubCdnRouteImport
-      parentRoute: typeof AppbarSidebarHubRoute
-    }
-    '/_appbar/_sidebar/hub/cash-rec': {
-      id: '/_appbar/_sidebar/hub/cash-rec'
-      path: '/cash-rec'
-      fullPath: '/hub/cash-rec'
-      preLoaderRoute: typeof AppbarSidebarHubCashRecRouteImport
-      parentRoute: typeof AppbarSidebarHubRoute
-    }
-    '/_appbar/_sidebar/hub/cash-management': {
-      id: '/_appbar/_sidebar/hub/cash-management'
-      path: '/cash-management'
-      fullPath: '/hub/cash-management'
-      preLoaderRoute: typeof AppbarSidebarHubCashManagementRouteImport
-      parentRoute: typeof AppbarSidebarHubRoute
-    }
-    '/_appbar/_sidebar/hub/ar-paid-report': {
-      id: '/_appbar/_sidebar/hub/ar-paid-report'
-      path: '/ar-paid-report'
-      fullPath: '/hub/ar-paid-report'
-      preLoaderRoute: typeof AppbarSidebarHubArPaidReportRouteImport
-      parentRoute: typeof AppbarSidebarHubRoute
-    }
-    '/_appbar/_sidebar/hub/ar-customers': {
-      id: '/_appbar/_sidebar/hub/ar-customers'
-      path: '/ar-customers'
-      fullPath: '/hub/ar-customers'
-      preLoaderRoute: typeof AppbarSidebarHubArCustomersRouteImport
-      parentRoute: typeof AppbarSidebarHubRoute
-    }
-    '/_appbar/_sidebar/cipher/unlock': {
-      id: '/_appbar/_sidebar/cipher/unlock'
-      path: '/unlock'
-      fullPath: '/cipher/unlock'
-      preLoaderRoute: typeof AppbarSidebarCipherUnlockRouteImport
-      parentRoute: typeof AppbarSidebarCipherRoute
-    }
-    '/_appbar/_sidebar/cipher/lock': {
-      id: '/_appbar/_sidebar/cipher/lock'
-      path: '/lock'
-      fullPath: '/cipher/lock'
-      preLoaderRoute: typeof AppbarSidebarCipherLockRouteImport
-      parentRoute: typeof AppbarSidebarCipherRoute
-    }
-    '/_appbar/_sidebar/academy/media': {
-      id: '/_appbar/_sidebar/academy/media'
-      path: '/academy/media'
-      fullPath: '/academy/media'
-      preLoaderRoute: typeof AppbarSidebarAcademyMediaRouteImport
+    '/_appbar/_sidebar/cipher': {
+      id: '/_appbar/_sidebar/cipher'
+      path: '/cipher'
+      fullPath: '/cipher'
+      preLoaderRoute: typeof AppbarSidebarCipherRouteImport
       parentRoute: typeof AppbarSidebarRoute
     }
-    '/_appbar/_sidebar/academy/employees': {
-      id: '/_appbar/_sidebar/academy/employees'
-      path: '/academy/employees'
-      fullPath: '/academy/employees'
-      preLoaderRoute: typeof AppbarSidebarAcademyEmployeesRouteImport
+    '/_appbar/_sidebar/hub': {
+      id: '/_appbar/_sidebar/hub'
+      path: '/hub'
+      fullPath: '/hub'
+      preLoaderRoute: typeof AppbarSidebarHubRouteImport
       parentRoute: typeof AppbarSidebarRoute
     }
-    '/_appbar/_sidebar/academy/courses': {
-      id: '/_appbar/_sidebar/academy/courses'
-      path: '/academy/courses'
-      fullPath: '/academy/courses'
-      preLoaderRoute: typeof AppbarSidebarAcademyCoursesRouteImport
+    '/_appbar/_sidebar/projects': {
+      id: '/_appbar/_sidebar/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof AppbarSidebarProjectsRouteImport
       parentRoute: typeof AppbarSidebarRoute
     }
-    '/_appbar/_sidebar/academy/completions': {
-      id: '/_appbar/_sidebar/academy/completions'
-      path: '/academy/completions'
-      fullPath: '/academy/completions'
-      preLoaderRoute: typeof AppbarSidebarAcademyCompletionsRouteImport
+    '/_appbar/_sidebar/reports': {
+      id: '/_appbar/_sidebar/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AppbarSidebarReportsRouteImport
       parentRoute: typeof AppbarSidebarRoute
     }
-    '/_appbar/_admin/_sidebar/subscriptions': {
-      id: '/_appbar/_admin/_sidebar/subscriptions'
-      path: '/subscriptions'
-      fullPath: '/subscriptions'
-      preLoaderRoute: typeof AppbarAdminSidebarSubscriptionsRouteImport
-      parentRoute: typeof AppbarAdminSidebarRoute
+    '/_appbar/_sidebar/settings': {
+      id: '/_appbar/_sidebar/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppbarSidebarSettingsRouteImport
+      parentRoute: typeof AppbarSidebarRoute
     }
-    '/_appbar/_admin/_sidebar/site-assets': {
-      id: '/_appbar/_admin/_sidebar/site-assets'
-      path: '/site-assets'
-      fullPath: '/site-assets'
-      preLoaderRoute: typeof AppbarAdminSidebarSiteAssetsRouteImport
-      parentRoute: typeof AppbarAdminSidebarRoute
-    }
-    '/_appbar/_admin/_sidebar/personnel': {
-      id: '/_appbar/_admin/_sidebar/personnel'
-      path: '/personnel'
-      fullPath: '/personnel'
-      preLoaderRoute: typeof AppbarAdminSidebarPersonnelRouteImport
-      parentRoute: typeof AppbarAdminSidebarRoute
-    }
-    '/_appbar/_admin/_sidebar/credentials': {
-      id: '/_appbar/_admin/_sidebar/credentials'
-      path: '/credentials'
-      fullPath: '/credentials'
-      preLoaderRoute: typeof AppbarAdminSidebarCredentialsRouteImport
+    '/_appbar/_admin/_sidebar/access': {
+      id: '/_appbar/_admin/_sidebar/access'
+      path: '/access'
+      fullPath: '/access'
+      preLoaderRoute: typeof AppbarAdminSidebarAccessRouteImport
       parentRoute: typeof AppbarAdminSidebarRoute
     }
     '/_appbar/_admin/_sidebar/assets': {
@@ -1171,116 +989,228 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppbarAdminSidebarAssetsRouteImport
       parentRoute: typeof AppbarAdminSidebarRoute
     }
-    '/_appbar/_admin/_sidebar/access': {
-      id: '/_appbar/_admin/_sidebar/access'
-      path: '/access'
-      fullPath: '/access'
-      preLoaderRoute: typeof AppbarAdminSidebarAccessRouteImport
+    '/_appbar/_admin/_sidebar/credentials': {
+      id: '/_appbar/_admin/_sidebar/credentials'
+      path: '/credentials'
+      fullPath: '/credentials'
+      preLoaderRoute: typeof AppbarAdminSidebarCredentialsRouteImport
       parentRoute: typeof AppbarAdminSidebarRoute
     }
-    '/_appbar/_sidebar/hub/intacct/': {
-      id: '/_appbar/_sidebar/hub/intacct/'
-      path: '/'
-      fullPath: '/hub/intacct/'
-      preLoaderRoute: typeof AppbarSidebarHubIntacctIndexRouteImport
-      parentRoute: typeof AppbarSidebarHubIntacctRoute
-    }
-    '/_appbar/_sidebar/academy/courses/': {
-      id: '/_appbar/_sidebar/academy/courses/'
-      path: '/'
-      fullPath: '/academy/courses/'
-      preLoaderRoute: typeof AppbarSidebarAcademyCoursesIndexRouteImport
-      parentRoute: typeof AppbarSidebarAcademyCoursesRoute
-    }
-    '/_appbar/_admin/_sidebar/site-assets/': {
-      id: '/_appbar/_admin/_sidebar/site-assets/'
-      path: '/'
-      fullPath: '/site-assets/'
-      preLoaderRoute: typeof AppbarAdminSidebarSiteAssetsIndexRouteImport
-      parentRoute: typeof AppbarAdminSidebarSiteAssetsRoute
-    }
-    '/_appbar/_admin/_sidebar/personnel/': {
-      id: '/_appbar/_admin/_sidebar/personnel/'
-      path: '/'
-      fullPath: '/personnel/'
-      preLoaderRoute: typeof AppbarAdminSidebarPersonnelIndexRouteImport
-      parentRoute: typeof AppbarAdminSidebarPersonnelRoute
-    }
-    '/_appbar/_sidebar/hub/intacct/tradogram': {
-      id: '/_appbar/_sidebar/hub/intacct/tradogram'
-      path: '/tradogram'
-      fullPath: '/hub/intacct/tradogram'
-      preLoaderRoute: typeof AppbarSidebarHubIntacctTradogramRouteImport
-      parentRoute: typeof AppbarSidebarHubIntacctRoute
-    }
-    '/_appbar/_sidebar/hub/intacct/payroll': {
-      id: '/_appbar/_sidebar/hub/intacct/payroll'
-      path: '/payroll'
-      fullPath: '/hub/intacct/payroll'
-      preLoaderRoute: typeof AppbarSidebarHubIntacctPayrollRouteImport
-      parentRoute: typeof AppbarSidebarHubIntacctRoute
-    }
-    '/_appbar/_sidebar/hub/intacct/ar-entries': {
-      id: '/_appbar/_sidebar/hub/intacct/ar-entries'
-      path: '/ar-entries'
-      fullPath: '/hub/intacct/ar-entries'
-      preLoaderRoute: typeof AppbarSidebarHubIntacctArEntriesRouteImport
-      parentRoute: typeof AppbarSidebarHubIntacctRoute
-    }
-    '/_appbar/_sidebar/academy/courses/$courseId': {
-      id: '/_appbar/_sidebar/academy/courses/$courseId'
-      path: '/$courseId'
-      fullPath: '/academy/courses/$courseId'
-      preLoaderRoute: typeof AppbarSidebarAcademyCoursesCourseIdRouteImport
-      parentRoute: typeof AppbarSidebarAcademyCoursesRoute
-    }
-    '/_appbar/_admin/_sidebar/subscriptions/list': {
-      id: '/_appbar/_admin/_sidebar/subscriptions/list'
-      path: '/list'
-      fullPath: '/subscriptions/list'
-      preLoaderRoute: typeof AppbarAdminSidebarSubscriptionsListRouteImport
-      parentRoute: typeof AppbarAdminSidebarSubscriptionsRoute
-    }
-    '/_appbar/_admin/_sidebar/subscriptions/categories': {
-      id: '/_appbar/_admin/_sidebar/subscriptions/categories'
-      path: '/categories'
-      fullPath: '/subscriptions/categories'
-      preLoaderRoute: typeof AppbarAdminSidebarSubscriptionsCategoriesRouteImport
-      parentRoute: typeof AppbarAdminSidebarSubscriptionsRoute
-    }
-    '/_appbar/_admin/_sidebar/site-assets/list': {
-      id: '/_appbar/_admin/_sidebar/site-assets/list'
-      path: '/list'
-      fullPath: '/site-assets/list'
-      preLoaderRoute: typeof AppbarAdminSidebarSiteAssetsListRouteImport
-      parentRoute: typeof AppbarAdminSidebarSiteAssetsRoute
-    }
-    '/_appbar/_admin/_sidebar/site-assets/add': {
-      id: '/_appbar/_admin/_sidebar/site-assets/add'
-      path: '/add'
-      fullPath: '/site-assets/add'
-      preLoaderRoute: typeof AppbarAdminSidebarSiteAssetsAddRouteImport
-      parentRoute: typeof AppbarAdminSidebarSiteAssetsRoute
-    }
-    '/_appbar/_admin/_sidebar/credentials/list': {
-      id: '/_appbar/_admin/_sidebar/credentials/list'
-      path: '/list'
-      fullPath: '/credentials/list'
-      preLoaderRoute: typeof AppbarAdminSidebarCredentialsListRouteImport
-      parentRoute: typeof AppbarAdminSidebarCredentialsRoute
-    }
-    '/_appbar/_admin/_sidebar/credentials/categories': {
-      id: '/_appbar/_admin/_sidebar/credentials/categories'
-      path: '/categories'
-      fullPath: '/credentials/categories'
-      preLoaderRoute: typeof AppbarAdminSidebarCredentialsCategoriesRouteImport
-      parentRoute: typeof AppbarAdminSidebarCredentialsRoute
-    }
-    '/_appbar/_admin/_sidebar/assets/personnel': {
-      id: '/_appbar/_admin/_sidebar/assets/personnel'
+    '/_appbar/_admin/_sidebar/personnel': {
+      id: '/_appbar/_admin/_sidebar/personnel'
       path: '/personnel'
-      fullPath: '/assets/personnel'
-      preLoaderRoute: typeof AppbarAdminSidebarAssetsPersonnelRouteImport
+      fullPath: '/personnel'
+      preLoaderRoute: typeof AppbarAdminSidebarPersonnelRouteImport
+      parentRoute: typeof AppbarAdminSidebarRoute
+    }
+    '/_appbar/_admin/_sidebar/site-assets': {
+      id: '/_appbar/_admin/_sidebar/site-assets'
+      path: '/site-assets'
+      fullPath: '/site-assets'
+      preLoaderRoute: typeof AppbarAdminSidebarSiteAssetsRouteImport
+      parentRoute: typeof AppbarAdminSidebarRoute
+    }
+    '/_appbar/_admin/_sidebar/subscriptions': {
+      id: '/_appbar/_admin/_sidebar/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/subscriptions'
+      preLoaderRoute: typeof AppbarAdminSidebarSubscriptionsRouteImport
+      parentRoute: typeof AppbarAdminSidebarRoute
+    }
+    '/_appbar/_sidebar/academy/completions': {
+      id: '/_appbar/_sidebar/academy/completions'
+      path: '/academy/completions'
+      fullPath: '/academy/completions'
+      preLoaderRoute: typeof AppbarSidebarAcademyCompletionsRouteImport
+      parentRoute: typeof AppbarSidebarRoute
+    }
+    '/_appbar/_sidebar/academy/courses': {
+      id: '/_appbar/_sidebar/academy/courses'
+      path: '/academy/courses'
+      fullPath: '/academy/courses'
+      preLoaderRoute: typeof AppbarSidebarAcademyCoursesRouteImport
+      parentRoute: typeof AppbarSidebarRoute
+    }
+    '/_appbar/_sidebar/academy/employees': {
+      id: '/_appbar/_sidebar/academy/employees'
+      path: '/academy/employees'
+      fullPath: '/academy/employees'
+      preLoaderRoute: typeof AppbarSidebarAcademyEmployeesRouteImport
+      parentRoute: typeof AppbarSidebarRoute
+    }
+    '/_appbar/_sidebar/academy/media': {
+      id: '/_appbar/_sidebar/academy/media'
+      path: '/academy/media'
+      fullPath: '/academy/media'
+      preLoaderRoute: typeof AppbarSidebarAcademyMediaRouteImport
+      parentRoute: typeof AppbarSidebarRoute
+    }
+    '/_appbar/_sidebar/cipher/lock': {
+      id: '/_appbar/_sidebar/cipher/lock'
+      path: '/lock'
+      fullPath: '/cipher/lock'
+      preLoaderRoute: typeof AppbarSidebarCipherLockRouteImport
+      parentRoute: typeof AppbarSidebarCipherRoute
+    }
+    '/_appbar/_sidebar/cipher/unlock': {
+      id: '/_appbar/_sidebar/cipher/unlock'
+      path: '/unlock'
+      fullPath: '/cipher/unlock'
+      preLoaderRoute: typeof AppbarSidebarCipherUnlockRouteImport
+      parentRoute: typeof AppbarSidebarCipherRoute
+    }
+    '/_appbar/_sidebar/hub/ar-customers': {
+      id: '/_appbar/_sidebar/hub/ar-customers'
+      path: '/ar-customers'
+      fullPath: '/hub/ar-customers'
+      preLoaderRoute: typeof AppbarSidebarHubArCustomersRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
+    '/_appbar/_sidebar/hub/ar-paid-report': {
+      id: '/_appbar/_sidebar/hub/ar-paid-report'
+      path: '/ar-paid-report'
+      fullPath: '/hub/ar-paid-report'
+      preLoaderRoute: typeof AppbarSidebarHubArPaidReportRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
+    '/_appbar/_sidebar/hub/cash-management': {
+      id: '/_appbar/_sidebar/hub/cash-management'
+      path: '/cash-management'
+      fullPath: '/hub/cash-management'
+      preLoaderRoute: typeof AppbarSidebarHubCashManagementRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
+    '/_appbar/_sidebar/hub/cash-rec': {
+      id: '/_appbar/_sidebar/hub/cash-rec'
+      path: '/cash-rec'
+      fullPath: '/hub/cash-rec'
+      preLoaderRoute: typeof AppbarSidebarHubCashRecRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
+    '/_appbar/_sidebar/hub/cdn': {
+      id: '/_appbar/_sidebar/hub/cdn'
+      path: '/cdn'
+      fullPath: '/hub/cdn'
+      preLoaderRoute: typeof AppbarSidebarHubCdnRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
+    '/_appbar/_sidebar/hub/fleet-card-compliance': {
+      id: '/_appbar/_sidebar/hub/fleet-card-compliance'
+      path: '/fleet-card-compliance'
+      fullPath: '/hub/fleet-card-compliance'
+      preLoaderRoute: typeof AppbarSidebarHubFleetCardComplianceRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
+    '/_appbar/_sidebar/hub/fleet-cards': {
+      id: '/_appbar/_sidebar/hub/fleet-cards'
+      path: '/fleet-cards'
+      fullPath: '/hub/fleet-cards'
+      preLoaderRoute: typeof AppbarSidebarHubFleetCardsRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
+    '/_appbar/_sidebar/hub/fleet-customers': {
+      id: '/_appbar/_sidebar/hub/fleet-customers'
+      path: '/fleet-customers'
+      fullPath: '/hub/fleet-customers'
+      preLoaderRoute: typeof AppbarSidebarHubFleetCustomersRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
+    '/_appbar/_sidebar/hub/intacct': {
+      id: '/_appbar/_sidebar/hub/intacct'
+      path: '/intacct'
+      fullPath: '/hub/intacct'
+      preLoaderRoute: typeof AppbarSidebarHubIntacctRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
+    '/_appbar/_sidebar/hub/payables': {
+      id: '/_appbar/_sidebar/hub/payables'
+      path: '/payables'
+      fullPath: '/hub/payables'
+      preLoaderRoute: typeof AppbarSidebarHubPayablesRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
+    '/_appbar/_sidebar/hub/pos-reports': {
+      id: '/_appbar/_sidebar/hub/pos-reports'
+      path: '/pos-reports'
+      fullPath: '/hub/pos-reports'
+      preLoaderRoute: typeof AppbarSidebarHubPosReportsRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
+    '/_appbar/_sidebar/hub/receivables': {
+      id: '/_appbar/_sidebar/hub/receivables'
+      path: '/receivables'
+      fullPath: '/hub/receivables'
+      preLoaderRoute: typeof AppbarSidebarHubReceivablesRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
+    '/_appbar/_sidebar/hub/shifts': {
+      id: '/_appbar/_sidebar/hub/shifts'
+      path: '/shifts'
+      fullPath: '/hub/shifts'
+      preLoaderRoute: typeof AppbarSidebarHubShiftsRouteImport
+      parentRoute: typeof AppbarSidebarHubRoute
+    }
+    '/_appbar/_sidebar/projects/': {
+      id: '/_appbar/_sidebar/projects/'
+      path: '/'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof AppbarSidebarProjectsIndexRouteImport
+      parentRoute: typeof AppbarSidebarProjectsRoute
+    }
+    '/_appbar/_sidebar/projects/$id': {
+      id: '/_appbar/_sidebar/projects/$id'
+      path: '/$id'
+      fullPath: '/projects/$id'
+      preLoaderRoute: typeof AppbarSidebarProjectsIdRouteImport
+      parentRoute: typeof AppbarSidebarProjectsRoute
+    }
+    '/_appbar/_sidebar/reports/narrative': {
+      id: '/_appbar/_sidebar/reports/narrative'
+      path: '/narrative'
+      fullPath: '/reports/narrative'
+      preLoaderRoute: typeof AppbarSidebarReportsNarrativeRouteImport
+      parentRoute: typeof AppbarSidebarReportsRoute
+    }
+    '/_appbar/_sidebar/settings/logs': {
+      id: '/_appbar/_sidebar/settings/logs'
+      path: '/logs'
+      fullPath: '/settings/logs'
+      preLoaderRoute: typeof AppbarSidebarSettingsLogsRouteImport
+      parentRoute: typeof AppbarSidebarSettingsRoute
+    }
+    '/_appbar/_sidebar/settings/roles': {
+      id: '/_appbar/_sidebar/settings/roles'
+      path: '/roles'
+      fullPath: '/settings/roles'
+      preLoaderRoute: typeof AppbarSidebarSettingsRolesRouteImport
+      parentRoute: typeof AppbarSidebarSettingsRoute
+    }
+    '/_appbar/_sidebar/settings/users': {
+      id: '/_appbar/_sidebar/settings/users'
+      path: '/users'
+      fullPath: '/settings/users'
+      preLoaderRoute: typeof AppbarSidebarSettingsUsersRouteImport
+      parentRoute: typeof AppbarSidebarSettingsRoute
+    }
+    '/_appbar/_admin/_sidebar/access/personnel': {
+      id: '/_appbar/_admin/_sidebar/access/personnel'
+      path: '/personnel'
+      fullPath: '/access/personnel'
+      preLoaderRoute: typeof AppbarAdminSidebarAccessPersonnelRouteImport
+      parentRoute: typeof AppbarAdminSidebarAccessRoute
+    }
+    '/_appbar/_admin/_sidebar/access/resources': {
+      id: '/_appbar/_admin/_sidebar/access/resources'
+      path: '/resources'
+      fullPath: '/access/resources'
+      preLoaderRoute: typeof AppbarAdminSidebarAccessResourcesRouteImport
+      parentRoute: typeof AppbarAdminSidebarAccessRoute
+    }
+    '/_appbar/_admin/_sidebar/assets/devices': {
+      id: '/_appbar/_admin/_sidebar/assets/devices'
+      path: '/devices'
+      fullPath: '/assets/devices'
+      preLoaderRoute: typeof AppbarAdminSidebarAssetsDevicesRouteImport
       parentRoute: typeof AppbarAdminSidebarAssetsRoute
     }
     '/_appbar/_admin/_sidebar/assets/location': {
@@ -1290,26 +1220,117 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppbarAdminSidebarAssetsLocationRouteImport
       parentRoute: typeof AppbarAdminSidebarAssetsRoute
     }
-    '/_appbar/_admin/_sidebar/assets/devices': {
-      id: '/_appbar/_admin/_sidebar/assets/devices'
-      path: '/devices'
-      fullPath: '/assets/devices'
-      preLoaderRoute: typeof AppbarAdminSidebarAssetsDevicesRouteImport
+    '/_appbar/_admin/_sidebar/assets/personnel': {
+      id: '/_appbar/_admin/_sidebar/assets/personnel'
+      path: '/personnel'
+      fullPath: '/assets/personnel'
+      preLoaderRoute: typeof AppbarAdminSidebarAssetsPersonnelRouteImport
       parentRoute: typeof AppbarAdminSidebarAssetsRoute
     }
-    '/_appbar/_admin/_sidebar/access/resources': {
-      id: '/_appbar/_admin/_sidebar/access/resources'
-      path: '/resources'
-      fullPath: '/access/resources'
-      preLoaderRoute: typeof AppbarAdminSidebarAccessResourcesRouteImport
-      parentRoute: typeof AppbarAdminSidebarAccessRoute
+    '/_appbar/_admin/_sidebar/credentials/categories': {
+      id: '/_appbar/_admin/_sidebar/credentials/categories'
+      path: '/categories'
+      fullPath: '/credentials/categories'
+      preLoaderRoute: typeof AppbarAdminSidebarCredentialsCategoriesRouteImport
+      parentRoute: typeof AppbarAdminSidebarCredentialsRoute
     }
-    '/_appbar/_admin/_sidebar/access/personnel': {
-      id: '/_appbar/_admin/_sidebar/access/personnel'
-      path: '/personnel'
-      fullPath: '/access/personnel'
-      preLoaderRoute: typeof AppbarAdminSidebarAccessPersonnelRouteImport
-      parentRoute: typeof AppbarAdminSidebarAccessRoute
+    '/_appbar/_admin/_sidebar/credentials/list': {
+      id: '/_appbar/_admin/_sidebar/credentials/list'
+      path: '/list'
+      fullPath: '/credentials/list'
+      preLoaderRoute: typeof AppbarAdminSidebarCredentialsListRouteImport
+      parentRoute: typeof AppbarAdminSidebarCredentialsRoute
+    }
+    '/_appbar/_admin/_sidebar/personnel/': {
+      id: '/_appbar/_admin/_sidebar/personnel/'
+      path: '/'
+      fullPath: '/personnel/'
+      preLoaderRoute: typeof AppbarAdminSidebarPersonnelIndexRouteImport
+      parentRoute: typeof AppbarAdminSidebarPersonnelRoute
+    }
+    '/_appbar/_admin/_sidebar/site-assets/': {
+      id: '/_appbar/_admin/_sidebar/site-assets/'
+      path: '/'
+      fullPath: '/site-assets/'
+      preLoaderRoute: typeof AppbarAdminSidebarSiteAssetsIndexRouteImport
+      parentRoute: typeof AppbarAdminSidebarSiteAssetsRoute
+    }
+    '/_appbar/_admin/_sidebar/site-assets/add': {
+      id: '/_appbar/_admin/_sidebar/site-assets/add'
+      path: '/add'
+      fullPath: '/site-assets/add'
+      preLoaderRoute: typeof AppbarAdminSidebarSiteAssetsAddRouteImport
+      parentRoute: typeof AppbarAdminSidebarSiteAssetsRoute
+    }
+    '/_appbar/_admin/_sidebar/site-assets/list': {
+      id: '/_appbar/_admin/_sidebar/site-assets/list'
+      path: '/list'
+      fullPath: '/site-assets/list'
+      preLoaderRoute: typeof AppbarAdminSidebarSiteAssetsListRouteImport
+      parentRoute: typeof AppbarAdminSidebarSiteAssetsRoute
+    }
+    '/_appbar/_admin/_sidebar/subscriptions/categories': {
+      id: '/_appbar/_admin/_sidebar/subscriptions/categories'
+      path: '/categories'
+      fullPath: '/subscriptions/categories'
+      preLoaderRoute: typeof AppbarAdminSidebarSubscriptionsCategoriesRouteImport
+      parentRoute: typeof AppbarAdminSidebarSubscriptionsRoute
+    }
+    '/_appbar/_admin/_sidebar/subscriptions/list': {
+      id: '/_appbar/_admin/_sidebar/subscriptions/list'
+      path: '/list'
+      fullPath: '/subscriptions/list'
+      preLoaderRoute: typeof AppbarAdminSidebarSubscriptionsListRouteImport
+      parentRoute: typeof AppbarAdminSidebarSubscriptionsRoute
+    }
+    '/_appbar/_sidebar/academy/courses/': {
+      id: '/_appbar/_sidebar/academy/courses/'
+      path: '/'
+      fullPath: '/academy/courses/'
+      preLoaderRoute: typeof AppbarSidebarAcademyCoursesIndexRouteImport
+      parentRoute: typeof AppbarSidebarAcademyCoursesRoute
+    }
+    '/_appbar/_sidebar/academy/courses/$courseId': {
+      id: '/_appbar/_sidebar/academy/courses/$courseId'
+      path: '/$courseId'
+      fullPath: '/academy/courses/$courseId'
+      preLoaderRoute: typeof AppbarSidebarAcademyCoursesCourseIdRouteImport
+      parentRoute: typeof AppbarSidebarAcademyCoursesRoute
+    }
+    '/_appbar/_sidebar/hub/intacct/': {
+      id: '/_appbar/_sidebar/hub/intacct/'
+      path: '/'
+      fullPath: '/hub/intacct/'
+      preLoaderRoute: typeof AppbarSidebarHubIntacctIndexRouteImport
+      parentRoute: typeof AppbarSidebarHubIntacctRoute
+    }
+    '/_appbar/_sidebar/hub/intacct/ar-entries': {
+      id: '/_appbar/_sidebar/hub/intacct/ar-entries'
+      path: '/ar-entries'
+      fullPath: '/hub/intacct/ar-entries'
+      preLoaderRoute: typeof AppbarSidebarHubIntacctArEntriesRouteImport
+      parentRoute: typeof AppbarSidebarHubIntacctRoute
+    }
+    '/_appbar/_sidebar/hub/intacct/bookworks': {
+      id: '/_appbar/_sidebar/hub/intacct/bookworks'
+      path: '/bookworks'
+      fullPath: '/hub/intacct/bookworks'
+      preLoaderRoute: typeof AppbarSidebarHubIntacctBookworksRouteImport
+      parentRoute: typeof AppbarSidebarHubIntacctRoute
+    }
+    '/_appbar/_sidebar/hub/intacct/payroll': {
+      id: '/_appbar/_sidebar/hub/intacct/payroll'
+      path: '/payroll'
+      fullPath: '/hub/intacct/payroll'
+      preLoaderRoute: typeof AppbarSidebarHubIntacctPayrollRouteImport
+      parentRoute: typeof AppbarSidebarHubIntacctRoute
+    }
+    '/_appbar/_sidebar/hub/intacct/tradogram': {
+      id: '/_appbar/_sidebar/hub/intacct/tradogram'
+      path: '/tradogram'
+      fullPath: '/hub/intacct/tradogram'
+      preLoaderRoute: typeof AppbarSidebarHubIntacctTradogramRouteImport
+      parentRoute: typeof AppbarSidebarHubIntacctRoute
     }
   }
 }
@@ -1491,6 +1512,7 @@ const AppbarSidebarCipherRouteWithChildren =
 
 interface AppbarSidebarHubIntacctRouteChildren {
   AppbarSidebarHubIntacctArEntriesRoute: typeof AppbarSidebarHubIntacctArEntriesRoute
+  AppbarSidebarHubIntacctBookworksRoute: typeof AppbarSidebarHubIntacctBookworksRoute
   AppbarSidebarHubIntacctPayrollRoute: typeof AppbarSidebarHubIntacctPayrollRoute
   AppbarSidebarHubIntacctTradogramRoute: typeof AppbarSidebarHubIntacctTradogramRoute
   AppbarSidebarHubIntacctIndexRoute: typeof AppbarSidebarHubIntacctIndexRoute
@@ -1500,6 +1522,8 @@ const AppbarSidebarHubIntacctRouteChildren: AppbarSidebarHubIntacctRouteChildren
   {
     AppbarSidebarHubIntacctArEntriesRoute:
       AppbarSidebarHubIntacctArEntriesRoute,
+    AppbarSidebarHubIntacctBookworksRoute:
+      AppbarSidebarHubIntacctBookworksRoute,
     AppbarSidebarHubIntacctPayrollRoute: AppbarSidebarHubIntacctPayrollRoute,
     AppbarSidebarHubIntacctTradogramRoute:
       AppbarSidebarHubIntacctTradogramRoute,
@@ -1522,8 +1546,8 @@ interface AppbarSidebarHubRouteChildren {
   AppbarSidebarHubFleetCustomersRoute: typeof AppbarSidebarHubFleetCustomersRoute
   AppbarSidebarHubIntacctRoute: typeof AppbarSidebarHubIntacctRouteWithChildren
   AppbarSidebarHubPayablesRoute: typeof AppbarSidebarHubPayablesRoute
-  AppbarSidebarHubReceivablesRoute: typeof AppbarSidebarHubReceivablesRoute
   AppbarSidebarHubPosReportsRoute: typeof AppbarSidebarHubPosReportsRoute
+  AppbarSidebarHubReceivablesRoute: typeof AppbarSidebarHubReceivablesRoute
   AppbarSidebarHubShiftsRoute: typeof AppbarSidebarHubShiftsRoute
 }
 
@@ -1539,8 +1563,8 @@ const AppbarSidebarHubRouteChildren: AppbarSidebarHubRouteChildren = {
   AppbarSidebarHubFleetCustomersRoute: AppbarSidebarHubFleetCustomersRoute,
   AppbarSidebarHubIntacctRoute: AppbarSidebarHubIntacctRouteWithChildren,
   AppbarSidebarHubPayablesRoute: AppbarSidebarHubPayablesRoute,
-  AppbarSidebarHubReceivablesRoute: AppbarSidebarHubReceivablesRoute,
   AppbarSidebarHubPosReportsRoute: AppbarSidebarHubPosReportsRoute,
+  AppbarSidebarHubReceivablesRoute: AppbarSidebarHubReceivablesRoute,
   AppbarSidebarHubShiftsRoute: AppbarSidebarHubShiftsRoute,
 }
 

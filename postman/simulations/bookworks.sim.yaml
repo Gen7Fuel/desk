@@ -1,0 +1,11 @@
+simulation: bookworks
+routing: path
+mocks:
+  - name: bookworks
+    routeKey: bookworks
+    origin: [gen7-rds.silverlinevps.com]
+    path: postman/mocks/bookworks/config.yaml
+  - name: intacct-bookworks
+    routeKey: sage
+    origin: [api.intacct.com]
+    path: postman/mocks/intacct-bookworks/config.yaml
