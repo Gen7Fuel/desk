@@ -1,0 +1,11 @@
+version: 1
+name: Intacct Bookworks draft fixture
+slug: intacct-bookworks-drafts
+protocol: http
+origin: api.intacct.com
+interceptRequests: true
+port: 4503
+scenarios:
+  - name: default
+    path: ./default.js
+    default: true

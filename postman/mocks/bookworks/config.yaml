@@ -1,0 +1,11 @@
+version: 1
+name: Bookworks read-only AP invoice fixture
+slug: bookworks-read-only-ap-invoices
+protocol: http
+origin: gen7-rds.silverlinevps.com
+interceptRequests: true
+port: 4502
+scenarios:
+  - name: default
+    path: ./default.js
+    default: true

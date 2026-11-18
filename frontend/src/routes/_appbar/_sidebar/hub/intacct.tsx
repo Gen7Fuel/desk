@@ -6,6 +6,7 @@ const intacctLinks = [
   { label: 'AR Entries', path: '/hub/intacct/ar-entries' },
   { label: 'Payroll', path: '/hub/intacct/payroll' },
   { label: 'Tradogram', path: '/hub/intacct/tradogram' },
+  { label: 'Bookworks', path: '/hub/intacct/bookworks' },
 ]
 
 export const Route = createFileRoute('/_appbar/_sidebar/hub/intacct')({
