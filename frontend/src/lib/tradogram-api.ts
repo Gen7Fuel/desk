@@ -75,6 +75,9 @@ export type Draft = {
   notes: string
   status: 'draft' | 'ready'
   intacctBillKey: string
+  intacctEntityId?: string
+  intacctBillNumber?: string
+  intacctCreationState?: '' | 'creating' | 'created' | 'failed' | 'uncertain'
   lines: Array<{
     id: string
     accountType: '' | 'loan' | 'inventory'
@@ -86,6 +89,30 @@ export type DeliveryDetail = {
   draft: Draft | null
   stale: boolean
   accounts: Array<GLAccount>
+}
+
+export type TradogramBillPreview = {
+  hash: string
+  entityId: string
+  company: string
+  deliveryCode: string
+  site: string
+  vendor: { id: string; name: string }
+  billNumber: string
+  invoiceDate: string
+  postingDate: string
+  dueDate: string
+  currency: string
+  totalCents: number
+  subtotalOnly: boolean
+  lines: Array<{
+    id: string
+    name: string
+    quantity: number
+    accountId: string
+    accountName: string
+    amountCents: number
+  }>
 }
 
 export function suggestedAccountCodes(

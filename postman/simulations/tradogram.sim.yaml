@@ -1,0 +1,7 @@
+simulation: tradogram
+routing: path
+mocks:
+  - name: intacct-tradogram
+    routeKey: sage
+    origin: [api.intacct.com]
+    path: postman/mocks/intacct-tradogram/config.yaml

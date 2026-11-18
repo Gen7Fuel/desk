@@ -1,0 +1,30 @@
+purpose:
+  stands_in_for: Sage Intacct OAuth, bill lookup and draft creation for Tradogram.
+  unblocks: Local testing of draft-only payloads, duplicate checks and ambiguous write handling without live accounting writes.
+assumptions:
+  - id: draft-http-workflow
+    status: supported
+    claim: The caller sends an A210 draft payload and persists its reference against this synthetic Intacct stand-in.
+    reason: The real HTTP client and draft integration ran against the local Postman simulation; the test asserted draft state in its saved result and a subsequent bill query.
+    verification: On 2026-11-18, all 15 draft tests passed with TRADOGRAM_SIM_URL enabled. The simulation logged token 200, bill query 200, bill creation 201 and readback query 200. In-process HTTP tests also covered timeout-after-write, explicit rejection and persistence failures. Tradogram normalization uses fixtures and the repository is in memory.
+    source: backend/apps/tradogram/tradogram.drafts.test.js; postman/mocks/intacct-tradogram/default.js
+    updated_at: '2026-11-18'
+  - id: live-company-and-tax-validation
+    status: unknown
+    claim: A210 accepts the selected Tradogram GL accounts and received-subtotal draft without a tax solution or tax entries.
+    reason: No live Intacct bill was created. The synthetic mock checks draft state and company scope but does not enforce the full Intacct schema or company configuration. Official REST portal content was not machine-readable; Orbit returned no relevant Sage endpoint. Existing local integration shapes and Sage bill documentation informed the implementation.
+    verification: Local tests demonstrate submitted field selection only; A210 account, permission, mandatory dimensions and incomplete tax acceptance still require a live draft smoke test.
+    source: https://developer.sage.com/intacct/docs/openapi/ap/accounts-payable.bill/tag/Bills; https://developer.intacct.com/api/accounts-payable/bills/; backend/apps/tradogram/tradogram.drafts.js
+    updated_at: '2026-11-18'
+  - id: provider-idempotency
+    status: unknown
+    claim: Intacct prevents duplicate bills from concurrent external writers.
+    reason: The implementation does not assume this guarantee. Local reservations and a preflight lookup protect Desk submissions; ambiguous write results block retries. A different integration can race the lookup.
+    verification: Concurrent Desk requests and replay were exercised against an in-memory atomic claim. No provider idempotency test or live Mongo test was run.
+    source: backend/apps/tradogram/tradogram.drafts.js; backend/apps/tradogram/tradogram.model.js
+    updated_at: '2026-11-18'
+fingerprints:
+  - id: local-draft-implementation
+    date: '2026-11-18'
+    commit: null
+    cli: 'Installed CLI supports local simulations but not postman status; authenticated owner-mock discovery was unavailable. Mock is locally authored.'

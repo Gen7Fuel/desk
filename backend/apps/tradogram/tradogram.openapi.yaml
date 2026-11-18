@@ -1,0 +1,180 @@
+openapi: 3.0.3
+info:
+  title: Tradogram Intacct draft creation
+  version: 1.0.0
+  description: >-
+    Extension to the existing delivery preparation API. Creates unposted,
+    CAD received-subtotal drafts in the configured integration entity (A210 by
+    default). Tax, discounts and fees require review in Intacct. Source amounts,
+    vendor, accounts, company and draft state are controlled by the server.
+servers:
+  - url: /api/tradogram
+security:
+  - bearerAuth: []
+paths:
+  /deliveries/{code}/draft-preview:
+    post:
+      operationId: previewTradogramIntacctDraft
+      summary: Revalidate a saved ready delivery and preview an Intacct draft
+      description: Requires hub.intacct.read and hub.intacct.update. No bill is created.
+      parameters:
+        - $ref: '#/components/parameters/code'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillFields'
+      responses:
+        '200':
+          description: Preview with SHA-256 hash binding source, revision, company, vendor, GL selections and bill fields. Cache-Control no-store.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  [
+                    hash,
+                    entityId,
+                    company,
+                    vendor,
+                    billNumber,
+                    invoiceDate,
+                    postingDate,
+                    dueDate,
+                    currency,
+                    lines,
+                    totalCents,
+                    subtotalOnly,
+                  ]
+                properties:
+                  hash: { type: string, pattern: '^[a-f0-9]{64}$' }
+                  entityId: { type: string, enum: [A210, T010] }
+                  company: { type: string }
+                  vendor:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      name: { type: string }
+                  billNumber: { type: string }
+                  invoiceDate: { type: string, format: date }
+                  postingDate: { type: string, format: date }
+                  dueDate: { type: string, format: date }
+                  currency: { type: string, enum: [CAD] }
+                  totalCents: { type: integer, minimum: 1 }
+                  subtotalOnly: { type: boolean, enum: [true] }
+                  lines:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        name: { type: string }
+                        quantity: { type: number }
+                        accountId: { type: string }
+                        accountName: { type: string }
+                        amountCents: { type: integer, minimum: 0 }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/AuthError' }
+        '403': { $ref: '#/components/responses/AuthError' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '502': { $ref: '#/components/responses/UpstreamError' }
+        '503': { $ref: '#/components/responses/UpstreamError' }
+  /deliveries/{code}/intacct-draft:
+    post:
+      operationId: createTradogramIntacctDraft
+      summary: Create an unposted draft and persist its Intacct reference
+      description: >-
+        Requires hub.intacct.read and hub.intacct.update. Revalidates preview,
+        atomically reserves the delivery and vendor/bill number, checks existing
+        Intacct bills and creates once. Existing successful delivery submissions
+        return their saved reference. No automatic upstream retry. Creating or
+        uncertain attempts remain blocked until manually reconciled. Explicit
+        validation rejections allow a new preview and retry. Cache-Control no-store.
+      parameters:
+        - $ref: '#/components/parameters/code'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/BillFields'
+                - type: object
+                  required: [previewHash, subtotalAcknowledged]
+                  properties:
+                    previewHash: { type: string, pattern: '^[a-f0-9]{64}$' }
+                    subtotalAcknowledged: { type: boolean, enum: [true] }
+      responses:
+        '200':
+          description: Draft created, or reference to the delivery's existing draft
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [billKey, billNumber, entityId, state, alreadyCreated]
+                properties:
+                  billKey: { type: string }
+                  billNumber: { type: string }
+                  entityId: { type: string }
+                  state: { type: string, enum: [draft] }
+                  alreadyCreated: { type: boolean }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/AuthError' }
+        '403': { $ref: '#/components/responses/AuthError' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '502': { $ref: '#/components/responses/UpstreamError' }
+        '503': { $ref: '#/components/responses/UpstreamError' }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer }
+  parameters:
+    code:
+      name: code
+      in: path
+      required: true
+      schema: { type: string, pattern: '^[A-Za-z0-9]{12}$' }
+  schemas:
+    BillFields:
+      type: object
+      required: [billNumber, invoiceDate, dueDate]
+      properties:
+        billNumber:
+          {
+            type: string,
+            minLength: 1,
+            maxLength: 100,
+            example: 'INV-123-abcdefghijkl',
+          }
+        invoiceDate: { type: string, format: date }
+        dueDate:
+          {
+            type: string,
+            format: date,
+            description: Must be on or after the invoice date,
+          }
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+  responses:
+    ValidationError:
+      description: Invalid bill fields, source amounts, currency, vendor or GL selections
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    AuthError:
+      description: Missing authentication or Intacct permission
+    Conflict:
+      description: Delivery is not ready, changed, reserved, already sent or has an uncertain creation outcome
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    UpstreamError:
+      description: Upstream or persistence failure; ambiguous creation outcomes require manual reconciliation
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
