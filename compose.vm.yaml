@@ -1,0 +1,40 @@
+# Apply after compose.yaml on the VM. Docker startup is gated on the data disk mount.
+services:
+  caddy:
+    container_name: !reset null
+    ports: !override
+      - "127.0.0.1:${DESK_VM_PORT:-3500}:80"
+
+  api:
+    container_name: !reset null
+    env_file: !override
+      - ${DESK_VM_ENV_FILE:?Set DESK_VM_ENV_FILE to the Desk VM runtime environment file}
+    dns: !reset []
+    volumes: !override
+      - type: bind
+        source: ${GEN7_DATA_ROOT:?Set GEN7_DATA_ROOT to the mounted data disk}/desk/pos-data
+        target: /pos/data
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${GEN7_DATA_ROOT:?Set GEN7_DATA_ROOT to the mounted data disk}/desk/pos-archive
+        target: /pos/archive
+        bind:
+          create_host_path: false
+
+  cdn-backup:
+    container_name: !reset null
+    env_file: !override
+      - ${DESK_VM_ENV_FILE:?Set DESK_VM_ENV_FILE to the Desk VM runtime environment file}
+    profiles: [cdn-backup]
+
+  db:
+    volumes: !override
+      - type: bind
+        source: ${GEN7_DATA_ROOT:?Set GEN7_DATA_ROOT to the mounted data disk}/desk/mongo
+        target: /data/db
+        bind:
+          create_host_path: false
+
+volumes:
+  mongo_data: !reset null
