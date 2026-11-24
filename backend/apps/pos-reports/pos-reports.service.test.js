@@ -118,6 +118,7 @@ beforeEach(async () => {
   vi.stubEnv("POS_DATA_DIR", data);
   vi.stubEnv("POS_ARCHIVE_DIR", archive);
   vi.stubEnv("POS_FILE_STABLE_SECONDS", "1");
+  vi.stubEnv("POS_WRITES_ENABLED", undefined);
 });
 afterEach(async () => {
   vi.restoreAllMocks();
@@ -146,6 +147,48 @@ const acceptCurrent = async (date = "2026-11-03") => {
     email: "reviewer@example.test",
   });
 };
+
+it.each([undefined, "true"])(
+  "starts the importer with POS_WRITES_ENABLED=%s",
+  async (enabled) => {
+    vi.stubEnv("POS_WRITES_ENABLED", enabled);
+    await upload("startup.xml", journal(eventXml("1")));
+    const timer = service.startImporter();
+    try {
+      expect(timer).toBeDefined();
+      await vi.waitFor(() => {
+        expect(rows.Event).toHaveLength(1);
+        expect(rows.Lock).toHaveLength(0);
+      });
+    } finally {
+      clearInterval(timer);
+    }
+  },
+);
+
+it.each(["false", ""])(
+  "fences all POS writes with POS_WRITES_ENABLED=%j",
+  async (enabled) => {
+    const source = await upload("standby.xml", journal(eventXml("1")));
+    vi.stubEnv("POS_WRITES_ENABLED", enabled);
+    expect(service.startImporter()).toBeUndefined();
+    await expect(service.scan()).rejects.toMatchObject({ status: 503 });
+    await expect(service.saveSite({})).rejects.toMatchObject({ status: 503 });
+    await expect(
+      service.accept(
+        "burlington",
+        "2026-11-03",
+        { sourceHash: "0".repeat(64), revision: 0 },
+        { email: "reviewer@example.test" },
+      ),
+    ).rejects.toMatchObject({ status: 503 });
+    expect(models.Lock.findOneAndUpdate).not.toHaveBeenCalled();
+    expect(rows.Event).toHaveLength(0);
+    expect(rows.Report).toHaveLength(0);
+    expect(rows.Revision).toHaveLength(0);
+    await fs.access(source);
+  },
+);
 
 it("imports nested site XML, accepts a report, verifies the archive, and retains the report after deleting sources", async () => {
   const xml = journal(eventXml("1"));
@@ -269,6 +312,19 @@ it("recovers an acceptance interrupted between history and current report writes
   await expect(acceptCurrent()).rejects.toThrow("database interrupted");
   expect(rows.Revision).toHaveLength(1);
   expect(rows.Report).toHaveLength(0);
+  models.Lock.findOneAndUpdate.mockClear();
+  for (const [key, available] of [
+    ["POS_DATA_DIR", data],
+    ["POS_ARCHIVE_DIR", archive],
+  ]) {
+    vi.stubEnv(key, path.join(temp, "missing"));
+    await expect(service.scan()).rejects.toMatchObject({ status: 503 });
+    await expect(acceptCurrent()).rejects.toMatchObject({ status: 503 });
+    expect(models.Lock.findOneAndUpdate).not.toHaveBeenCalled();
+    expect(rows.Revision).toHaveLength(1);
+    expect(rows.Report).toHaveLength(0);
+    vi.stubEnv(key, available);
+  }
   models.Report.findOneAndUpdate.mockImplementation(original);
   await expect(acceptCurrent()).rejects.toMatchObject({ status: 409 });
   expect((await acceptCurrent()).report.revision).toBe(1);
@@ -492,6 +548,25 @@ it("enforces read and update permissions on the actual API routes", async () => 
     .send({ sourceHash: preview.body.sourceHash, revision: 0 });
   expect(accepted.status).toBe(200);
   expect(accepted.body.report.status).toBe("accepted");
+  vi.stubEnv("POS_WRITES_ENABLED", "false");
+  const standbyToken = token(true, true);
+  const standby = await request(app)
+    .get("/api/pos-reports/reports/burlington/2026-11-03")
+    .auth(standbyToken, { type: "bearer" });
+  expect(standby.status).toBe(200);
+  expect(standby.body.status).toBe("accepted");
+  models.Lock.findOneAndUpdate.mockClear();
+  for (const [method, route] of [
+    ["put", "/api/pos-reports/sites"],
+    ["post", "/api/pos-reports/scan"],
+    ["post", "/api/pos-reports/reports/burlington/2026-11-03/accept"],
+  ]) {
+    const response = await request(app)[method](route)
+      .auth(standbyToken, { type: "bearer" })
+      .send({});
+    expect(response.status).toBe(503);
+  }
+  expect(models.Lock.findOneAndUpdate).not.toHaveBeenCalled();
   expect(
     (
       await request(app)

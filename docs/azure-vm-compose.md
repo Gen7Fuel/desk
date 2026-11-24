@@ -12,3 +12,9 @@ curl --fail -H 'Host: desk.gen7fuel.com' http://127.0.0.1:3500/api/health
 ```
 
 Once the host mount is verified and Desk backup ownership has been explicitly handed over, enable the `cdn-backup` profile in the VM startup configuration. Keep its existing Azure source and archive destination settings. To hand ownership back, explicitly stop the VM backup service before enabling the other host. A frontend-only update can use `up -d --no-deps --wait caddy` after pulling the reviewed frontend image and checking the mount. This leaves the API, database and backup worker on their current releases.
+
+## Desk POS ownership
+
+Set `POS_WRITES_ENABLED=false` in the runtime environment file on every standby. Set `POS_WRITES_ENABLED=true` on the designated POS writer after verifying the predecessor has stopped and the data and archive paths are on the verified disk. Recreate the API after changing its environment. Check the new container's effective setting before opening the write routes.
+
+The standby can read accepted reports. Its scheduled importer stays off and its POS mutation requests return HTTP 503. For a writer change on the old VPS, account for the production deployment workflow recreating `backend/.env`. The switch must be applied persistently before a production handover.

@@ -28,6 +28,16 @@ let lastScan = {
   issues: [],
   completedAt: null,
 };
+function writesEnabled() {
+  return (
+    process.env.POS_WRITES_ENABLED === undefined ||
+    process.env.POS_WRITES_ENABLED === "true"
+  );
+}
+function requireWritesEnabled() {
+  if (!writesEnabled())
+    throw error("POS writes are disabled on this Desk instance.", 503);
+}
 async function listLocations() {
   return locationsClient.getLocations();
 }
@@ -177,18 +187,29 @@ const inside = (root, target) => {
       !path.isAbsolute(relative))
   );
 };
+async function resolveRoot(directory, unavailable) {
+  try {
+    const resolved = await fs.realpath(directory);
+    if ((await fs.stat(resolved)).isDirectory()) return resolved;
+  } catch {
+    // Report missing or inaccessible paths as unavailable storage.
+  }
+  throw error(unavailable, 503);
+}
 async function roots() {
   if (!process.env.POS_DATA_DIR || !process.env.POS_ARCHIVE_DIR)
     throw error(
       "Configure POS_DATA_DIR and POS_ARCHIVE_DIR on the backend.",
       503,
     );
-  const data = await fs.realpath(process.env.POS_DATA_DIR).catch(() => {
-    throw error("POS data directory is unavailable.", 503);
-  });
-  const archive = await fs.realpath(process.env.POS_ARCHIVE_DIR).catch(() => {
-    throw error("POS archive directory is unavailable.", 503);
-  });
+  const data = await resolveRoot(
+    process.env.POS_DATA_DIR,
+    "POS data directory is unavailable.",
+  );
+  const archive = await resolveRoot(
+    process.env.POS_ARCHIVE_DIR,
+    "POS archive directory is unavailable.",
+  );
   if (inside(data, archive) || inside(archive, data))
     throw error(
       "POS data and archive must be separate, non-nested directories.",
@@ -238,8 +259,7 @@ async function readStable(full, stableMs) {
     );
   return { buffer, hash: hash(buffer), stat: after };
 }
-async function scanUnlocked(check = () => {}) {
-  const { data } = await roots();
+async function scanUnlocked(data, check) {
   const sites = await listSites();
   const result = { imported: 0, duplicates: 0, waiting: 0, issues: [] };
   const stableMs = Math.max(
@@ -577,6 +597,7 @@ async function archiveSiteFiles(site, check) {
   return { archived, waiting, errors };
 }
 async function accept(site, date, input, user) {
+  requireWritesEnabled();
   validateIdentity(site, date);
   if (
     !input ||
@@ -585,6 +606,7 @@ async function accept(site, date, input, user) {
     input.revision < 0
   )
     throw error("Provide the reviewed sourceHash and revision.");
+  const { data } = await roots();
   return withLock(async (check) => {
     // Recover an acceptance interrupted after the immutable revision was saved.
     const previous = await models.Report.findOne({ site, date }).lean();
@@ -613,7 +635,7 @@ async function accept(site, date, input, user) {
         },
       );
     }
-    const scan = await scanUnlocked(check);
+    const scan = await scanUnlocked(data, check);
     if (scan.issues.some((i) => i.site === site))
       throw error(
         "Resolve this site's import issues before acceptance. Refresh files to see details.",
@@ -698,10 +720,20 @@ async function accept(site, date, input, user) {
     return { report: await detail(site, date), archive, scan };
   });
 }
+async function scan() {
+  requireWritesEnabled();
+  const { data } = await roots();
+  return withLock((check) => scanUnlocked(data, check));
+}
 function startImporter() {
-  if (!process.env.POS_DATA_DIR || !process.env.POS_ARCHIVE_DIR) return;
+  if (
+    !writesEnabled() ||
+    !process.env.POS_DATA_DIR ||
+    !process.env.POS_ARCHIVE_DIR
+  )
+    return;
   const run = () =>
-    withLock(scanUnlocked).catch((e) => {
+    scan().catch((e) => {
       if (e.status !== 409) console.error("[pos/scan]", e.message);
     });
   run();
@@ -715,11 +747,14 @@ function startImporter() {
 module.exports = {
   listSites,
   listLocations,
-  saveSite: (input) => withLock(() => saveSite(input)),
+  saveSite: async (input) => {
+    requireWritesEnabled();
+    return withLock(() => saveSite(input));
+  },
   listReports,
   detail,
   accept,
-  scan: () => withLock(scanUnlocked),
+  scan,
   scanStatus: () => lastScan,
   startImporter,
   archiveSiteFiles,
