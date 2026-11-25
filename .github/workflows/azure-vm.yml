@@ -1,0 +1,179 @@
+name: Deploy Desk to Azure VM
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'compose.yaml'
+      - 'compose.vm.yaml'
+      - 'Caddyfile'
+      - '.github/workflows/azure-vm.yml'
+  workflow_dispatch:
+    inputs:
+      build_only:
+        description: Publish an immutable release without contacting the VM
+        type: boolean
+        default: true
+
+permissions: {}
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main' && (vars.DESK_RUNTIME_TARGET == 'azure' || (github.event_name == 'workflow_dispatch' && inputs.build_only))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      config: ${{ steps.source.outputs.config }}
+      backend-source: ${{ steps.source.outputs.backend }}
+      frontend-source: ${{ steps.source.outputs.frontend }}
+      backend-digest: ${{ steps.backend.outputs.digest }}
+      frontend-digest: ${{ steps.frontend.outputs.digest }}
+    env:
+      IMAGE_TAG: azure-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Record the complete desired release
+        id: source
+        shell: bash
+        env:
+          VITE_CDN_BASE: ${{ secrets.VITE_CDN_BASE }}
+        run: |
+          set -euo pipefail
+          config=$(sha256sum compose.yaml compose.vm.yaml Caddyfile | sha256sum | cut -d' ' -f1)
+          backend=$(git rev-parse HEAD:backend | sha256sum | cut -d' ' -f1)
+          frontend=$( { git rev-parse HEAD:frontend && printf '%s' "$VITE_CDN_BASE"; } | sha256sum | cut -d' ' -f1)
+          printf 'config=%s\nbackend=%s\nfrontend=%s\n' "$config" "$backend" "$frontend" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish Desk API
+        id: backend
+        uses: docker/build-push-action@v7
+        with:
+          context: ./backend
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/gen7fuel/desk-api:${{ env.IMAGE_TAG }}
+          cache-from: type=gha,scope=desk-api
+          cache-to: type=gha,mode=max,scope=desk-api
+      - name: Publish Desk frontend
+        id: frontend
+        uses: docker/build-push-action@v7
+        with:
+          context: ./frontend
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/gen7fuel/desk-frontend:${{ env.IMAGE_TAG }}
+          build-args: VITE_CDN_BASE=${{ secrets.VITE_CDN_BASE }}
+          cache-from: type=gha,scope=desk-frontend
+          cache-to: type=gha,mode=max,scope=desk-frontend
+
+  release:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      payload: ${{ steps.manifest.outputs.payload }}
+    steps:
+      - name: Assemble the pinned release manifest
+        id: manifest
+        shell: bash
+        env:
+          CONFIG: ${{ needs.publish.outputs.config }}
+          BACKEND_SOURCE: ${{ needs.publish.outputs.backend-source }}
+          FRONTEND_SOURCE: ${{ needs.publish.outputs.frontend-source }}
+          BACKEND_DIGEST: ${{ needs.publish.outputs.backend-digest }}
+          FRONTEND_DIGEST: ${{ needs.publish.outputs.frontend-digest }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$GITHUB_RUN_NUMBER" =~ ^[1-9][0-9]*$ && "$GITHUB_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]]
+          for fingerprint in "$CONFIG" "$BACKEND_SOURCE" "$FRONTEND_SOURCE"; do
+            [[ "$fingerprint" =~ ^[0-9a-f]{64}$ ]]
+          done
+          for digest in "$BACKEND_DIGEST" "$FRONTEND_DIGEST"; do
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          done
+
+          payload=$(jq -cn \
+            --arg commit "$GITHUB_SHA" \
+            --argjson generation "$GITHUB_RUN_NUMBER" --argjson attempt "$GITHUB_RUN_ATTEMPT" \
+            --arg config "$CONFIG" \
+            --arg backend_source "$BACKEND_SOURCE" --arg backend_image "ghcr.io/gen7fuel/desk-api@$BACKEND_DIGEST" \
+            --arg frontend_source "$FRONTEND_SOURCE" --arg frontend_image "ghcr.io/gen7fuel/desk-frontend@$FRONTEND_DIGEST" \
+            '{app:"desk", $commit, $generation, $attempt, $config, images:{backend:{source:$backend_source,image:$backend_image},frontend:{source:$frontend_source,image:$frontend_image}}}')
+          printf '%s\n' "$payload" > gen7-release.json
+          printf 'payload=%s\n' "$(printf '%s' "$payload" | base64 -w0)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gen7-desk-release
+          path: gen7-release.json
+          if-no-files-found: error
+          retention-days: 14
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && vars.DESK_RUNTIME_TARGET == 'azure' && (github.event_name != 'workflow_dispatch' || !inputs.build_only)
+    needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: desk-azure-production
+    concurrency:
+      group: desk-azure-vm-deploy
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Deploy the Desk release by digest
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AZURE_VM_ID: ${{ vars.AZURE_VM_ID }}
+          PAYLOAD: ${{ needs.release.outputs.payload }}
+        run: |
+          set -euo pipefail
+          [[ "$AZURE_VM_ID" =~ ^/subscriptions/[0-9a-fA-F-]+/resourceGroups/[^/]+/providers/Microsoft\.Compute/virtualMachines/[^/]+$ ]]
+          [[ "$PAYLOAD" =~ ^[A-Za-z0-9+/]+=*$ ]]
+          work=$(mktemp -d)
+          printf "#!/bin/sh\nexec /usr/local/libexec/gen7-deploy-compose '%s'\n" "$PAYLOAD" > "$work/deploy.sh"
+
+          main_head=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          if [[ "$main_head" != "$GITHUB_SHA" ]]; then
+            echo 'The release commit is no longer at the tip of main.' >&2
+            exit 1
+          fi
+          if ! az vm run-command invoke --ids "$AZURE_VM_ID" --command-id RunShellScript \
+            --scripts "@$work/deploy.sh" --only-show-errors -o json > "$work/result.json"; then
+            echo 'Azure Run Command failed. Verify the VM deployment state before rerunning.' >&2
+            exit 1
+          fi
+          expected="GEN7_DEPLOY_OK desk $GITHUB_RUN_NUMBER $GITHUB_RUN_ATTEMPT"
+          if ! jq -e --arg expected "$expected" '
+            any(.value[]?;
+              if .code == "ComponentStatus/StdOut/succeeded" then
+                .message
+              elif .code == "ProvisioningState/succeeded" then
+                (.message | gsub("\r"; "") | split("[stdout]\n")
+                  | if length == 2 then .[1] | split("[stderr]")[0] else "" end)
+              else "" end
+              | split("\n") | any(rtrimstr("\r") == $expected))
+          ' "$work/result.json" > /dev/null; then
+            echo 'The VM did not confirm this Desk release. Verify its deployment state before rerunning.' >&2
+            exit 1
+          fi
+          printf '%s\n' "$expected"
