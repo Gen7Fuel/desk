@@ -56,6 +56,17 @@ malformed XML, unsupported line content, and conflicting versions of a
 transaction remain in place and are surfaced as import issues. Young uploads
 wait for a later scan. A site's unresolved import errors block acceptance.
 
+Set `POS_WRITES_ENABLED=false` in the Desk API environment on a standby host.
+The background scan stays off and manual scans, site changes, and report
+acceptance return HTTP 503. Users can still read reports. The active host uses
+`POS_WRITES_ENABLED=true`. Existing deployments with the setting unset retain
+their previous behavior. An empty or unrecognized value disables writes.
+
+Before handing over POS storage, stop or disable the old Desk writer and verify
+it has stopped before starting the new owner. Scan and acceptance require both
+configured directories to exist. Verify the filesystem mount on the host as
+well, since an empty directory can exist at a missing mount point.
+
 Reports use event **completion date**, never `BusinessDate` or filename time.
 SmartPOS's offset-free timestamps are interpreted as local wall time in the
 site's timezone. Explicit offsets, if present, are converted to that timezone.
