@@ -1,0 +1,71 @@
+name: Verify Desk Azure VM identity
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  probe:
+    if: github.repository == 'Gen7Fuel/desk' && github.ref == 'refs/heads/main' && vars.DESK_RUNTIME_TARGET == 'vps'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: desk-azure-production
+    concurrency:
+      group: desk-azure-vm-deploy
+      cancel-in-progress: false
+    permissions:
+      id-token: write
+    steps:
+      - uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Verify access to the inactive migration VM
+        shell: bash
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          AZURE_VM_ID: ${{ vars.AZURE_VM_ID }}
+          AZURE_CORE_OUTPUT: none
+        run: |
+          set -euo pipefail
+          [[ "$AZURE_SUBSCRIPTION_ID" =~ ^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$ ]]
+          expected="/subscriptions/${AZURE_SUBSCRIPTION_ID,,}/resourcegroups/gen7erp/providers/microsoft.compute/virtualmachines/gen7-erp-vm"
+          [[ "${AZURE_VM_ID,,}" == "$expected" ]]
+          actual=$(az vm show --ids "$AZURE_VM_ID" --query id -o tsv --only-show-errors)
+          [[ "${actual,,}" == "$expected" ]]
+
+          work=$(mktemp -d)
+          trap 'rm -rf -- "$work"' EXIT
+          cat > "$work/probe.sh" <<'GUEST'
+          #!/bin/sh
+          set -eu
+          test "$(hostname -s)" = gen7-erp-vm
+          for app in hub desk; do
+            test ! -e "/etc/gen7-deploy/$app/enabled"
+            test ! -e "/etc/gen7-deploy/$app/runtime.env"
+            test ! -e "/var/lib/gen7-deploy/$app/active.json"
+          done
+          printf '%s\n' GEN7_AZURE_IDENTITY_PROBE_OK
+          GUEST
+          az vm run-command invoke --ids "$AZURE_VM_ID" --command-id RunShellScript \
+            --scripts "@$work/probe.sh" --only-show-errors -o json > "$work/result.json"
+          jq -e '
+            def nonempty_lines: gsub("\r"; "") | split("\n") | map(select(length > 0));
+            .value as $statuses |
+            if ($statuses | length) == 1 and $statuses[0].code == "ProvisioningState/succeeded" then
+              ($statuses[0].message | gsub("\r"; "") | split("[stdout]\n")) as $parts |
+              ($parts | length) == 2 and ($parts[1] | split("[stderr]") |
+                length == 2 and (.[0] | nonempty_lines) == ["GEN7_AZURE_IDENTITY_PROBE_OK"]
+                and (.[1] | nonempty_lines) == [])
+            else
+              ($statuses | all(.code == "ComponentStatus/StdOut/succeeded" or
+                               .code == "ComponentStatus/StdErr/succeeded")) and
+              ([$statuses[] | select(.code == "ComponentStatus/StdOut/succeeded") | .message | nonempty_lines]
+                == [["GEN7_AZURE_IDENTITY_PROBE_OK"]]) and
+              ([$statuses[] | select(.code == "ComponentStatus/StdErr/succeeded") | .message | nonempty_lines]
+                | all(. == []))
+            end
+          ' "$work/result.json" > /dev/null
+          printf '%s\n' GEN7_AZURE_IDENTITY_PROBE_OK
